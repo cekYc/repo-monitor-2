@@ -7,6 +7,7 @@ const TOKEN_STORAGE_KEY = "repo-monitor-gh-token";
 interface SearchFormProps {
   onSearch: (username: string, token: string) => void;
   loading: boolean;
+  hasToken?: boolean;
 }
 
 export default function SearchForm({ onSearch, loading }: SearchFormProps) {
@@ -44,7 +45,7 @@ export default function SearchForm({ onSearch, loading }: SearchFormProps) {
 
   const handleSubmit = (e: React.FormEvent) => {
     e.preventDefault();
-    if (username.trim() && token.trim()) {
+    if (username.trim()) {
       onSearch(username.trim(), token.trim());
     }
   };
@@ -59,12 +60,17 @@ export default function SearchForm({ onSearch, loading }: SearchFormProps) {
         <div className="space-y-4">
           {/* Token Input */}
           <div>
-            <label
-              htmlFor="token"
-              className="block text-sm font-medium text-gray-600 dark:text-gray-400 mb-1"
-            >
-              GitHub API Token
-            </label>
+            <div className="flex items-center justify-between mb-1">
+              <label
+                htmlFor="token"
+                className="block text-sm font-medium text-gray-600 dark:text-gray-400"
+              >
+                GitHub API Token
+              </label>
+              <span className="text-xs text-gray-400 dark:text-gray-500">
+                Opsiyonel
+              </span>
+            </div>
             <div className="relative">
               <input
                 id="token"
@@ -96,9 +102,9 @@ export default function SearchForm({ onSearch, loading }: SearchFormProps) {
             </div>
             <p className="text-xs mt-1">
               {tokenSaved ? (
-                <span className="text-green-500">✓ Token tarayıcıda kayıtlı (localStorage)</span>
+                <span className="text-green-500">✓ Token tarayıcıda kayıtlı — saatte 5.000 istek</span>
               ) : (
-                <span className="text-gray-400">Token girildiğinde otomatik olarak tarayıcıda saklanır</span>
+                <span className="text-amber-500 dark:text-amber-400">⚠ Tokensiz saatte sadece 60 istek hakkınız var. Token ile 5.000'e çıkar.</span>
               )}
             </p>
           </div>
@@ -114,7 +120,7 @@ export default function SearchForm({ onSearch, loading }: SearchFormProps) {
             <input
               id="username"
               type="text"
-              placeholder="örn: torvalds"
+              placeholder="örn: cekYc"
               value={username}
               onChange={(e) => setUsername(e.target.value)}
               className="w-full px-4 py-3 rounded-xl border border-gray-300 dark:border-gray-700 bg-gray-50 dark:bg-gray-800 text-gray-800 dark:text-gray-200 placeholder-gray-400 focus:ring-2 focus:ring-indigo-500 focus:border-transparent outline-none transition-all"
@@ -124,7 +130,7 @@ export default function SearchForm({ onSearch, loading }: SearchFormProps) {
           {/* Submit Button */}
           <button
             type="submit"
-            disabled={loading || !username.trim() || !token.trim()}
+            disabled={loading || !username.trim()}
             className="w-full py-3 px-6 rounded-xl bg-gradient-to-r from-indigo-600 to-purple-600 text-white font-semibold hover:from-indigo-700 hover:to-purple-700 disabled:opacity-50 disabled:cursor-not-allowed transition-all duration-300 shadow-md hover:shadow-lg cursor-pointer"
           >
             {loading ? (

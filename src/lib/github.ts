@@ -39,9 +39,9 @@ export interface UserAnalysis {
 
 export async function fetchUserAnalysis(
   username: string,
-  token: string
+  token?: string
 ): Promise<UserAnalysis> {
-  const octokit = new Octokit({ auth: token });
+  const octokit = token ? new Octokit({ auth: token }) : new Octokit();
 
   // Fetch user profile
   const { data: userData } = await octokit.users.getByUsername({ username });

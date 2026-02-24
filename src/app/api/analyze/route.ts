@@ -13,15 +13,8 @@ export async function GET(request: NextRequest) {
     );
   }
 
-  if (!token) {
-    return NextResponse.json(
-      { error: "GitHub API token gerekli" },
-      { status: 400 }
-    );
-  }
-
   try {
-    const analysis = await fetchUserAnalysis(username, token);
+    const analysis = await fetchUserAnalysis(username, token || undefined);
     return NextResponse.json(analysis);
   } catch (error: unknown) {
     const message =
@@ -38,6 +31,13 @@ export async function GET(request: NextRequest) {
       return NextResponse.json(
         { error: "Geçersiz GitHub API token" },
         { status: 401 }
+      );
+    }
+
+    if (message.includes("rate limit") || message.includes("API rate limit")) {
+      return NextResponse.json(
+        { error: "API istek limiti aşıldı. Token kullanarak limiti artırabilirsiniz." },
+        { status: 429 }
       );
     }
 

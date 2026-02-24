@@ -65,6 +65,10 @@ src/
     └── utils.ts                # Yardımcı fonksiyonlar, renk paleti
 ```
 
+## Geliştirici
+
+Built by [**@cekYc**](https://github.com/cekYc)
+
 ## Lisans
 
 MIT

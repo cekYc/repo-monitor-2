@@ -20,44 +20,80 @@ export default function RepoCard({ repo, index }: RepoCardProps) {
   const [expanded, setExpanded] = useState(false);
 
   const hasLanguages = repo.languagePercentages.length > 0;
+  const dominantLang = repo.languagePercentages[0];
 
   return (
     <div
       className="bg-white dark:bg-gray-900 rounded-2xl shadow-md border border-gray-200 dark:border-gray-800 overflow-hidden hover:shadow-lg transition-shadow duration-300"
       style={{ animationDelay: `${index * 50}ms` }}
     >
-      {/* Header */}
-      <div className="p-5">
+      {/* Clickable Header */}
+      <button
+        type="button"
+        onClick={() => hasLanguages && setExpanded(!expanded)}
+        className={`w-full text-left p-5 transition-colors ${
+          hasLanguages
+            ? "cursor-pointer hover:bg-gray-50 dark:hover:bg-gray-800/50"
+            : "cursor-default"
+        }`}
+      >
         <div className="flex items-start justify-between gap-3">
           <div className="min-w-0 flex-1">
-            <a
-              href={repo.html_url}
-              target="_blank"
-              rel="noopener noreferrer"
-              className="text-lg font-bold text-indigo-600 dark:text-indigo-400 hover:underline truncate block"
-            >
-              {repo.name}
-            </a>
+            <div className="flex items-center gap-2">
+              <a
+                href={repo.html_url}
+                target="_blank"
+                rel="noopener noreferrer"
+                onClick={(e) => e.stopPropagation()}
+                className="text-lg font-bold text-indigo-600 dark:text-indigo-400 hover:underline truncate"
+              >
+                {repo.name}
+              </a>
+              {dominantLang && (
+                <span
+                  className="text-[10px] font-semibold px-2 py-0.5 rounded-full text-white flex-shrink-0"
+                  style={{ backgroundColor: getLanguageColor(dominantLang.name, 0) }}
+                >
+                  {dominantLang.name}
+                </span>
+              )}
+            </div>
             {repo.description && (
               <p className="text-sm text-gray-500 dark:text-gray-400 mt-1 line-clamp-2">
                 {repo.description}
               </p>
             )}
           </div>
-          <div className="flex items-center gap-3 text-xs text-gray-500 dark:text-gray-400 flex-shrink-0">
-            <span title="Yıldız">⭐ {repo.stargazers_count}</span>
-            <span title="Fork">🍴 {repo.forks_count}</span>
+          <div className="flex items-center gap-3 flex-shrink-0">
+            <div className="flex items-center gap-3 text-xs text-gray-500 dark:text-gray-400">
+              <span title="Y\u0131ld\u0131z">\u2b50 {repo.stargazers_count}</span>
+              <span title="Fork">\ud83c\udf74 {repo.forks_count}</span>
+            </div>
+            {hasLanguages && (
+              <svg
+                className={`w-4 h-4 text-gray-400 transition-transform duration-300 ${
+                  expanded ? "rotate-180" : ""
+                }`}
+                fill="none"
+                viewBox="0 0 24 24"
+                stroke="currentColor"
+                strokeWidth={2}
+              >
+                <path strokeLinecap="round" strokeLinejoin="round" d="M19 9l-7 7-7-7" />
+              </svg>
+            )}
           </div>
         </div>
 
         <div className="flex flex-wrap gap-3 mt-3 text-xs text-gray-500 dark:text-gray-400">
-          <span>📦 {formatBytes(repo.totalBytes)} kod</span>
-          <span>💾 {repo.size} KB repo</span>
-          <span>📅 {formatDate(repo.created_at)}</span>
-          <span>🔄 {formatDate(repo.updated_at)}</span>
+          <span>\ud83d\udce6 {formatBytes(repo.totalBytes)} kod</span>
+          <span>\ud83d\udcbe {repo.size} KB repo</span>
+          <span>\ud83d\udcc5 {formatDate(repo.created_at)}</span>
+          <span>\ud83d\udd04 {formatDate(repo.updated_at)}</span>
+          <span>\ud83d\udcdd {repo.languagePercentages.length} dil</span>
         </div>
 
-        {/* Language Bar */}
+        {/* Language Bar (always visible) */}
         {hasLanguages && (
           <div className="mt-4">
             <div className="flex rounded-full overflow-hidden h-3 bg-gray-200 dark:bg-gray-700">
@@ -89,14 +125,9 @@ export default function RepoCard({ repo, index }: RepoCardProps) {
                 </div>
               ))}
               {repo.languagePercentages.length > 5 && (
-                <button
-                  onClick={() => setExpanded(!expanded)}
-                  className="text-xs text-indigo-500 hover:text-indigo-700 dark:hover:text-indigo-300 transition-colors cursor-pointer"
-                >
-                  {expanded
-                    ? "Daha az göster"
-                    : `+${repo.languagePercentages.length - 5} dil daha`}
-                </button>
+                <span className="text-xs text-indigo-500">
+                  +{repo.languagePercentages.length - 5} dil daha
+                </span>
               )}
             </div>
           </div>
@@ -104,12 +135,12 @@ export default function RepoCard({ repo, index }: RepoCardProps) {
 
         {!hasLanguages && (
           <div className="mt-4 text-sm text-gray-400 italic">
-            Bu repoda dil bilgisi bulunamadı (boş veya binary dosyalar)
+            Bu repoda dil bilgisi bulunamad\u0131 (bo\u015f veya binary dosyalar)
           </div>
         )}
-      </div>
+      </button>
 
-      {/* Expanded Detail */}
+      {/* Expanded Detail — all repos can toggle this */}
       {expanded && hasLanguages && (
         <div className="border-t border-gray-200 dark:border-gray-800 p-5 bg-gray-50 dark:bg-gray-950">
           <div className="grid grid-cols-1 md:grid-cols-2 gap-6">

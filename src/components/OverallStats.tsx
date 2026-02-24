@@ -11,23 +11,78 @@ import {
   XAxis,
   YAxis,
   CartesianGrid,
-  Legend,
 } from "recharts";
 import { getLanguageColor, formatBytes } from "@/lib/utils";
 import { UserAnalysis } from "@/lib/github";
+import { useMemo } from "react";
 
 interface OverallStatsProps {
   analysis: UserAnalysis;
 }
 
 export default function OverallStats({ analysis }: OverallStatsProps) {
-  const { user, overallLanguages, totalBytes, totalRepos } = analysis;
+  const { user, overallLanguages, totalBytes, totalRepos, repos } = analysis;
 
   const pieData = overallLanguages.slice(0, 15);
   const barData = overallLanguages.slice(0, 20).map((l, i) => ({
     ...l,
     fill: getLanguageColor(l.name, i),
   }));
+
+  // Compute extra insights
+  const insights = useMemo(() => {
+    if (repos.length === 0) return null;
+
+    // Biggest & smallest repos by code
+    const sortedBySize = [...repos].sort((a, b) => b.totalBytes - a.totalBytes);
+    const biggestRepo = sortedBySize[0];
+    const smallestRepo = sortedBySize[sortedBySize.length - 1];
+
+    // Most starred
+    const mostStarred = [...repos].sort((a, b) => b.stargazers_count - a.stargazers_count)[0];
+
+    // Most languages
+    const mostLangs = [...repos].sort((a, b) => b.languagePercentages.length - a.languagePercentages.length)[0];
+
+    // Average languages per repo
+    const avgLangs = repos.reduce((sum, r) => sum + r.languagePercentages.length, 0) / repos.length;
+
+    // Average repo size
+    const avgSize = totalBytes / repos.length;
+
+    // Newest & oldest repo
+    const sortedByDate = [...repos].sort((a, b) => new Date(b.created_at).getTime() - new Date(a.created_at).getTime());
+    const newestRepo = sortedByDate[0];
+    const oldestRepo = sortedByDate[sortedByDate.length - 1];
+
+    // Most recently updated
+    const mostRecent = [...repos].sort((a, b) => new Date(b.updated_at).getTime() - new Date(a.updated_at).getTime())[0];
+
+    // Most forked
+    const mostForked = [...repos].sort((a, b) => b.forks_count - a.forks_count)[0];
+
+    // Total stars
+    const totalStars = repos.reduce((sum, r) => sum + r.stargazers_count, 0);
+
+    // Total forks
+    const totalForks = repos.reduce((sum, r) => sum + r.forks_count, 0);
+
+    // Dominant language (appears in most repos as the #1 lang)
+    const dominantMap: Record<string, number> = {};
+    repos.forEach(r => {
+      if (r.languagePercentages.length > 0) {
+        const top = r.languagePercentages[0].name;
+        dominantMap[top] = (dominantMap[top] || 0) + 1;
+      }
+    });
+    const dominantLang = Object.entries(dominantMap).sort((a, b) => b[1] - a[1])[0];
+
+    return {
+      biggestRepo, smallestRepo, mostStarred, mostLangs, avgLangs, avgSize,
+      newestRepo, oldestRepo, mostRecent, mostForked, totalStars, totalForks,
+      dominantLang,
+    };
+  }, [repos, totalBytes]);
 
   return (
     <div className="space-y-8">
@@ -247,6 +302,153 @@ export default function OverallStats({ analysis }: OverallStatsProps) {
               </tbody>
             </table>
           </div>
+        </div>
+      </div>
+
+      {/* Insights Panel */}
+      {insights && (
+        <div className="bg-white dark:bg-gray-900 rounded-2xl shadow-lg p-6 border border-gray-200 dark:border-gray-800">
+          <h2 className="text-xl font-bold mb-6 text-gray-800 dark:text-gray-100">
+            💡 Öne Çıkan Metrikler
+          </h2>
+          <div className="grid grid-cols-1 sm:grid-cols-2 lg:grid-cols-3 gap-4">
+            {/* Dominant Language */}
+            {insights.dominantLang && (
+              <InsightCard
+                icon="👑"
+                label="Favori Dil"
+                value={insights.dominantLang[0]}
+                detail={`${insights.dominantLang[1]} repoda birincil dil`}
+                color={getLanguageColor(insights.dominantLang[0], 0)}
+              />
+            )}
+
+            {/* Avg languages per repo */}
+            <InsightCard
+              icon="📐"
+              label="Ortalama Dil / Repo"
+              value={insights.avgLangs.toFixed(1)}
+              detail="dil ortalaması"
+            />
+
+            {/* Avg size */}
+            <InsightCard
+              icon="📊"
+              label="Ortalama Repo Boyutu"
+              value={formatBytes(insights.avgSize)}
+              detail="kod boyutu"
+            />
+
+            {/* Total stars */}
+            <InsightCard
+              icon="⭐"
+              label="Toplam Yıldız"
+              value={String(insights.totalStars)}
+              detail={`En çok: ${insights.mostStarred.name} (${insights.mostStarred.stargazers_count})`}
+            />
+
+            {/* Total forks */}
+            <InsightCard
+              icon="🍴"
+              label="Toplam Fork"
+              value={String(insights.totalForks)}
+              detail={insights.mostForked.forks_count > 0
+                ? `En çok: ${insights.mostForked.name} (${insights.mostForked.forks_count})`
+                : "Henüz fork yok"}
+            />
+
+            {/* Biggest repo */}
+            <InsightCard
+              icon="🏋️"
+              label="En Büyük Repo"
+              value={insights.biggestRepo.name}
+              detail={formatBytes(insights.biggestRepo.totalBytes)}
+            />
+
+            {/* Most languages */}
+            <InsightCard
+              icon="🌐"
+              label="En Çok Dil"
+              value={insights.mostLangs.name}
+              detail={`${insights.mostLangs.languagePercentages.length} farklı dil`}
+            />
+
+            {/* Newest repo */}
+            <InsightCard
+              icon="🆕"
+              label="En Yeni Repo"
+              value={insights.newestRepo.name}
+              detail={new Date(insights.newestRepo.created_at).toLocaleDateString("tr-TR")}
+            />
+
+            {/* Oldest repo */}
+            <InsightCard
+              icon="📜"
+              label="En Eski Repo"
+              value={insights.oldestRepo.name}
+              detail={new Date(insights.oldestRepo.created_at).toLocaleDateString("tr-TR")}
+            />
+
+            {/* Most recently updated */}
+            <InsightCard
+              icon="🔄"
+              label="Son Güncellenen"
+              value={insights.mostRecent.name}
+              detail={new Date(insights.mostRecent.updated_at).toLocaleDateString("tr-TR")}
+            />
+
+            {/* Total languages */}
+            <InsightCard
+              icon="🗂️"
+              label="Toplam Dil Sayısı"
+              value={String(overallLanguages.length)}
+              detail="farklı programlama dili"
+            />
+
+            {/* Smallest repo */}
+            <InsightCard
+              icon="🔬"
+              label="En Küçük Repo"
+              value={insights.smallestRepo.name}
+              detail={formatBytes(insights.smallestRepo.totalBytes)}
+            />
+          </div>
+        </div>
+      )}
+    </div>
+  );
+}
+
+function InsightCard({
+  icon,
+  label,
+  value,
+  detail,
+  color,
+}: {
+  icon: string;
+  label: string;
+  value: string;
+  detail: string;
+  color?: string;
+}) {
+  return (
+    <div className="bg-gray-50 dark:bg-gray-800/50 rounded-xl p-4 border border-gray-100 dark:border-gray-800 hover:border-indigo-200 dark:hover:border-indigo-800 transition-colors">
+      <div className="flex items-start gap-3">
+        <span className="text-xl flex-shrink-0">{icon}</span>
+        <div className="min-w-0">
+          <p className="text-xs font-medium text-gray-500 dark:text-gray-400 uppercase tracking-wide">
+            {label}
+          </p>
+          <p
+            className="text-lg font-bold text-gray-800 dark:text-gray-100 truncate mt-0.5"
+            style={color ? { color } : undefined}
+          >
+            {value}
+          </p>
+          <p className="text-xs text-gray-400 dark:text-gray-500 mt-0.5 truncate">
+            {detail}
+          </p>
         </div>
       </div>
     </div>

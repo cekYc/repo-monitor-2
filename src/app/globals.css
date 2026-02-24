@@ -1,5 +1,8 @@
 @import "tailwindcss";
 
+@custom-variant dark (&:where(.dark, .dark *));
+
+/* Light mode defaults */
 :root {
   --background: #f8fafc;
   --foreground: #171717;
@@ -12,11 +15,10 @@
   --font-mono: var(--font-geist-mono);
 }
 
-@media (prefers-color-scheme: dark) {
-  :root {
-    --background: #030712;
-    --foreground: #ededed;
-  }
+/* Dark mode via class */
+.dark {
+  --background: #030712;
+  --foreground: #ededed;
 }
 
 body {
@@ -49,13 +51,12 @@ body {
   background: #94a3b8;
 }
 
-@media (prefers-color-scheme: dark) {
-  ::-webkit-scrollbar-thumb {
-    background: #334155;
-  }
-  ::-webkit-scrollbar-thumb:hover {
-    background: #475569;
-  }
+.dark ::-webkit-scrollbar-thumb {
+  background: #334155;
+}
+
+.dark ::-webkit-scrollbar-thumb:hover {
+  background: #475569;
 }
 
 /* Recharts tooltip fix for dark mode */

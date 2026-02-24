@@ -4,6 +4,7 @@ import { useState, useCallback } from "react";
 import SearchForm from "@/components/SearchForm";
 import OverallStats from "@/components/OverallStats";
 import RepoCard from "@/components/RepoCard";
+import ThemeToggle from "@/components/ThemeToggle";
 import { UserAnalysis } from "@/lib/github";
 
 const CACHE_PREFIX = "repo-monitor-cache-";
@@ -141,6 +142,8 @@ export default function Home() {
 
   return (
     <div className="min-h-screen bg-gradient-to-br from-gray-50 via-white to-gray-100 dark:from-gray-950 dark:via-gray-900 dark:to-gray-950">
+      <ThemeToggle />
+
       {/* Header */}
       <header className="py-8 text-center">
         <h1 className="text-4xl font-extrabold bg-gradient-to-r from-indigo-600 via-purple-600 to-pink-500 bg-clip-text text-transparent">

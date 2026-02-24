@@ -66,8 +66,8 @@ export default function RepoCard({ repo, index }: RepoCardProps) {
           </div>
           <div className="flex items-center gap-3 flex-shrink-0">
             <div className="flex items-center gap-3 text-xs text-gray-500 dark:text-gray-400">
-              <span title="Y\u0131ld\u0131z">\u2b50 {repo.stargazers_count}</span>
-              <span title="Fork">\ud83c\udf74 {repo.forks_count}</span>
+            <span title="Yıldız">⭐ {repo.stargazers_count}</span>
+            <span title="Fork">🍴 {repo.forks_count}</span>
             </div>
             {hasLanguages && (
               <svg
@@ -86,11 +86,11 @@ export default function RepoCard({ repo, index }: RepoCardProps) {
         </div>
 
         <div className="flex flex-wrap gap-3 mt-3 text-xs text-gray-500 dark:text-gray-400">
-          <span>\ud83d\udce6 {formatBytes(repo.totalBytes)} kod</span>
-          <span>\ud83d\udcbe {repo.size} KB repo</span>
-          <span>\ud83d\udcc5 {formatDate(repo.created_at)}</span>
-          <span>\ud83d\udd04 {formatDate(repo.updated_at)}</span>
-          <span>\ud83d\udcdd {repo.languagePercentages.length} dil</span>
+          <span>📦 {formatBytes(repo.totalBytes)} kod</span>
+          <span>💾 {repo.size} KB repo</span>
+          <span>📅 {formatDate(repo.created_at)}</span>
+          <span>🔄 {formatDate(repo.updated_at)}</span>
+          <span>📝 {repo.languagePercentages.length} dil</span>
         </div>
 
         {/* Language Bar (always visible) */}
@@ -135,7 +135,7 @@ export default function RepoCard({ repo, index }: RepoCardProps) {
 
         {!hasLanguages && (
           <div className="mt-4 text-sm text-gray-400 italic">
-            Bu repoda dil bilgisi bulunamad\u0131 (bo\u015f veya binary dosyalar)
+            Bu repoda dil bilgisi bulunamadı (boş veya binary dosyalar)
           </div>
         )}
       </button>

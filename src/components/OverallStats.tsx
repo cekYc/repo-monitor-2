@@ -18,10 +18,39 @@ import { useMemo } from "react";
 
 interface OverallStatsProps {
   analysis: UserAnalysis;
+  excludedRepos: Set<string>;
+  onClearExclusions: () => void;
 }
 
-export default function OverallStats({ analysis }: OverallStatsProps) {
-  const { user, overallLanguages, totalBytes, totalRepos, repos } = analysis;
+export default function OverallStats({ analysis, excludedRepos, onClearExclusions }: OverallStatsProps) {
+  const { user, repos: allRepos } = analysis;
+
+  // Filter out excluded repos and recalculate everything
+  const activeRepos = useMemo(
+    () => allRepos.filter((r) => !excludedRepos.has(r.name)),
+    [allRepos, excludedRepos]
+  );
+
+  const { overallLanguages, totalBytes, totalRepos } = useMemo(() => {
+    const langMap: Record<string, number> = {};
+    let total = 0;
+    for (const repo of activeRepos) {
+      for (const [lang, bytes] of Object.entries(repo.languages)) {
+        langMap[lang] = (langMap[lang] || 0) + bytes;
+        total += bytes;
+      }
+    }
+    const langs = Object.entries(langMap)
+      .map(([name, bytes]) => ({
+        name,
+        value: total > 0 ? Math.round((bytes / total) * 10000) / 100 : 0,
+        bytes,
+      }))
+      .sort((a, b) => b.value - a.value);
+    return { overallLanguages: langs, totalBytes: total, totalRepos: activeRepos.length };
+  }, [activeRepos]);
+
+  const repos = activeRepos;
 
   const pieData = overallLanguages.slice(0, 15);
   const barData = overallLanguages.slice(0, 20).map((l, i) => ({
@@ -138,6 +167,27 @@ export default function OverallStats({ analysis }: OverallStatsProps) {
           </div>
         </div>
       </div>
+
+      {/* Exclusion Banner */}
+      {excludedRepos.size > 0 && (
+        <div className="bg-amber-50 dark:bg-amber-950/30 border border-amber-200 dark:border-amber-800 rounded-2xl p-4 flex flex-col sm:flex-row items-start sm:items-center justify-between gap-3">
+          <div className="flex items-center gap-2">
+            <span className="text-amber-500 text-lg">🔇</span>
+            <p className="text-amber-700 dark:text-amber-300 text-sm font-medium">
+              <span className="font-bold">{excludedRepos.size}</span> repo genel dağılımdan hariç tutuluyor
+              <span className="text-amber-500 dark:text-amber-400 ml-1">
+                ({analysis.repos.length - excludedRepos.size}/{analysis.repos.length} aktif)
+              </span>
+            </p>
+          </div>
+          <button
+            onClick={onClearExclusions}
+            className="text-xs px-3 py-1.5 rounded-lg bg-amber-100 dark:bg-amber-900/50 text-amber-700 dark:text-amber-300 hover:bg-amber-200 dark:hover:bg-amber-900 transition-colors font-medium cursor-pointer whitespace-nowrap"
+          >
+            Tümünü Dahil Et
+          </button>
+        </div>
+      )}
 
       {/* Overall Language Distribution */}
       <div className="bg-white dark:bg-gray-900 rounded-2xl shadow-lg p-6 border border-gray-200 dark:border-gray-800">

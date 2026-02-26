@@ -1,6 +1,6 @@
 "use client";
 
-import { useState, useCallback } from "react";
+import { useState, useCallback, useMemo } from "react";
 import SearchForm from "@/components/SearchForm";
 import OverallStats from "@/components/OverallStats";
 import RepoCard from "@/components/RepoCard";
@@ -53,6 +53,23 @@ export default function Home() {
   const [cacheHit, setCacheHit] = useState(false);
   const [lastUsername, setLastUsername] = useState("");
   const [lastToken, setLastToken] = useState("");
+  const [excludedRepos, setExcludedRepos] = useState<Set<string>>(new Set());
+
+  const toggleExcludeRepo = useCallback((repoName: string) => {
+    setExcludedRepos((prev) => {
+      const next = new Set(prev);
+      if (next.has(repoName)) {
+        next.delete(repoName);
+      } else {
+        next.add(repoName);
+      }
+      return next;
+    });
+  }, []);
+
+  const clearExclusions = useCallback(() => {
+    setExcludedRepos(new Set());
+  }, []);
 
   const handleSearch = useCallback(async (username: string, token: string) => {
     setLoading(true);
@@ -61,6 +78,7 @@ export default function Home() {
     setCacheHit(false);
     setLastUsername(username);
     setLastToken(token);
+    setExcludedRepos(new Set());
 
     // Önce cache'e bak
     const cached = getCachedAnalysis(username);
@@ -214,7 +232,11 @@ export default function Home() {
               </div>
             )}
 
-            <OverallStats analysis={analysis} />
+            <OverallStats
+              analysis={analysis}
+              excludedRepos={excludedRepos}
+              onClearExclusions={clearExclusions}
+            />
 
             {/* Repo List Header with Sort & Filter */}
             <div className="bg-white dark:bg-gray-900 rounded-2xl shadow-lg p-5 border border-gray-200 dark:border-gray-800">
@@ -256,7 +278,13 @@ export default function Home() {
             {/* Repo Cards */}
             <div className="grid gap-4">
               {sortedRepos.map((repo, i) => (
-                <RepoCard key={repo.name} repo={repo} index={i} />
+                <RepoCard
+                  key={repo.name}
+                  repo={repo}
+                  index={i}
+                  isExcluded={excludedRepos.has(repo.name)}
+                  onToggleExclude={toggleExcludeRepo}
+                />
               ))}
             </div>
 

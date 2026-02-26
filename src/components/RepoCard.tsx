@@ -8,18 +8,47 @@ import {
   ResponsiveContainer,
 } from "recharts";
 import { getLanguageColor, formatBytes, formatDate } from "@/lib/utils";
-import { RepoInfo } from "@/lib/github";
+import { RepoInfo, RepoCommitHistory } from "@/lib/github";
 import { useState } from "react";
+import CommitHistory from "./CommitHistory";
 
 interface RepoCardProps {
   repo: RepoInfo;
   index: number;
   isExcluded: boolean;
   onToggleExclude: (repoName: string) => void;
+  owner: string;
+  token: string;
 }
 
-export default function RepoCard({ repo, index, isExcluded, onToggleExclude }: RepoCardProps) {
+export default function RepoCard({ repo, index, isExcluded, onToggleExclude, owner, token }: RepoCardProps) {
   const [expanded, setExpanded] = useState(false);
+  const [commitHistory, setCommitHistory] = useState<RepoCommitHistory | null>(null);
+  const [historyLoading, setHistoryLoading] = useState(false);
+  const [historyError, setHistoryError] = useState<string | null>(null);
+  const [showHistory, setShowHistory] = useState(false);
+
+  const loadCommitHistory = async () => {
+    if (commitHistory) {
+      setShowHistory(!showHistory);
+      return;
+    }
+    setHistoryLoading(true);
+    setHistoryError(null);
+    setShowHistory(true);
+    try {
+      const params = new URLSearchParams({ owner, repo: repo.name });
+      if (token) params.set("token", token);
+      const res = await fetch(`/api/commit-history?${params}`);
+      const data = await res.json();
+      if (!res.ok) throw new Error(data.error || "Bir hata oluştu");
+      setCommitHistory(data);
+    } catch (err: unknown) {
+      setHistoryError(err instanceof Error ? err.message : "Bir hata oluştu");
+    } finally {
+      setHistoryLoading(false);
+    }
+  };
 
   const hasLanguages = repo.languagePercentages.length > 0;
   const dominantLang = repo.languagePercentages[0];
@@ -247,6 +276,43 @@ export default function RepoCard({ repo, index, isExcluded, onToggleExclude }: R
                 </div>
               ))}
             </div>
+          </div>
+
+          {/* Commit History Section */}
+          <div className="mt-5 pt-4 border-t border-gray-200 dark:border-gray-800">
+            <button
+              type="button"
+              onClick={loadCommitHistory}
+              disabled={historyLoading}
+              className="inline-flex items-center gap-2 px-4 py-2 rounded-xl bg-indigo-50 dark:bg-indigo-950/30 text-indigo-600 dark:text-indigo-400 text-sm font-medium hover:bg-indigo-100 dark:hover:bg-indigo-950/50 transition-colors cursor-pointer disabled:opacity-50"
+            >
+              {historyLoading ? (
+                <>
+                  <svg className="animate-spin h-4 w-4" viewBox="0 0 24 24" fill="none">
+                    <circle className="opacity-25" cx="12" cy="12" r="10" stroke="currentColor" strokeWidth="4" />
+                    <path className="opacity-75" fill="currentColor" d="M4 12a8 8 0 018-8V0C5.373 0 0 5.373 0 12h4z" />
+                  </svg>
+                  Commit geçmişi yükleniyor...
+                </>
+              ) : (
+                <>
+                  <svg className="w-4 h-4" fill="none" viewBox="0 0 24 24" strokeWidth={2} stroke="currentColor">
+                    <path strokeLinecap="round" strokeLinejoin="round" d="M12 6v6h4.5m4.5 0a9 9 0 11-18 0 9 9 0 0118 0z" />
+                  </svg>
+                  {showHistory && commitHistory ? "Commit Geçmişini Gizle" : "Commit Geçmişini Göster"}
+                </>
+              )}
+            </button>
+
+            {historyError && (
+              <p className="text-red-500 text-xs mt-2">❌ {historyError}</p>
+            )}
+
+            {showHistory && commitHistory && (
+              <div className="mt-4">
+                <CommitHistory history={commitHistory} />
+              </div>
+            )}
           </div>
         </div>
       )}

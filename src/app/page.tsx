@@ -284,6 +284,8 @@ export default function Home() {
                   index={i}
                   isExcluded={excludedRepos.has(repo.name)}
                   onToggleExclude={toggleExcludeRepo}
+                  owner={analysis.user.login}
+                  token={lastToken}
                 />
               ))}
             </div>

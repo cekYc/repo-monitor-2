@@ -1,4 +1,5 @@
 import { Octokit } from "@octokit/rest";
+import { getLanguageFromPath } from "./utils";
 
 export interface RepoLanguages {
   [language: string]: number; // bytes
@@ -155,5 +156,112 @@ export async function fetchUserAnalysis(
     overallLanguages,
     totalBytes,
     totalRepos: repoInfos.length,
+  };
+}
+
+// --- Commit History Language Analysis ---
+
+export interface CommitLanguageSnapshot {
+  sha: string;
+  shortSha: string;
+  date: string;
+  message: string;
+  languages: Record<string, number>; // lang -> bytes
+  languagePercentages: { name: string; value: number; bytes: number }[];
+  totalBytes: number;
+}
+
+export interface RepoCommitHistory {
+  repoName: string;
+  snapshots: CommitLanguageSnapshot[];
+  allLanguages: string[]; // union of all languages across snapshots
+}
+
+export async function fetchRepoCommitHistory(
+  owner: string,
+  repo: string,
+  token?: string,
+  limit: number = 15
+): Promise<RepoCommitHistory> {
+  const octokit = token ? new Octokit({ auth: token }) : new Octokit();
+
+  // Fetch recent commits
+  const { data: commits } = await octokit.repos.listCommits({
+    owner,
+    repo,
+    per_page: Math.min(limit, 30),
+  });
+
+  // Sample commits evenly if there are many (take first, some middle, and last)
+  let selectedCommits = commits;
+  if (commits.length > limit) {
+    const step = Math.floor(commits.length / limit);
+    selectedCommits = [];
+    for (let i = 0; i < commits.length && selectedCommits.length < limit; i += step) {
+      selectedCommits.push(commits[i]);
+    }
+    // Always include the last (oldest)
+    if (selectedCommits[selectedCommits.length - 1] !== commits[commits.length - 1]) {
+      selectedCommits.push(commits[commits.length - 1]);
+    }
+  }
+
+  // For each commit, get the tree and compute languages
+  const snapshots: CommitLanguageSnapshot[] = [];
+  const allLangsSet = new Set<string>();
+
+  for (const commit of selectedCommits) {
+    try {
+      const { data: tree } = await octokit.git.getTree({
+        owner,
+        repo,
+        tree_sha: commit.sha,
+        recursive: "1",
+      });
+
+      const langMap: Record<string, number> = {};
+      let total = 0;
+
+      for (const item of tree.tree) {
+        if (item.type === "blob" && item.path && item.size) {
+          const lang = getLanguageFromPath(item.path);
+          if (lang) {
+            langMap[lang] = (langMap[lang] || 0) + item.size;
+            total += item.size;
+            allLangsSet.add(lang);
+          }
+        }
+      }
+
+      const languagePercentages = Object.entries(langMap)
+        .map(([name, bytes]) => ({
+          name,
+          value: total > 0 ? Math.round((bytes / total) * 10000) / 100 : 0,
+          bytes,
+        }))
+        .sort((a, b) => b.value - a.value);
+
+      snapshots.push({
+        sha: commit.sha,
+        shortSha: commit.sha.substring(0, 7),
+        date: commit.commit.author?.date || commit.commit.committer?.date || "",
+        message: commit.commit.message.split("\n")[0], // first line only
+        languages: langMap,
+        languagePercentages,
+        totalBytes: total,
+      });
+    } catch {
+      // Skip if tree fetch fails (e.g. too large)
+      continue;
+    }
+  }
+
+  // Reverse so oldest is first (chronological order)
+  snapshots.reverse();
+
+  return {
+    repoName: repo,
+    snapshots,
+    allLanguages: Array.from(allLangsSet),
   };
 }

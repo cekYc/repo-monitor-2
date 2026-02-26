@@ -66,3 +66,67 @@ export function formatDate(dateStr: string): string {
     day: "numeric",
   });
 }
+
+// File extension to language mapping (GitHub Linguist-compatible)
+const EXT_TO_LANGUAGE: Record<string, string> = {
+  // JavaScript / TypeScript
+  ".js": "JavaScript", ".jsx": "JavaScript", ".mjs": "JavaScript", ".cjs": "JavaScript",
+  ".ts": "TypeScript", ".tsx": "TypeScript", ".mts": "TypeScript", ".cts": "TypeScript",
+  // Python
+  ".py": "Python", ".pyw": "Python", ".pyi": "Python",
+  // Java / JVM
+  ".java": "Java", ".kt": "Kotlin", ".kts": "Kotlin", ".scala": "Scala", ".clj": "Clojure",
+  // C family
+  ".c": "C", ".h": "C", ".cpp": "C++", ".cc": "C++", ".cxx": "C++", ".hpp": "C++", ".hxx": "C++",
+  ".cs": "C#", ".m": "Objective-C", ".mm": "Objective-C",
+  // Go / Rust / Zig
+  ".go": "Go", ".rs": "Rust", ".zig": "Zig",
+  // Web
+  ".html": "HTML", ".htm": "HTML", ".css": "CSS", ".scss": "SCSS", ".sass": "SCSS", ".less": "CSS",
+  ".vue": "Vue", ".svelte": "Svelte",
+  // Ruby / PHP / Perl
+  ".rb": "Ruby", ".php": "PHP", ".pl": "Perl", ".pm": "Perl",
+  // Swift / Dart
+  ".swift": "Swift", ".dart": "Dart",
+  // Shell
+  ".sh": "Shell", ".bash": "Shell", ".zsh": "Shell", ".fish": "Shell",
+  ".ps1": "PowerShell", ".psm1": "PowerShell",
+  // Others
+  ".r": "R", ".R": "R", ".lua": "Lua", ".ex": "Elixir", ".exs": "Elixir",
+  ".erl": "Erlang", ".hs": "Haskell", ".ml": "OCaml", ".fs": "F#", ".fsx": "F#",
+  ".jl": "Julia", ".nim": "Nim", ".v": "V", ".cr": "Crystal",
+  // Data / Config
+  ".json": "JSON", ".yaml": "YAML", ".yml": "YAML", ".toml": "TOML", ".xml": "XML",
+  ".sql": "SQL", ".graphql": "GraphQL", ".gql": "GraphQL",
+  // Markup / Docs
+  ".md": "Markdown", ".mdx": "Markdown", ".rst": "reStructuredText", ".tex": "TeX",
+  // DevOps
+  ".dockerfile": "Dockerfile", ".tf": "HCL", ".hcl": "HCL",
+  // Assembly
+  ".asm": "Assembly", ".s": "Assembly",
+  // Jupyter
+  ".ipynb": "Jupyter Notebook",
+  // Makefile etc
+  ".cmake": "CMake",
+};
+
+// Special filenames
+const FILENAME_TO_LANGUAGE: Record<string, string> = {
+  "Dockerfile": "Dockerfile",
+  "Makefile": "Makefile",
+  "CMakeLists.txt": "CMake",
+  "Gemfile": "Ruby",
+  "Rakefile": "Ruby",
+  "Vagrantfile": "Ruby",
+};
+
+export function getLanguageFromPath(path: string): string | null {
+  // Check filename first
+  const filename = path.split("/").pop() || "";
+  if (FILENAME_TO_LANGUAGE[filename]) return FILENAME_TO_LANGUAGE[filename];
+  // Check extension
+  const dotIdx = filename.lastIndexOf(".");
+  if (dotIdx === -1) return null;
+  const ext = filename.substring(dotIdx).toLowerCase();
+  return EXT_TO_LANGUAGE[ext] || null;
+}

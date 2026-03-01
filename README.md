@@ -59,6 +59,12 @@ GitHub profiles show a tiny language bar, but it doesn't tell you much. If you w
 - **Embeddable Badge Generator** — SVG language badge for your GitHub README with Markdown/HTML copy
 - **Language-Based Suggestions** — "You love TypeScript — check these trending repos" powered by GitHub Search
 
+### Advanced Analytics
+- **Repo Health & Security Score** — Checks README, LICENSE, CI/CD, description, recency, issue ratio per repo → 0-100 score with Excellent/Good/Fair/Poor grades and gauge chart
+- **Developer Persona & Gamification** — Commit time analysis (Events API for hours, GraphQL for calendar) → 6 unlockable badges: 🦉 Night Owl, 🐦 Early Bird, ⚔️ Weekend Warrior, 🌍 Polyglot, 🔥 Streaker, ♻️ Refactor Master
+- **Custom Extension Scanner** — Define custom file extensions (e.g. `.cky` → Ceky Lang) and scan all repos using GitHub Trees API
+- **Smart Server Cache** — Stale-while-revalidate caching with background revalidation, `X-Cache` headers (HIT/STALE/MISS)
+
 ### Organization & PWA
 - **Organization Analysis** — Analyze any GitHub org's public repos with language distribution
 - **PWA Support** — Install as a native app, offline-capable with service worker
@@ -66,7 +72,7 @@ GitHub profiles show a tiny language bar, but it doesn't tell you much. If you w
 
 ### UX
 - **Dark / Light Mode** — Toggle between themes instantly
-- **English / Turkish (i18n)** — Full bilingual support with 200+ translation keys
+- **English / Turkish (i18n)** — Full bilingual support with 250+ translation keys
 - **Real-time Progress** — SSE streaming shows which repo is being analyzed
 - **Client-Side Caching** — Results cached for 30 minutes
 - **No Token Required** — Works without authentication (60 req/hr); add a token for 5,000 req/hr
@@ -120,6 +126,9 @@ Open [http://localhost:3000](http://localhost:3000) in your browser.
 | `GET /api/contributions?username=` | 365-day contribution data |
 | `GET /api/suggestions?languages=` | Trending repo suggestions |
 | `GET /api/commit-history?owner=&repo=` | Commit history by language |
+| `GET /api/health-score?username=` | Repo health & security score |
+| `GET /api/persona?username=` | Developer persona & badges |
+| `GET /api/scan-extensions?username=&extensions=` | Custom extension scan |
 | `GET /api/rate-limit` | GitHub API rate limit status |
 
 ## Project Structure
@@ -135,6 +144,9 @@ src/
 │   │   ├── contributions/route.ts   # Contribution heatmap data
 │   │   ├── suggestions/route.ts     # Language-based suggestions
 │   │   ├── commit-history/route.ts  # Repo commit timeline
+│   │   ├── health-score/route.ts    # Repo health checks
+│   │   ├── persona/route.ts         # Developer persona analysis
+│   │   ├── scan-extensions/route.ts # Custom extension scanner
 │   │   └── rate-limit/route.ts      # Rate limit status
 │   ├── globals.css
 │   ├── layout.tsx                   # Root layout + PWA manifest
@@ -154,10 +166,14 @@ src/
 │   ├── SearchForm.tsx               # Search + compare form
 │   ├── ThemeProvider.tsx            # Dark/light mode context
 │   ├── ThemeToggle.tsx              # Theme toggle button
-│   └── UserCompare.tsx              # Side-by-side user comparison
+│   ├── UserCompare.tsx              # Side-by-side user comparison
+│   ├── HealthScore.tsx              # Repo health gauge + breakdown
+│   ├── DeveloperPersona.tsx         # Persona badges + commit charts
+│   └── CustomExtensionScanner.tsx   # Custom extension management + scan
 └── lib/
     ├── github.ts                    # Octokit service + type definitions
-    ├── i18n.ts                      # Translation keys (200+ TR/EN)
+    ├── i18n.ts                      # Translation keys (250+ TR/EN)
+    ├── cache.ts                     # Server-side smart cache (SWR)
     └── utils.ts                     # Colors, formatBytes, formatDate
 ```
 

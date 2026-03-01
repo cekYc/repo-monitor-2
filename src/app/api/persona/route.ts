@@ -69,11 +69,17 @@ export async function GET(request: NextRequest) {
 
   // Check cache
   const cacheKey = personaCacheKey(username);
-  const cached = serverCache.get<PersonaResult>(cacheKey);
-  if (cached.status === "fresh" || cached.status === "stale") {
-    return NextResponse.json(cached.data, {
-      headers: { "X-Cache": cached.status === "fresh" ? "HIT" : "STALE" },
-    });
+  const forceRefresh = searchParams.get("refresh") === "1";
+
+  if (!forceRefresh) {
+    const cached = serverCache.get<PersonaResult>(cacheKey);
+    if (cached.status === "fresh" || cached.status === "stale") {
+      return NextResponse.json(cached.data, {
+        headers: { "X-Cache": cached.status === "fresh" ? "HIT" : "STALE" },
+      });
+    }
+  } else {
+    serverCache.delete(cacheKey);
   }
 
   try {
@@ -83,146 +89,168 @@ export async function GET(request: NextRequest) {
     let languageCount = 0;
     let longestStreak = 0;
     let refactorRatio = 0; // deletions / additions
+    let graphqlSuccess = false;
 
+    // --- Step 1: Try GraphQL for accurate totals, streak, calendar (requires token) ---
     if (token) {
-      // Use GraphQL for detailed data
-      const now = new Date();
-      const from = new Date(now);
-      from.setFullYear(from.getFullYear() - 1);
+      try {
+        const now = new Date();
+        const from = new Date(now);
+        from.setFullYear(from.getFullYear() - 1);
 
-      const res = await fetch("https://api.github.com/graphql", {
-        method: "POST",
-        headers: {
-          Authorization: `bearer ${token}`,
-          "Content-Type": "application/json",
-        },
-        body: JSON.stringify({
-          query: COMMIT_TIMES_QUERY,
-          variables: {
-            username,
-            from: from.toISOString(),
-            to: now.toISOString(),
+        const res = await fetch("https://api.github.com/graphql", {
+          method: "POST",
+          headers: {
+            Authorization: `bearer ${token}`,
+            "Content-Type": "application/json",
           },
-        }),
-      });
+          body: JSON.stringify({
+            query: COMMIT_TIMES_QUERY,
+            variables: {
+              username,
+              from: from.toISOString(),
+              to: now.toISOString(),
+            },
+          }),
+        });
 
-      if (res.ok) {
-        const json = await res.json();
-        const collection = json?.data?.user?.contributionsCollection;
-        const repos = json?.data?.user?.repositories?.nodes;
+        if (res.ok) {
+          const json = await res.json();
+          const collection = json?.data?.user?.contributionsCollection;
+          const repos = json?.data?.user?.repositories?.nodes;
 
-        if (collection) {
-          totalCommits = collection.totalCommitContributions || 0;
+          if (collection && (collection.totalCommitContributions || 0) > 0) {
+            graphqlSuccess = true;
+            totalCommits = collection.totalCommitContributions || 0;
 
-          // Extract commit times from contributions
-          for (const repoContrib of collection.commitContributionsByRepository || []) {
-            for (const node of repoContrib.contributions?.nodes || []) {
-              if (node.occurredAt) {
-                const date = new Date(node.occurredAt);
-                commitHours[date.getUTCHours()]++;
-                commitDays[date.getUTCDay()]++;
+            // Streak from calendar
+            const allDays: { date: string; count: number }[] = [];
+            for (const week of collection.contributionCalendar?.weeks || []) {
+              for (const day of week.contributionDays) {
+                allDays.push({ date: day.date, count: day.contributionCount });
               }
             }
+
+            let currentStreak = 0;
+            for (const day of allDays) {
+              if (day.count > 0) {
+                currentStreak++;
+                longestStreak = Math.max(longestStreak, currentStreak);
+              } else {
+                currentStreak = 0;
+              }
+            }
+
+            // Day distribution from calendar (accurate)
+            const dayTotals = new Array(7).fill(0);
+            for (const week of collection.contributionCalendar?.weeks || []) {
+              for (const day of week.contributionDays) {
+                dayTotals[day.weekday] += day.contributionCount;
+              }
+            }
+            commitDays = dayTotals;
           }
 
-          // Calculate streak from calendar
-          const allDays: { date: string; count: number }[] = [];
-          for (const week of collection.contributionCalendar?.weeks || []) {
-            for (const day of week.contributionDays) {
-              allDays.push({ date: day.date, count: day.contributionCount });
+          // Count unique languages from GraphQL
+          if (repos) {
+            const langSet = new Set<string>();
+            for (const repo of repos) {
+              for (const lang of repo.languages?.nodes || []) {
+                langSet.add(lang.name);
+              }
             }
+            languageCount = langSet.size;
           }
-
-          // Streak calculation
-          let currentStreak = 0;
-          for (const day of allDays) {
-            if (day.count > 0) {
-              currentStreak++;
-              longestStreak = Math.max(longestStreak, currentStreak);
-            } else {
-              currentStreak = 0;
-            }
-          }
-
-          // Also fill commitDays from calendar for accurate day distribution
-          const dayTotals = new Array(7).fill(0);
-          for (const week of collection.contributionCalendar?.weeks || []) {
-            for (const day of week.contributionDays) {
-              dayTotals[day.weekday] += day.contributionCount;
-            }
-          }
-          // Use calendar data for days (more accurate)
-          commitDays = dayTotals;
         }
-
-        // Count unique languages
-        if (repos) {
-          const langSet = new Set<string>();
-          for (const repo of repos) {
-            for (const lang of repo.languages?.nodes || []) {
-              langSet.add(lang.name);
-            }
-          }
-          languageCount = langSet.size;
-        }
+      } catch {
+        // GraphQL failed — will fall through to Events API
       }
-    } else {
-      // Fallback: Events API
-      const octokit = new Octokit();
+    }
+
+    // --- Step 2: Always use Events API for commit HOUR distribution ---
+    // GraphQL contributionsByRepository only has dates (no times), so we need Events API for hours
+    {
+      const octokit = token ? new Octokit({ auth: token }) : new Octokit();
       const allEvents = [];
       for (let page = 1; page <= 10; page++) {
-        const { data: events } = await octokit.activity.listPublicEventsForUser({
-          username,
-          per_page: 100,
-          page,
-        });
-        allEvents.push(...events);
-        if (events.length < 100) break;
+        try {
+          const { data: events } = await octokit.activity.listPublicEventsForUser({
+            username,
+            per_page: 100,
+            page,
+          });
+          allEvents.push(...events);
+          if (events.length < 100) break;
+        } catch {
+          break; // Rate limit or other error — use what we have
+        }
       }
 
+      // Extract commit hours from push events (these have actual timestamps)
+      let eventsCommitCount = 0;
       for (const event of allEvents) {
         if (event.type === "PushEvent" && event.created_at) {
           const payload = event.payload as { commits?: { sha: string }[] };
           const commitCount = payload.commits?.length || 1;
           const date = new Date(event.created_at);
           commitHours[date.getUTCHours()] += commitCount;
-          commitDays[date.getUTCDay()] += commitCount;
-          totalCommits += commitCount;
+          eventsCommitCount += commitCount;
         }
       }
 
-      // Get language count from user repos
-      const { data: repos } = await octokit.repos.listForUser({
-        username,
-        type: "owner",
-        per_page: 100,
-        sort: "updated",
-      });
-      const langSet = new Set<string>();
-      for (const repo of repos.filter((r) => !r.fork)) {
-        if (repo.language) langSet.add(repo.language);
-      }
-      languageCount = langSet.size;
+      // If GraphQL didn't work, use Events API for everything
+      if (!graphqlSuccess) {
+        totalCommits = eventsCommitCount;
 
-      // Basic streak from events
-      const dateSet = new Set(
-        allEvents
-          .filter((e) => e.created_at)
-          .map((e) => e.created_at!.split("T")[0])
-      );
-      const dates = Array.from(dateSet).sort();
-      let streak = 0;
-      for (let i = 0; i < dates.length; i++) {
-        if (i === 0) {
-          streak = 1;
-        } else {
-          const prev = new Date(dates[i - 1]);
-          const curr = new Date(dates[i]);
-          const diff = (curr.getTime() - prev.getTime()) / (1000 * 60 * 60 * 24);
-          if (diff === 1) streak++;
-          else streak = 1;
+        // Day distribution from events
+        for (const event of allEvents) {
+          if (event.type === "PushEvent" && event.created_at) {
+            const payload = event.payload as { commits?: { sha: string }[] };
+            const commitCount = payload.commits?.length || 1;
+            const date = new Date(event.created_at);
+            commitDays[date.getUTCDay()] += commitCount;
+          }
         }
-        longestStreak = Math.max(longestStreak, streak);
+
+        // Language count from repos
+        if (languageCount === 0) {
+          try {
+            const { data: repos } = await octokit.repos.listForUser({
+              username,
+              type: "owner",
+              per_page: 100,
+              sort: "updated",
+            });
+            const langSet = new Set<string>();
+            for (const repo of repos.filter((r) => !r.fork)) {
+              if (repo.language) langSet.add(repo.language);
+            }
+            languageCount = langSet.size;
+          } catch {
+            // ignore
+          }
+        }
+
+        // Streak from events
+        const dateSet = new Set(
+          allEvents
+            .filter((e) => e.created_at)
+            .map((e) => e.created_at!.split("T")[0])
+        );
+        const dates = Array.from(dateSet).sort();
+        let streak = 0;
+        for (let i = 0; i < dates.length; i++) {
+          if (i === 0) {
+            streak = 1;
+          } else {
+            const prev = new Date(dates[i - 1]);
+            const curr = new Date(dates[i]);
+            const diff = (curr.getTime() - prev.getTime()) / (1000 * 60 * 60 * 24);
+            if (diff === 1) streak++;
+            else streak = 1;
+          }
+          longestStreak = Math.max(longestStreak, streak);
+        }
       }
 
       // Estimate refactor ratio from push events

@@ -51,6 +51,12 @@ GitHub kullanıcılarının **kendi yazdığı** public repolarını analiz eden
 - **Gömülebilir Badge Oluşturucu** — GitHub README'niz için SVG dil badge'i + Markdown/HTML kopyalama
 - **Dil Bazlı Repo Önerileri** — "TypeScript seviyorsun — şu trending repo'lara bak" GitHub Search ile
 
+### Gelişmiş Analitik
+- **Repo Sağlık & Güvenlik Skoru** — README, LICENSE, CI/CD, açıklama, güncellik, issue oranı kontrolü → 0-100 skor, Mükemmel/İyi/Orta/Zayıf derecelendirme, gauge chart
+- **Geliştirici Personası & Oyunlaştırma** — Commit saat analizi (Events API saat, GraphQL takvim) → 6 rozet: 🦉 Gece Kuşu, 🐦 Erken Kalkan, ⚔️ Hafta Sonu Savaşçısı, 🌍 Poliglot, 🔥 Seri Yapıcı, ♻️ Refactor Ustası
+- **Özel Uzantı Tarayıcı** — Özel dosya uzantıları tanımlayın (örn: `.cky` → Ceky Lang) ve repoları GitHub Trees API ile tarayın
+- **Akıllı Sunucu Cache** — Stale-while-revalidate caching, arka plan yenilemesi, `X-Cache` header (HIT/STALE/MISS)
+
 ### Organizasyon & PWA
 - **Organizasyon Analizi** — Herhangi bir GitHub org'un public repolarını dil dağılımıyla analiz
 - **PWA Desteği** — Yerel uygulama olarak yükle, service worker ile offline destek
@@ -58,7 +64,7 @@ GitHub kullanıcılarının **kendi yazdığı** public repolarını analiz eden
 
 ### Kullanıcı Deneyimi
 - **Dark / Light Mode** — Tema değiştirme butonu ile anında geçiş
-- **İngilizce / Türkçe (i18n)** — 200+ çeviri anahtarı ile tam iki dil desteği
+- **İngilizce / Türkçe (i18n)** — 250+ çeviri anahtarı ile tam iki dil desteği
 - **Gerçek Zamanlı İlerleme** — SSE streaming ile hangi repo analiz ediliyor göstergesi
 - **İstemci Tarafı Cache** — Sonuçlar 30 dakika cache'lenir
 - **Tokensiz Kullanım** — Token olmadan saatte 60 istek, token ile 5.000
@@ -95,6 +101,9 @@ Tarayıcıda [http://localhost:3000](http://localhost:3000) adresine gidin.
 | `GET /api/contributions?username=` | 365 günlük katkı verisi |
 | `GET /api/suggestions?languages=` | Trending repo önerileri |
 | `GET /api/commit-history?owner=&repo=` | Dil bazlı commit geçmişi |
+| `GET /api/health-score?username=` | Repo sağlık & güvenlik skoru |
+| `GET /api/persona?username=` | Geliştirici personası & rozetler |
+| `GET /api/scan-extensions?username=&extensions=` | Özel uzantı taraması |
 | `GET /api/rate-limit` | GitHub API rate limit durumu |
 
 ## Tech Stack

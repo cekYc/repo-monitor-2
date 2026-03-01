@@ -194,33 +194,44 @@ function HomeContent() {
 
         buffer += decoder.decode(value, { stream: true });
 
-        // Parse SSE events from buffer
-        const lines = buffer.split("\n");
-        buffer = "";
+        // SSE events are separated by double newlines
+        const parts = buffer.split("\n\n");
+        // Last part may be incomplete — keep it in buffer
+        buffer = parts.pop() || "";
 
-        let eventType = "";
-        for (const line of lines) {
-          if (line.startsWith("event: ")) {
-            eventType = line.substring(7).trim();
-          } else if (line.startsWith("data: ")) {
-            const data = JSON.parse(line.substring(6));
+        for (const part of parts) {
+          const trimmed = part.trim();
+          if (!trimmed) continue;
 
-            if (eventType === "progress") {
-              setProgress(data);
-            } else if (eventType === "complete") {
-              setCachedAnalysis(username, data);
-              setAnalysis(data);
-              addRecentSearch(username, data.user?.avatar_url);
-              setRecentSearches(getRecentSearches());
-            } else if (eventType === "error") {
-              throw new Error(data.error);
+          let eventType = "";
+          let dataStr = "";
+
+          for (const line of trimmed.split("\n")) {
+            if (line.startsWith("event: ")) {
+              eventType = line.substring(7).trim();
+            } else if (line.startsWith("data: ")) {
+              dataStr += line.substring(6);
             }
-          } else if (line.trim() === "") {
-            // Event boundary, reset
-            eventType = "";
-          } else {
-            // Incomplete line, keep in buffer
-            buffer = line;
+          }
+
+          if (!dataStr) continue;
+
+          let data;
+          try {
+            data = JSON.parse(dataStr);
+          } catch {
+            continue; // skip malformed
+          }
+
+          if (eventType === "progress") {
+            setProgress(data);
+          } else if (eventType === "complete") {
+            setCachedAnalysis(username, data);
+            setAnalysis(data);
+            addRecentSearch(username, data.user?.avatar_url);
+            setRecentSearches(getRecentSearches());
+          } else if (eventType === "error") {
+            throw new Error(data.error);
           }
         }
       }

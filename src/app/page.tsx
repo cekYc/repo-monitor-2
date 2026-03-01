@@ -9,6 +9,11 @@ import ThemeToggle from "@/components/ThemeToggle";
 import LocaleToggle from "@/components/LocaleToggle";
 import RateLimitBadge from "@/components/RateLimitBadge";
 import UserCompare from "@/components/UserCompare";
+import OrgAnalyzer from "@/components/OrgAnalyzer";
+import BadgeGenerator from "@/components/BadgeGenerator";
+import RepoSuggestions from "@/components/RepoSuggestions";
+import ContributionHeatmap from "@/components/ContributionHeatmap";
+import PwaInstallButton from "@/components/PwaInstallButton";
 import { useLocale } from "@/components/LocaleProvider";
 import { UserAnalysis } from "@/lib/github";
 
@@ -352,6 +357,9 @@ function HomeContent() {
           compareLoading={compareLoading}
         />
 
+        {/* Organization Analysis */}
+        <OrgAnalyzer token={lastToken} />
+
         {/* Loading State with Progress */}
         {loading && (
           <div className="text-center py-12">
@@ -432,6 +440,18 @@ function HomeContent() {
               analysis={analysis}
               excludedRepos={excludedRepos}
               onClearExclusions={clearExclusions}
+            />
+
+            {/* Badge Generator */}
+            <BadgeGenerator username={analysis.user.login} />
+
+            {/* Contribution Heatmap */}
+            <ContributionHeatmap username={analysis.user.login} token={lastToken} />
+
+            {/* Repo Suggestions based on top languages */}
+            <RepoSuggestions
+              topLanguages={analysis.overallLanguages.slice(0, 3).map((l) => l.name)}
+              token={lastToken}
             />
 
             {/* Compare Section */}
@@ -534,6 +554,9 @@ function HomeContent() {
 
       {/* Rate Limit Badge */}
       <RateLimitBadge token={lastToken} />
+
+      {/* PWA Install Button */}
+      <PwaInstallButton />
 
       {/* Footer */}
       <footer className="text-center py-6 text-sm text-gray-400 dark:text-gray-500">

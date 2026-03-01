@@ -269,3 +269,129 @@ export async function fetchRepoCommitHistory(
     allLanguages: Array.from(allLangsSet),
   };
 }
+
+// --- Organization Analysis ---
+
+export interface OrgProfile {
+  login: string;
+  name: string | null;
+  avatar_url: string;
+  html_url: string;
+  description: string | null;
+  public_repos: number;
+  members_count?: number;
+}
+
+export interface OrgAnalysis {
+  org: OrgProfile;
+  repos: RepoInfo[];
+  overallLanguages: { name: string; value: number; bytes: number }[];
+  totalBytes: number;
+  totalRepos: number;
+}
+
+export async function fetchOrgAnalysis(
+  orgName: string,
+  token?: string,
+  onProgress?: (current: number, total: number, repoName: string) => void
+): Promise<OrgAnalysis> {
+  const octokit = token ? new Octokit({ auth: token }) : new Octokit();
+
+  const { data: orgData } = await octokit.orgs.get({ org: orgName });
+
+  const org: OrgProfile = {
+    login: orgData.login,
+    name: orgData.name ?? null,
+    avatar_url: orgData.avatar_url,
+    html_url: orgData.html_url,
+    description: orgData.description ?? null,
+    public_repos: orgData.public_repos,
+  };
+
+  // Fetch all public repos (paginated)
+  let page = 1;
+  const perPage = 100;
+  let allRepos: Awaited<ReturnType<typeof octokit.repos.listForOrg>>["data"] = [];
+
+  while (true) {
+    const { data: repos } = await octokit.repos.listForOrg({
+      org: orgName,
+      type: "public",
+      per_page: perPage,
+      page,
+      sort: "updated",
+    });
+    allRepos = allRepos.concat(repos);
+    if (repos.length < perPage) break;
+    page++;
+  }
+
+  // Filter: only non-fork repos
+  const ownRepos = allRepos.filter((r) => !r.fork);
+
+  const BATCH_SIZE = 10;
+  const repoInfos: RepoInfo[] = [];
+
+  for (let i = 0; i < ownRepos.length; i += BATCH_SIZE) {
+    const batch = ownRepos.slice(i, i + BATCH_SIZE);
+    const results = await Promise.all(
+      batch.map(async (repo, batchIdx) => {
+        if (onProgress) {
+          onProgress(i + batchIdx + 1, ownRepos.length, repo.name);
+        }
+        const { data: languages } = await octokit.repos.listLanguages({
+          owner: orgName,
+          repo: repo.name,
+        });
+
+        const totalBytes = Object.values(languages).reduce((sum, b) => sum + b, 0);
+        const languagePercentages = Object.entries(languages)
+          .map(([name, bytes]) => ({
+            name,
+            value: totalBytes > 0 ? Math.round((bytes / totalBytes) * 10000) / 100 : 0,
+            bytes,
+          }))
+          .sort((a, b) => b.value - a.value);
+
+        return {
+          name: repo.name,
+          description: repo.description,
+          html_url: repo.html_url,
+          stargazers_count: repo.stargazers_count ?? 0,
+          forks_count: repo.forks_count ?? 0,
+          size: repo.size ?? 0,
+          created_at: repo.created_at ?? "",
+          updated_at: repo.updated_at ?? "",
+          languages,
+          languagePercentages,
+          totalBytes,
+        } satisfies RepoInfo;
+      })
+    );
+    repoInfos.push(...results);
+  }
+
+  const overallMap: Record<string, number> = {};
+  let totalBytes = 0;
+  for (const repo of repoInfos) {
+    for (const [lang, bytes] of Object.entries(repo.languages)) {
+      overallMap[lang] = (overallMap[lang] || 0) + bytes;
+      totalBytes += bytes;
+    }
+  }
+  const overallLanguages = Object.entries(overallMap)
+    .map(([name, bytes]) => ({
+      name,
+      value: totalBytes > 0 ? Math.round((bytes / totalBytes) * 10000) / 100 : 0,
+      bytes,
+    }))
+    .sort((a, b) => b.value - a.value);
+
+  return {
+    org,
+    repos: repoInfos,
+    overallLanguages,
+    totalBytes,
+    totalRepos: repoInfos.length,
+  };
+}

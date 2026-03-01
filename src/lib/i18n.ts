@@ -137,6 +137,44 @@ export const translations = {
 
   // Footer
   "footer.copyright": { tr: "Repo Monitor © 2026", en: "Repo Monitor © 2026" },
+
+  // Organization Analysis
+  "org.toggle": { tr: "🏢 Organizasyon Analizi", en: "🏢 Organization Analysis" },
+  "org.title": { tr: "🏢 Organizasyon Analizi", en: "🏢 Organization Analysis" },
+  "org.placeholder": { tr: "örn: facebook", en: "e.g. facebook" },
+  "org.label": { tr: "Organizasyon Adı", en: "Organization Name" },
+  "org.submit": { tr: "Analiz Et", en: "Analyze" },
+  "org.loading": { tr: "Org repoları analiz ediliyor...", en: "Analyzing org repos..." },
+  "org.members": { tr: "Üye", en: "Members" },
+  "org.publicRepos": { tr: "Repo", en: "Repos" },
+
+  // Badge Generator
+  "badge.title": { tr: "🏷️ Embeddable Badge", en: "🏷️ Embeddable Badge" },
+  "badge.description": { tr: "GitHub README'nize ekleyebileceğiniz dil dağılımı badge'i", en: "Language distribution badge for your GitHub README" },
+  "badge.markdown": { tr: "Markdown", en: "Markdown" },
+  "badge.html": { tr: "HTML", en: "HTML" },
+  "badge.copied": { tr: "Kopyalandı!", en: "Copied!" },
+  "badge.copy": { tr: "Kopyala", en: "Copy" },
+  "badge.preview": { tr: "Önizleme", en: "Preview" },
+
+  // Suggestions
+  "suggestions.title": { tr: "💡 Önerilen Repolar", en: "💡 Suggested Repos" },
+  "suggestions.description": { tr: "En çok kullandığınız dillere göre popüler repolar", en: "Popular repos based on your most-used languages" },
+  "suggestions.loading": { tr: "Öneriler yükleniyor...", en: "Loading suggestions..." },
+  "suggestions.star": { tr: "yıldız", en: "stars" },
+  "suggestions.empty": { tr: "Öneri bulunamadı", en: "No suggestions found" },
+
+  // Contribution Heatmap
+  "heatmap.title": { tr: "📅 Katkı Haritası", en: "📅 Contribution Heatmap" },
+  "heatmap.loading": { tr: "Katkı verileri yükleniyor...", en: "Loading contribution data..." },
+  "heatmap.events": { tr: "etkinlik", en: "events" },
+  "heatmap.noData": { tr: "Katkı verisi bulunamadı", en: "No contribution data found" },
+  "heatmap.less": { tr: "Az", en: "Less" },
+  "heatmap.more": { tr: "Çok", en: "More" },
+
+  // PWA
+  "pwa.install": { tr: "Uygulamayı Yükle", en: "Install App" },
+  "pwa.installed": { tr: "Uygulama yüklendi!", en: "App installed!" },
 } as const;
 
 export type TranslationKey = keyof typeof translations;

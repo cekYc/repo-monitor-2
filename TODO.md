@@ -51,25 +51,36 @@
 
 ---
 
-## 🟢 Düşük Öncelik (Nice to Have)
+## ~~🟢 Düşük Öncelik (Nice to Have)~~ ✅ Tamamlandı
 
-### 9. Organizasyon Analizi
+### ~~9. Organizasyon Analizi~~ ✅
 - GitHub org repoları topluca analiz
 - Takım bazlı dil dağılımı
+- Org profil kartı + PieChart + BarChart
+- Katlanabilir panel (OrgAnalyzer bileşeni)
 
-### 10. Embeddable Badge Generator
-- `![Languages](ceky-repo-monitor.vercel.app/badge/cekYc)` formatında badge
+### ~~10. Embeddable Badge Generator~~ ✅
+- `![Languages](ceky-repo-monitor.vercel.app/api/badge/cekYc)` formatında SVG badge
 - GitHub README'lere doğrudan eklenebilir
+- Markdown ve HTML embed kodu + kopyala butonu
+- Top 8 dil renkli bar + legend
 
-### 11. Dil Bazlı Repo Önerileri
-- "TypeScript seviyorsun — şu trending repo'lara bak" gibi öneriler
+### ~~11. Dil Bazlı Repo Önerileri~~ ✅
+- Kullanıcının en çok kullandığı 3 dile göre trending repo önerileri
+- Stars, forks, açıklama ile suggestion kartları
+- GitHub Search API (stars>1000)
 
-### 12. Contribution Heatmap
-- GitHub katkı takvimi tarzında dil bazlı aktivite haritası
+### ~~12. Contribution Heatmap~~ ✅
+- GitHub katkı takvimi tarzında 365 günlük aktivite haritası
+- 4 seviyeli yeşil renk skalası
+- Ay başlıkları + gün etiketleri + legend
+- GitHub Events API ile veri
 
-### 13. PWA (Progressive Web App)
-- Offline erişim, ana ekrana ekle
-- Push notification (yeni repo eklendiğinde)
+### ~~13. PWA (Progressive Web App)~~ ✅
+- manifest.json + Service Worker (network-first, cache fallback)
+- Ana ekrana ekle butonu (beforeinstallprompt)
+- SVG ikonlar (192x192, 512x512)
+- Viewport theme-color + apple-web-app meta
 
 ---
 
@@ -97,3 +108,8 @@
 - [x] Profil kartını PNG olarak indirme (html-to-image)
 - [x] İki kullanıcıyı karşılaştırma (UserCompare bileşeni)
 - [x] API Rate Limit göstergesi (RateLimitBadge)
+- [x] Organizasyon analizi (OrgAnalyzer bileşeni + /api/analyze-org)
+- [x] Embeddable SVG badge generator (/api/badge/[username] + BadgeGenerator)
+- [x] Dil bazlı repo önerileri (RepoSuggestions + /api/suggestions)
+- [x] Contribution Heatmap (ContributionHeatmap + /api/contributions)
+- [x] PWA desteği (manifest.json, sw.js, PwaInstallButton)

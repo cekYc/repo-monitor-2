@@ -500,7 +500,7 @@ function HomeContent() {
             />
 
             {/* Badge Generator */}
-            <BadgeGenerator username={analysis.user.login} />
+            <BadgeGenerator username={analysis.user.login} token={lastToken} />
 
             {/* Health Score */}
             <HealthScore username={analysis.user.login} token={lastToken} />

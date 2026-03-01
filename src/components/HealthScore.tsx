@@ -1,6 +1,6 @@
 "use client";
 
-import { useState, useCallback } from "react";
+import { useState, useCallback, useEffect } from "react";
 import { useLocale } from "@/components/LocaleProvider";
 
 interface RepoHealth {
@@ -42,6 +42,14 @@ export default function HealthScore({ username, token }: HealthScoreProps) {
   const [error, setError] = useState<string | null>(null);
   const [expanded, setExpanded] = useState(false);
   const [fetched, setFetched] = useState(false);
+
+  // Reset state when username changes
+  useEffect(() => {
+    setData(null);
+    setFetched(false);
+    setExpanded(false);
+    setError(null);
+  }, [username]);
 
   const fetchHealth = useCallback(async () => {
     if (fetched && data) {

@@ -77,7 +77,7 @@ export async function GET(request: NextRequest) {
   }
 
   try {
-    let commitHours = new Array(24).fill(0);
+    const commitHours = new Array(24).fill(0);
     let commitDays = new Array(7).fill(0);
     let totalCommits = 0;
     let languageCount = 0;

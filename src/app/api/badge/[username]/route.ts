@@ -1,6 +1,7 @@
 import { NextRequest } from "next/server";
 import { Octokit } from "@octokit/rest";
 import { getLanguageColor } from "@/lib/utils";
+import { serverCache } from "@/lib/cache";
 
 export const runtime = "nodejs";
 
@@ -10,6 +11,19 @@ export async function GET(
 ) {
   const { username } = await params;
   const token = request.nextUrl.searchParams.get("token");
+
+  // Check badge cache first
+  const cacheKey = `badge:${username.toLowerCase()}`;
+  const cached = serverCache.get<string>(cacheKey);
+  if (cached.status === "fresh" || cached.status === "stale") {
+    return new Response(cached.data, {
+      headers: {
+        "Content-Type": "image/svg+xml",
+        "Cache-Control": "public, max-age=3600, s-maxage=3600",
+        "X-Cache": cached.status === "fresh" ? "HIT" : "STALE",
+      },
+    });
+  }
 
   const octokit = token ? new Octokit({ auth: token }) : new Octokit();
 
@@ -113,6 +127,9 @@ export async function GET(
   ${barSegments}
   ${legendItems}
 </svg>`;
+
+    // Cache the SVG for 1 hour / 4 hours max
+    serverCache.set(cacheKey, svg, 60 * 60 * 1000, 4 * 60 * 60 * 1000);
 
     return new Response(svg, {
       headers: {

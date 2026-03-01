@@ -5,18 +5,23 @@ import { useLocale } from "@/components/LocaleProvider";
 
 interface BadgeGeneratorProps {
   username: string;
+  token?: string;
 }
 
-export default function BadgeGenerator({ username }: BadgeGeneratorProps) {
+export default function BadgeGenerator({ username, token }: BadgeGeneratorProps) {
   const { t } = useLocale();
   const [copied, setCopied] = useState<string | null>(null);
 
   const baseUrl = typeof window !== "undefined" ? window.location.origin : "https://ceky-repo-monitor.vercel.app";
-  const badgeUrl = `${baseUrl}/api/badge/${username}`;
+  // Preview URL uses token for auth (avoids rate limit), but embed code doesn't include token
+  const badgePreviewUrl = token
+    ? `${baseUrl}/api/badge/${username}?token=${encodeURIComponent(token)}`
+    : `${baseUrl}/api/badge/${username}`;
+  const badgeShareUrl = `${baseUrl}/api/badge/${username}`;
   const profileUrl = `${baseUrl}/?user=${username}`;
 
-  const markdownCode = `[![${username}'s Languages](${badgeUrl})](${profileUrl})`;
-  const htmlCode = `<a href="${profileUrl}"><img src="${badgeUrl}" alt="${username}'s Languages" /></a>`;
+  const markdownCode = `[![${username}'s Languages](${badgeShareUrl})](${profileUrl})`;
+  const htmlCode = `<a href="${profileUrl}"><img src="${badgeShareUrl}" alt="${username}'s Languages" /></a>`;
 
   const handleCopy = async (text: string, type: string) => {
     try {
@@ -44,7 +49,7 @@ export default function BadgeGenerator({ username }: BadgeGeneratorProps) {
         </h3>
         <div className="bg-gray-50 dark:bg-gray-800 rounded-xl p-4 border border-gray-100 dark:border-gray-800 overflow-x-auto">
           {/* eslint-disable-next-line @next/next/no-img-element */}
-          <img src={badgeUrl} alt={`${username}'s Languages`} className="max-w-full" />
+          <img src={badgePreviewUrl} alt={`${username}'s Languages`} className="max-w-full" />
         </div>
       </div>
 

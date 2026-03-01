@@ -1,6 +1,6 @@
 "use client";
 
-import { useState, useCallback } from "react";
+import { useState, useCallback, useEffect } from "react";
 import { useLocale } from "@/components/LocaleProvider";
 import {
   BarChart,
@@ -51,6 +51,14 @@ export default function DeveloperPersona({ username, token }: DeveloperPersonaPr
   const [error, setError] = useState<string | null>(null);
   const [expanded, setExpanded] = useState(false);
   const [fetched, setFetched] = useState(false);
+
+  // Reset state when username changes
+  useEffect(() => {
+    setData(null);
+    setFetched(false);
+    setExpanded(false);
+    setError(null);
+  }, [username]);
 
   const DAY_NAMES_TR = ["Paz", "Pzt", "Sal", "Çar", "Per", "Cum", "Cmt"];
   const DAY_NAMES_EN = ["Sun", "Mon", "Tue", "Wed", "Thu", "Fri", "Sat"];

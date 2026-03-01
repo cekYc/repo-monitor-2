@@ -14,6 +14,9 @@ import BadgeGenerator from "@/components/BadgeGenerator";
 import RepoSuggestions from "@/components/RepoSuggestions";
 import ContributionHeatmap from "@/components/ContributionHeatmap";
 import PwaInstallButton from "@/components/PwaInstallButton";
+import HealthScore from "@/components/HealthScore";
+import DeveloperPersona from "@/components/DeveloperPersona";
+import CustomExtensionScanner from "@/components/CustomExtensionScanner";
 import { useLocale } from "@/components/LocaleProvider";
 import { UserAnalysis } from "@/lib/github";
 
@@ -499,8 +502,17 @@ function HomeContent() {
             {/* Badge Generator */}
             <BadgeGenerator username={analysis.user.login} />
 
+            {/* Health Score */}
+            <HealthScore username={analysis.user.login} token={lastToken} />
+
             {/* Contribution Heatmap */}
             <ContributionHeatmap username={analysis.user.login} token={lastToken} />
+
+            {/* Developer Persona */}
+            <DeveloperPersona username={analysis.user.login} token={lastToken} />
+
+            {/* Custom Extension Scanner */}
+            <CustomExtensionScanner username={analysis.user.login} token={lastToken} />
 
             {/* Repo Suggestions based on top languages */}
             <RepoSuggestions

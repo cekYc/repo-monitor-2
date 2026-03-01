@@ -84,6 +84,38 @@
 
 ---
 
+## ~~🔵 Advanced Features~~ ✅ Tamamlandı
+
+### ~~14. Smart Server Cache & Background Revalidation~~ ✅
+- Server-side in-memory cache (stale-while-revalidate pattern)
+- `src/lib/cache.ts` — SmartCache sınıfı (TTL + maxAge + revalidation lock)
+- /api/analyze yanıtlarına X-Cache header (HIT / STALE / MISS)
+- 15 dk fresh → background revalidation → 60 dk expire
+- Health score, persona, extensions API'larında da aktif
+
+### ~~15. Repo Health & Security Score~~ ✅
+- /api/health-score — README, LICENSE, Description, CI/CD, recency, issue ratio kontrolleri
+- Her repo için 0-100 skor (6 kriter × ağırlıklı puan)
+- Genel ortalama ile Excellent/Good/Fair/Poor derecelendirme
+- Gauge chart, repo bazlı breakdown, emoji göstergeleri
+- HealthScore bileşeni (katlanabilir, lazy-load)
+
+### ~~16. Developer Persona & Gamification~~ ✅
+- /api/persona — GraphQL + Events API ile commit saat/gün analizi
+- 6 badge: 🦉 Night Owl, 🐦 Early Bird, ⚔️ Weekend Warrior, 🌍 Polyglot, 🔥 Streaker, ♻️ Refactor Master
+- Commit saat dağılımı BarChart + gün dağılımı BarChart
+- En verimli saat, en aktif gün, en uzun streak metrikleri
+- DeveloperPersona bileşeni (katlanabilir, gradient badge kartları)
+
+### ~~17. Custom Extension Scanner~~ ✅
+- /api/scan-extensions — GitHub Trees API ile özel uzantı taraması
+- Kullanıcı tanımlı extension → language → color mappingleri
+- localStorage'da kalıcı (repo-monitor-custom-extensions)
+- Tarama sonuçları: dosya sayısı, byte boyutu, repo bazlı dosya listesi
+- CustomExtensionScanner bileşeni (katlanabilir, form + sonuçlar)
+
+---
+
 ## ✅ Tamamlanan Özellikler
 
 - [x] GitHub API ile repo analizi (non-fork)
@@ -104,7 +136,7 @@
 - [x] Son aramalar geçmişi (localStorage + chips)
 - [x] Open Graph & SEO meta tags
 - [x] SSE streaming analiz ilerleme göstergesi
-- [x] İngilizce / Türkçe dil değiştirme (i18n — 130+ çeviri anahtarı)
+- [x] İngilizce / Türkçe dil değiştirme (i18n — 250+ çeviri anahtarı)
 - [x] Profil kartını PNG olarak indirme (html-to-image)
 - [x] İki kullanıcıyı karşılaştırma (UserCompare bileşeni)
 - [x] API Rate Limit göstergesi (RateLimitBadge)
@@ -113,3 +145,9 @@
 - [x] Dil bazlı repo önerileri (RepoSuggestions + /api/suggestions)
 - [x] Contribution Heatmap (ContributionHeatmap + /api/contributions)
 - [x] PWA desteği (manifest.json, sw.js, PwaInstallButton)
+- [x] Repo kartları PNG export (seçim + toplu export)
+- [x] Gelişmiş karşılaştırma (head-to-head bars, 🏆 winner, PNG export)
+- [x] Smart server cache (stale-while-revalidate, background revalidation)
+- [x] Repo Health & Security Score (6-kriter, gauge, breakdown)
+- [x] Developer Persona & Gamification (6 badge, commit analizi)
+- [x] Custom Extension Scanner (özel uzantı tarama, Trees API)

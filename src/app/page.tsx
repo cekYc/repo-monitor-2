@@ -102,7 +102,7 @@ export default function Home() {
 function HomeContent() {
   const searchParams = useSearchParams();
   const router = useRouter();
-  const { t, locale } = useLocale();
+  const { t } = useLocale();
 
   const [analysis, setAnalysis] = useState<UserAnalysis | null>(null);
   const [loading, setLoading] = useState(false);

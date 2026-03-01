@@ -30,9 +30,9 @@ export default function RateLimitBadge({ token }: { token: string }) {
   }, [token]);
 
   useEffect(() => {
-    fetchRateLimit();
+    const timeout = setTimeout(fetchRateLimit, 0);
     const interval = setInterval(fetchRateLimit, 60_000); // refresh every 60s
-    return () => clearInterval(interval);
+    return () => { clearTimeout(timeout); clearInterval(interval); };
   }, [fetchRateLimit]);
 
   if (!info) return null;

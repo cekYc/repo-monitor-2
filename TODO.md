@@ -25,27 +25,29 @@
 
 ---
 
-## 🟡 Orta Öncelik (Kullanıcı Deneyimini Güçlendirir)
+## ~~🟡 Orta Öncelik~~ ✅ Tamamlandı
 
-### 5. İngilizce / Türkçe Dil Değiştirme (i18n)
-- UI'ı tamamen İngilizce'ye çevirme seçeneği
-- Dil tercihini localStorage'da sakla
-- **Neden:** Global kullanıcı kitlesine ulaşmak için şart.
+### ~~5. İngilizce / Türkçe Dil Değiştirme (i18n)~~ ✅
+- Tüm UI metinleri i18n sistemiyle çevrildi (130+ çeviri anahtarı)
+- LocaleProvider + useLocale hook + LocaleToggle bileşeni
+- Dil tercihi localStorage'da saklanır
+- Tüm bileşenler (SearchForm, OverallStats, RepoCard, CommitHistory, ThemeToggle) i18n destekli
 
-### 6. Profil Kartını Resim Olarak İndir (Export PNG)
-- "İndir" butonu ile analiz sonucunu PNG/SVG olarak kaydet
-- GitHub profil README'sine eklenebilir format
-- **Neden:** Kullanıcılar kendi profillerinde göstermek ister.
+### ~~6. Profil Kartını Resim Olarak İndir (Export PNG)~~ ✅
+- html-to-image kütüphanesi ile profil + dağılım + metrikler PNG olarak indirilebilir
+- 2x piksel oranı, dark/light mode desteği
+- OverallStats bileşeninde "📸 PNG İndir" butonu
 
-### 7. İki Kullanıcıyı Karşılaştır
-- Yan yana dil dağılımı karşılaştırması
-- Ortak diller, farklılıklar
-- **Neden:** Rekabetçi ve eğlenceli — paylaşılma oranını artırır.
+### ~~7. İki Kullanıcıyı Karşılaştır~~ ✅
+- Yan yana dil dağılımı karşılaştırması (grouped BarChart)
+- Ortak diller, kullanıcıya özgü diller, toplam kod/repo/yıldız
+- SearchForm'da karşılaştırma modu toggle
 
-### 8. API Rate Limit Göstergesi
-- Kalan API istek sayısını göster (60/60 veya 5000/5000)
-- Limit yaklaştığında uyarı
-- **Neden:** Kullanıcılara şeffaflık sağlar.
+### ~~8. API Rate Limit Göstergesi~~ ✅
+- Sağ alt köşede sabit badge ile kalan API istek sayısı
+- 60 saniyede bir otomatik yenileme
+- Limit azaldığında renk kodlu uyarı (yeşil/sarı/kırmızı)
+- Genişletilebilir detay paneli
 
 ---
 
@@ -91,3 +93,7 @@
 - [x] Son aramalar geçmişi (localStorage + chips)
 - [x] Open Graph & SEO meta tags
 - [x] SSE streaming analiz ilerleme göstergesi
+- [x] İngilizce / Türkçe dil değiştirme (i18n — 130+ çeviri anahtarı)
+- [x] Profil kartını PNG olarak indirme (html-to-image)
+- [x] İki kullanıcıyı karşılaştırma (UserCompare bileşeni)
+- [x] API Rate Limit göstergesi (RateLimitBadge)

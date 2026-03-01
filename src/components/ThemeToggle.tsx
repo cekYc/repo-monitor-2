@@ -1,15 +1,17 @@
 "use client";
 
 import { useTheme } from "@/components/ThemeProvider";
+import { useLocale } from "@/components/LocaleProvider";
 
 export default function ThemeToggle() {
   const { theme, toggleTheme } = useTheme();
+  const { t } = useLocale();
 
   return (
     <button
       onClick={toggleTheme}
       className="fixed top-4 right-4 z-50 p-3 rounded-full bg-white dark:bg-gray-800 shadow-lg border border-gray-200 dark:border-gray-700 hover:shadow-xl transition-all duration-300 hover:scale-110 cursor-pointer group"
-      title={theme === "dark" ? "Aydınlık Moda Geç" : "Karanlık Moda Geç"}
+      title={theme === "dark" ? t("theme.light") : t("theme.dark")}
     >
       {theme === "dark" ? (
         <svg

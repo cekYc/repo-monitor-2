@@ -14,8 +14,9 @@ import {
 } from "recharts";
 import { getLanguageColor, formatBytes } from "@/lib/utils";
 import { UserAnalysis } from "@/lib/github";
-import { useMemo } from "react";
+import { useMemo, useRef, useState, useCallback } from "react";
 import Image from "next/image";
+import { useLocale } from "@/components/LocaleProvider";
 
 interface OverallStatsProps {
   analysis: UserAnalysis;
@@ -24,7 +25,30 @@ interface OverallStatsProps {
 }
 
 export default function OverallStats({ analysis, excludedRepos, onClearExclusions }: OverallStatsProps) {
+  const { t, locale } = useLocale();
+  const exportRef = useRef<HTMLDivElement>(null);
+  const [exporting, setExporting] = useState(false);
   const { user, repos: allRepos } = analysis;
+
+  const handleExportPng = useCallback(async () => {
+    if (!exportRef.current) return;
+    setExporting(true);
+    try {
+      const { toPng } = await import("html-to-image");
+      const dataUrl = await toPng(exportRef.current, {
+        backgroundColor: document.documentElement.classList.contains("dark") ? "#111827" : "#ffffff",
+        pixelRatio: 2,
+      });
+      const link = document.createElement("a");
+      link.download = `${user.login}-repo-monitor.png`;
+      link.href = dataUrl;
+      link.click();
+    } catch (err) {
+      console.error("PNG export failed:", err);
+    } finally {
+      setExporting(false);
+    }
+  }, [user.login]);
 
   // Filter out excluded repos and recalculate everything
   const activeRepos = useMemo(
@@ -114,8 +138,22 @@ export default function OverallStats({ analysis, excludedRepos, onClearExclusion
     };
   }, [repos, totalBytes]);
 
+  const dateLocale = locale === "tr" ? "tr-TR" : "en-US";
+
   return (
     <div className="space-y-8">
+      {/* Export PNG Button */}
+      <div className="flex justify-end">
+        <button
+          onClick={handleExportPng}
+          disabled={exporting}
+          className="inline-flex items-center gap-2 px-4 py-2 rounded-xl bg-indigo-50 dark:bg-indigo-950/30 text-indigo-600 dark:text-indigo-400 text-sm font-medium hover:bg-indigo-100 dark:hover:bg-indigo-950/50 transition-colors cursor-pointer disabled:opacity-50 border border-indigo-200 dark:border-indigo-800"
+        >
+          {exporting ? t("stats.exporting") : t("stats.export")}
+        </button>
+      </div>
+
+      <div ref={exportRef} className="space-y-8">
       {/* User Profile Card */}
       <div className="bg-linear-to-r from-indigo-600 via-purple-600 to-pink-500 rounded-2xl p-8 text-white shadow-xl">
         <div className="flex flex-col md:flex-row items-center gap-6">
@@ -144,27 +182,27 @@ export default function OverallStats({ analysis, excludedRepos, onClearExclusion
             <div className="flex flex-wrap gap-6 mt-4 justify-center md:justify-start">
               <div>
                 <span className="text-2xl font-bold">{totalRepos}</span>
-                <span className="text-white/70 ml-1 text-sm">Repo</span>
+                <span className="text-white/70 ml-1 text-sm">{t("stats.repo")}</span>
               </div>
               <div>
                 <span className="text-2xl font-bold">{user.followers}</span>
-                <span className="text-white/70 ml-1 text-sm">Takipçi</span>
+                <span className="text-white/70 ml-1 text-sm">{t("stats.followers")}</span>
               </div>
               <div>
                 <span className="text-2xl font-bold">{user.following}</span>
-                <span className="text-white/70 ml-1 text-sm">Takip</span>
+                <span className="text-white/70 ml-1 text-sm">{t("stats.following")}</span>
               </div>
               <div>
                 <span className="text-2xl font-bold">
                   {formatBytes(totalBytes)}
                 </span>
-                <span className="text-white/70 ml-1 text-sm">Toplam Kod</span>
+                <span className="text-white/70 ml-1 text-sm">{t("stats.totalCode")}</span>
               </div>
               <div>
                 <span className="text-2xl font-bold">
                   {overallLanguages.length}
                 </span>
-                <span className="text-white/70 ml-1 text-sm">Dil</span>
+                <span className="text-white/70 ml-1 text-sm">{t("stats.language")}</span>
               </div>
             </div>
           </div>
@@ -177,9 +215,9 @@ export default function OverallStats({ analysis, excludedRepos, onClearExclusion
           <div className="flex items-center gap-2">
             <span className="text-amber-500 text-lg">🔇</span>
             <p className="text-amber-700 dark:text-amber-300 text-sm font-medium">
-              <span className="font-bold">{excludedRepos.size}</span> repo genel dağılımdan hariç tutuluyor
+              <span className="font-bold">{excludedRepos.size}</span> {t("exclusion.banner")}
               <span className="text-amber-500 dark:text-amber-400 ml-1">
-                ({analysis.repos.length - excludedRepos.size}/{analysis.repos.length} aktif)
+                ({analysis.repos.length - excludedRepos.size}/{analysis.repos.length} {t("exclusion.active")})
               </span>
             </p>
           </div>
@@ -187,7 +225,7 @@ export default function OverallStats({ analysis, excludedRepos, onClearExclusion
             onClick={onClearExclusions}
             className="text-xs px-3 py-1.5 rounded-lg bg-amber-100 dark:bg-amber-900/50 text-amber-700 dark:text-amber-300 hover:bg-amber-200 dark:hover:bg-amber-900 transition-colors font-medium cursor-pointer whitespace-nowrap"
           >
-            Tümünü Dahil Et
+            {t("exclusion.includeAll")}
           </button>
         </div>
       )}
@@ -195,13 +233,13 @@ export default function OverallStats({ analysis, excludedRepos, onClearExclusion
       {/* Overall Language Distribution */}
       <div className="bg-white dark:bg-gray-900 rounded-2xl shadow-lg p-6 border border-gray-200 dark:border-gray-800">
         <h2 className="text-xl font-bold mb-6 text-gray-800 dark:text-gray-100">
-          📊 Genel Dil Dağılımı (Tüm Repolar)
+          {t("stats.distribution.title")}
         </h2>
         <div className="grid grid-cols-1 lg:grid-cols-2 gap-8">
           {/* Pie Chart */}
           <div>
             <h3 className="text-sm font-semibold text-gray-500 dark:text-gray-400 mb-3 uppercase tracking-wide">
-              Yüzdelik Dağılım
+              {t("stats.pie.title")}
             </h3>
             <ResponsiveContainer width="100%" height={350}>
               <PieChart>
@@ -245,7 +283,7 @@ export default function OverallStats({ analysis, excludedRepos, onClearExclusion
           {/* Bar Chart */}
           <div>
             <h3 className="text-sm font-semibold text-gray-500 dark:text-gray-400 mb-3 uppercase tracking-wide">
-              Boyut Karşılaştırması
+              {t("stats.bar.title")}
             </h3>
             <ResponsiveContainer width="100%" height={Math.max(350, barData.length * 36)}>
               <BarChart
@@ -294,23 +332,23 @@ export default function OverallStats({ analysis, excludedRepos, onClearExclusion
         {/* Language Legend Table */}
         <div className="mt-6">
           <h3 className="text-sm font-semibold text-gray-500 dark:text-gray-400 mb-3 uppercase tracking-wide">
-            Detaylı Tablo
+            {t("stats.table.title")}
           </h3>
           <div className="overflow-x-auto">
             <table className="w-full text-sm">
               <thead>
                 <tr className="border-b border-gray-200 dark:border-gray-700">
                   <th className="py-2 px-3 text-left font-semibold text-gray-600 dark:text-gray-300">
-                    Dil
+                    {t("stats.table.lang")}
                   </th>
                   <th className="py-2 px-3 text-right font-semibold text-gray-600 dark:text-gray-300">
-                    Yüzde
+                    {t("stats.table.percent")}
                   </th>
                   <th className="py-2 px-3 text-right font-semibold text-gray-600 dark:text-gray-300">
-                    Boyut
+                    {t("stats.table.size")}
                   </th>
                   <th className="py-2 px-3 text-left font-semibold text-gray-600 dark:text-gray-300 w-1/2">
-                    Oran
+                    {t("stats.table.ratio")}
                   </th>
                 </tr>
               </thead>
@@ -362,16 +400,16 @@ export default function OverallStats({ analysis, excludedRepos, onClearExclusion
       {insights && (
         <div className="bg-white dark:bg-gray-900 rounded-2xl shadow-lg p-6 border border-gray-200 dark:border-gray-800">
           <h2 className="text-xl font-bold mb-6 text-gray-800 dark:text-gray-100">
-            💡 Öne Çıkan Metrikler
+            {t("insights.title")}
           </h2>
           <div className="grid grid-cols-1 sm:grid-cols-2 lg:grid-cols-3 gap-4">
             {/* Dominant Language */}
             {insights.dominantLang && (
               <InsightCard
                 icon="👑"
-                label="Favori Dil"
+                label={t("insights.favLang")}
                 value={insights.dominantLang[0]}
-                detail={`${insights.dominantLang[1]} repoda birincil dil`}
+                detail={`${insights.dominantLang[1]} ${t("insights.favLangDetail")}`}
                 color={getLanguageColor(insights.dominantLang[0], 0)}
               />
             )}
@@ -379,41 +417,41 @@ export default function OverallStats({ analysis, excludedRepos, onClearExclusion
             {/* Avg languages per repo */}
             <InsightCard
               icon="📐"
-              label="Ortalama Dil / Repo"
+              label={t("insights.avgLang")}
               value={insights.avgLangs.toFixed(1)}
-              detail="dil ortalaması"
+              detail={t("insights.avgLangDetail")}
             />
 
             {/* Avg size */}
             <InsightCard
               icon="📊"
-              label="Ortalama Repo Boyutu"
+              label={t("insights.avgSize")}
               value={formatBytes(insights.avgSize)}
-              detail="kod boyutu"
+              detail={t("insights.codeSize")}
             />
 
             {/* Total stars */}
             <InsightCard
               icon="⭐"
-              label="Toplam Yıldız"
+              label={t("insights.totalStars")}
               value={String(insights.totalStars)}
-              detail={`En çok: ${insights.mostStarred.name} (${insights.mostStarred.stargazers_count})`}
+              detail={`${t("insights.mostStarred")}: ${insights.mostStarred.name} (${insights.mostStarred.stargazers_count})`}
             />
 
             {/* Total forks */}
             <InsightCard
               icon="🍴"
-              label="Toplam Fork"
+              label={t("insights.totalForks")}
               value={String(insights.totalForks)}
               detail={insights.mostForked.forks_count > 0
-                ? `En çok: ${insights.mostForked.name} (${insights.mostForked.forks_count})`
-                : "Henüz fork yok"}
+                ? `${t("insights.mostStarred")}: ${insights.mostForked.name} (${insights.mostForked.forks_count})`
+                : t("insights.noFork")}
             />
 
             {/* Biggest repo */}
             <InsightCard
               icon="🏋️"
-              label="En Büyük Repo"
+              label={t("insights.biggestRepo")}
               value={insights.biggestRepo.name}
               detail={formatBytes(insights.biggestRepo.totalBytes)}
             />
@@ -421,53 +459,54 @@ export default function OverallStats({ analysis, excludedRepos, onClearExclusion
             {/* Most languages */}
             <InsightCard
               icon="🌐"
-              label="En Çok Dil"
+              label={t("insights.mostLangs")}
               value={insights.mostLangs.name}
-              detail={`${insights.mostLangs.languagePercentages.length} farklı dil`}
+              detail={`${insights.mostLangs.languagePercentages.length} ${t("insights.differentLangs")}`}
             />
 
             {/* Newest repo */}
             <InsightCard
               icon="🆕"
-              label="En Yeni Repo"
+              label={t("insights.newestRepo")}
               value={insights.newestRepo.name}
-              detail={new Date(insights.newestRepo.created_at).toLocaleDateString("tr-TR")}
+              detail={new Date(insights.newestRepo.created_at).toLocaleDateString(dateLocale)}
             />
 
             {/* Oldest repo */}
             <InsightCard
               icon="📜"
-              label="En Eski Repo"
+              label={t("insights.oldestRepo")}
               value={insights.oldestRepo.name}
-              detail={new Date(insights.oldestRepo.created_at).toLocaleDateString("tr-TR")}
+              detail={new Date(insights.oldestRepo.created_at).toLocaleDateString(dateLocale)}
             />
 
             {/* Most recently updated */}
             <InsightCard
               icon="🔄"
-              label="Son Güncellenen"
+              label={t("insights.lastUpdated")}
               value={insights.mostRecent.name}
-              detail={new Date(insights.mostRecent.updated_at).toLocaleDateString("tr-TR")}
+              detail={new Date(insights.mostRecent.updated_at).toLocaleDateString(dateLocale)}
             />
 
             {/* Total languages */}
             <InsightCard
               icon="🗂️"
-              label="Toplam Dil Sayısı"
+              label={t("insights.totalLangs")}
               value={String(overallLanguages.length)}
-              detail="farklı programlama dili"
+              detail={t("insights.differentProgLangs")}
             />
 
             {/* Smallest repo */}
             <InsightCard
               icon="🔬"
-              label="En Küçük Repo"
+              label={t("insights.smallestRepo")}
               value={insights.smallestRepo.name}
               detail={formatBytes(insights.smallestRepo.totalBytes)}
             />
           </div>
         </div>
       )}
+      </div>{/* end exportRef */}
     </div>
   );
 }

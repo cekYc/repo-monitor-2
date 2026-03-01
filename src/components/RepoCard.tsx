@@ -11,6 +11,7 @@ import { getLanguageColor, formatBytes, formatDate } from "@/lib/utils";
 import { RepoInfo, RepoCommitHistory } from "@/lib/github";
 import { useState } from "react";
 import CommitHistory from "./CommitHistory";
+import { useLocale } from "@/components/LocaleProvider";
 
 interface RepoCardProps {
   repo: RepoInfo;
@@ -22,6 +23,7 @@ interface RepoCardProps {
 }
 
 export default function RepoCard({ repo, index, isExcluded, onToggleExclude, owner, token }: RepoCardProps) {
+  const { t } = useLocale();
   const [expanded, setExpanded] = useState(false);
   const [commitHistory, setCommitHistory] = useState<RepoCommitHistory | null>(null);
   const [historyLoading, setHistoryLoading] = useState(false);
@@ -41,10 +43,10 @@ export default function RepoCard({ repo, index, isExcluded, onToggleExclude, own
       if (token) params.set("token", token);
       const res = await fetch(`/api/commit-history?${params}`);
       const data = await res.json();
-      if (!res.ok) throw new Error(data.error || "Bir hata oluştu");
+      if (!res.ok) throw new Error(data.error || t("error.generic"));
       setCommitHistory(data);
     } catch (err: unknown) {
-      setHistoryError(err instanceof Error ? err.message : "Bir hata oluştu");
+      setHistoryError(err instanceof Error ? err.message : t("error.generic"));
     } finally {
       setHistoryLoading(false);
     }
@@ -112,7 +114,7 @@ export default function RepoCard({ repo, index, isExcluded, onToggleExclude, own
                   ? "bg-amber-100 dark:bg-amber-900/50 text-amber-600 dark:text-amber-400 hover:bg-amber-200 dark:hover:bg-amber-800"
                   : "bg-gray-100 dark:bg-gray-800 text-gray-400 dark:text-gray-500 hover:bg-red-50 dark:hover:bg-red-950/30 hover:text-red-500 dark:hover:text-red-400"
               }`}
-              title={isExcluded ? "Genel dağılıma dahil et" : "Genel dağılımdan hariç tut"}
+              title={isExcluded ? t("repo.include") : t("repo.exclude")}
             >
               {isExcluded ? (
                 <svg className="w-4 h-4" fill="none" viewBox="0 0 24 24" strokeWidth={2} stroke="currentColor">
@@ -146,11 +148,11 @@ export default function RepoCard({ repo, index, isExcluded, onToggleExclude, own
         </div>
 
         <div className="flex flex-wrap gap-3 mt-3 text-xs text-gray-500 dark:text-gray-400">
-          <span>📦 {formatBytes(repo.totalBytes)} kod</span>
-          <span>💾 {repo.size} KB repo</span>
+          <span>📦 {formatBytes(repo.totalBytes)} {t("repo.code")}</span>
+          <span>💾 {repo.size} KB {t("repo.repo")}</span>
           <span>📅 {formatDate(repo.created_at)}</span>
           <span>🔄 {formatDate(repo.updated_at)}</span>
-          <span>📝 {repo.languagePercentages.length} dil</span>
+          <span>📝 {repo.languagePercentages.length} {t("repo.langs")}</span>
         </div>
 
         {/* Language Bar (always visible) */}
@@ -186,7 +188,7 @@ export default function RepoCard({ repo, index, isExcluded, onToggleExclude, own
               ))}
               {repo.languagePercentages.length > 5 && (
                 <span className="text-xs text-indigo-500">
-                  +{repo.languagePercentages.length - 5} dil daha
+                  +{repo.languagePercentages.length - 5} {t("repo.moreLangs")}
                 </span>
               )}
             </div>
@@ -195,7 +197,7 @@ export default function RepoCard({ repo, index, isExcluded, onToggleExclude, own
 
         {!hasLanguages && (
           <div className="mt-4 text-sm text-gray-400 italic">
-            Bu repoda dil bilgisi bulunamadı (boş veya binary dosyalar)
+            {t("repo.noLangs")}
           </div>
         )}
       </button>
@@ -299,7 +301,7 @@ export default function RepoCard({ repo, index, isExcluded, onToggleExclude, own
                   <svg className="w-4 h-4" fill="none" viewBox="0 0 24 24" strokeWidth={2} stroke="currentColor">
                     <path strokeLinecap="round" strokeLinejoin="round" d="M12 6v6h4.5m4.5 0a9 9 0 11-18 0 9 9 0 0118 0z" />
                   </svg>
-                  {showHistory && commitHistory ? "Commit Geçmişini Gizle" : "Commit Geçmişini Göster"}
+                  {showHistory && commitHistory ? t("repo.commitHistory.hide") : t("repo.commitHistory.load")}
                 </>
               )}
             </button>

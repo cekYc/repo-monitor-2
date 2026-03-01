@@ -6,6 +6,10 @@ import SearchForm from "@/components/SearchForm";
 import OverallStats from "@/components/OverallStats";
 import RepoCard from "@/components/RepoCard";
 import ThemeToggle from "@/components/ThemeToggle";
+import LocaleToggle from "@/components/LocaleToggle";
+import RateLimitBadge from "@/components/RateLimitBadge";
+import UserCompare from "@/components/UserCompare";
+import { useLocale } from "@/components/LocaleProvider";
 import { UserAnalysis } from "@/lib/github";
 
 const CACHE_PREFIX = "repo-monitor-cache-";
@@ -98,6 +102,7 @@ export default function Home() {
 function HomeContent() {
   const searchParams = useSearchParams();
   const router = useRouter();
+  const { t, locale } = useLocale();
 
   const [analysis, setAnalysis] = useState<UserAnalysis | null>(null);
   const [loading, setLoading] = useState(false);
@@ -111,6 +116,12 @@ function HomeContent() {
   const [progress, setProgress] = useState<ProgressInfo | null>(null);
   const [recentSearches, setRecentSearches] = useState<RecentSearch[]>([]);
   const autoSearchDone = useRef(false);
+
+  // Compare state
+  const [compareAnalysis, setCompareAnalysis] = useState<UserAnalysis | null>(null);
+  const [compareLoading, setCompareLoading] = useState(false);
+  const [compareError, setCompareError] = useState<string | null>(null);
+  const [showCompare, setShowCompare] = useState(false);
 
   const toggleExcludeRepo = useCallback((repoName: string) => {
     setExcludedRepos((prev) => {
@@ -240,6 +251,28 @@ function HomeContent() {
     handleSearch(username, token);
   }, [handleSearch]);
 
+  // Compare handler
+  const handleCompare = useCallback(async (username: string, token: string) => {
+    setCompareLoading(true);
+    setCompareError(null);
+    setCompareAnalysis(null);
+    setShowCompare(true);
+
+    try {
+      const params = new URLSearchParams({ username });
+      if (token) params.set("token", token);
+
+      const response = await fetch(`/api/analyze?${params}`);
+      const data = await response.json();
+      if (!response.ok) throw new Error(data.error || t("error.generic"));
+      setCompareAnalysis(data);
+    } catch (err: unknown) {
+      setCompareError(err instanceof Error ? err.message : t("error.generic"));
+    } finally {
+      setCompareLoading(false);
+    }
+  }, [t]);
+
   const getSortedRepos = () => {
     if (!analysis) return [];
 
@@ -285,6 +318,7 @@ function HomeContent() {
   return (
     <div className="min-h-screen bg-linear-to-br from-gray-50 via-white to-gray-100 dark:from-gray-950 dark:via-gray-900 dark:to-gray-950">
       <ThemeToggle />
+      <LocaleToggle />
 
       {/* Header */}
       <header className="py-8 text-center">
@@ -292,16 +326,19 @@ function HomeContent() {
           Ceky&apos;s Repo Monitor
         </h1>
         <p className="text-gray-500 dark:text-gray-400 mt-2">
-          GitHub kullanıcılarının repolarını ve dil dağılımlarını analiz edin
+          {t("header.subtitle")}
         </p>
       </header>
 
       <main className="max-w-6xl mx-auto px-4 pb-16 space-y-8">
         <SearchForm
           onSearch={handleSearch}
+          onCompare={handleCompare}
           loading={loading}
           recentSearches={recentSearches}
           initialUsername={searchParams.get("user") || ""}
+          showCompareMode={!!analysis}
+          compareLoading={compareLoading}
         />
 
         {/* Loading State with Progress */}
@@ -330,8 +367,8 @@ function HomeContent() {
                 </svg>
                 <span className="text-gray-700 dark:text-gray-300 font-medium">
                   {progress
-                    ? `Analiz ediliyor... (${progress.current}/${progress.total})`
-                    : "Repolar yükleniyor..."}
+                    ? `${t("progress.analyzing")} (${progress.current}/${progress.total})`
+                    : t("progress.loading")}
                 </span>
               </div>
               {progress && (
@@ -369,13 +406,13 @@ function HomeContent() {
             {cacheHit && (
               <div className="max-w-2xl mx-auto bg-amber-50 dark:bg-amber-950/30 border border-amber-200 dark:border-amber-800 rounded-2xl p-3 flex items-center justify-between">
                 <p className="text-amber-600 dark:text-amber-400 text-sm font-medium">
-                  ⚡ Cache&apos;den yüklendi (30 dk geçerli)
+                  {t("cache.loaded")}
                 </p>
                 <button
                   onClick={() => handleForceRefresh(lastUsername, lastToken)}
                   className="text-xs px-3 py-1.5 rounded-lg bg-amber-100 dark:bg-amber-900/50 text-amber-700 dark:text-amber-300 hover:bg-amber-200 dark:hover:bg-amber-900 transition-colors font-medium cursor-pointer"
                 >
-                  🔄 Yenile
+                  {t("cache.refresh")}
                 </button>
               </div>
             )}
@@ -386,11 +423,46 @@ function HomeContent() {
               onClearExclusions={clearExclusions}
             />
 
+            {/* Compare Section */}
+            {showCompare && (
+              <div className="space-y-4">
+                {compareLoading && (
+                  <div className="text-center py-8">
+                    <div className="inline-flex items-center gap-3 bg-white dark:bg-gray-900 rounded-2xl px-6 py-4 shadow-lg border border-gray-200 dark:border-gray-800">
+                      <svg className="animate-spin h-5 w-5 text-purple-600" viewBox="0 0 24 24" fill="none">
+                        <circle className="opacity-25" cx="12" cy="12" r="10" stroke="currentColor" strokeWidth="4" />
+                        <path className="opacity-75" fill="currentColor" d="M4 12a8 8 0 018-8V0C5.373 0 0 5.373 0 12h4z" />
+                      </svg>
+                      <span className="text-gray-600 dark:text-gray-300 text-sm">{t("progress.analyzing")}</span>
+                    </div>
+                  </div>
+                )}
+                {compareError && (
+                  <div className="bg-red-50 dark:bg-red-950/50 border border-red-200 dark:border-red-800 rounded-2xl p-4 text-center">
+                    <p className="text-red-600 dark:text-red-400 font-medium text-sm">❌ {compareError}</p>
+                  </div>
+                )}
+                {compareAnalysis && analysis && (
+                  <>
+                    <UserCompare userA={analysis} userB={compareAnalysis} />
+                    <div className="text-center">
+                      <button
+                        onClick={() => { setShowCompare(false); setCompareAnalysis(null); }}
+                        className="text-sm text-gray-400 hover:text-gray-600 dark:hover:text-gray-300 transition-colors cursor-pointer"
+                      >
+                        {t("search.compare.cancel")}
+                      </button>
+                    </div>
+                  </>
+                )}
+              </div>
+            )}
+
             {/* Repo List Header with Sort & Filter */}
             <div className="bg-white dark:bg-gray-900 rounded-2xl shadow-lg p-5 border border-gray-200 dark:border-gray-800">
               <div className="flex flex-col sm:flex-row items-start sm:items-center justify-between gap-4">
                 <h2 className="text-xl font-bold text-gray-800 dark:text-gray-100">
-                  📁 Repolar ({sortedRepos.length})
+                  {t("repos.title")} ({sortedRepos.length})
                 </h2>
                 <div className="flex flex-wrap gap-3">
                   {/* Language Filter */}
@@ -399,7 +471,7 @@ function HomeContent() {
                     onChange={(e) => setFilterLang(e.target.value)}
                     className="px-3 py-2 rounded-lg border border-gray-300 dark:border-gray-700 bg-gray-50 dark:bg-gray-800 text-sm text-gray-700 dark:text-gray-300 focus:ring-2 focus:ring-indigo-500 outline-none"
                   >
-                    <option value="">Tüm Diller</option>
+                    <option value="">{t("repos.allLangs")}</option>
                     {analysis.overallLanguages.map((l) => (
                       <option key={l.name} value={l.name}>
                         {l.name} (%{l.value})
@@ -413,11 +485,11 @@ function HomeContent() {
                     onChange={(e) => setSortBy(e.target.value as SortKey)}
                     className="px-3 py-2 rounded-lg border border-gray-300 dark:border-gray-700 bg-gray-50 dark:bg-gray-800 text-sm text-gray-700 dark:text-gray-300 focus:ring-2 focus:ring-indigo-500 outline-none"
                   >
-                    <option value="updated">Son Güncelleme</option>
-                    <option value="stars">Yıldız Sayısı</option>
-                    <option value="size">Kod Boyutu</option>
-                    <option value="languages">Dil Sayısı</option>
-                    <option value="name">İsim (A-Z)</option>
+                    <option value="updated">{t("repos.sort.updated")}</option>
+                    <option value="stars">{t("repos.sort.stars")}</option>
+                    <option value="size">{t("repos.sort.size")}</option>
+                    <option value="languages">{t("repos.sort.languages")}</option>
+                    <option value="name">{t("repos.sort.name")}</option>
                   </select>
                 </div>
               </div>
@@ -441,17 +513,20 @@ function HomeContent() {
             {sortedRepos.length === 0 && (
               <div className="text-center py-12 text-gray-400">
                 {filterLang
-                  ? `"${filterLang}" dili kullanılan repo bulunamadı`
-                  : "Repo bulunamadı"}
+                  ? `"${filterLang}" ${t("repos.langNotFound")}`
+                  : t("repos.notFound")}
               </div>
             )}
           </>
         )}
       </main>
 
+      {/* Rate Limit Badge */}
+      <RateLimitBadge token={lastToken} />
+
       {/* Footer */}
       <footer className="text-center py-6 text-sm text-gray-400 dark:text-gray-500">
-        <span>Repo Monitor © 2026</span>
+        <span>{t("footer.copyright")}</span>
         <span className="mx-1.5">·</span>
         <a
           href="https://github.com/cekYc"

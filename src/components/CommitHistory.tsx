@@ -11,18 +11,22 @@ import {
 } from "recharts";
 import { getLanguageColor, formatBytes } from "@/lib/utils";
 import { RepoCommitHistory } from "@/lib/github";
+import { useLocale } from "@/components/LocaleProvider";
 
 interface CommitHistoryProps {
   history: RepoCommitHistory;
 }
 
 export default function CommitHistory({ history }: CommitHistoryProps) {
+  const { t, locale } = useLocale();
   const { snapshots } = history;
+  const dateLocale = locale === "tr" ? "tr-TR" : "en-US";
+  const otherLabel = locale === "tr" ? "Diğer" : "Other";
 
   if (snapshots.length < 2) {
     return (
       <div className="text-center py-8 text-gray-400 text-sm">
-        Yeterli commit geçmişi bulunamadı (en az 2 commit gerekli)
+        {t("commit.notEnough")}
       </div>
     );
   }
@@ -37,7 +41,7 @@ export default function CommitHistory({ history }: CommitHistoryProps) {
   const chartData = snapshots.map((snap) => {
     const point: Record<string, string | number> = {
       label: snap.shortSha,
-      date: new Date(snap.date).toLocaleDateString("tr-TR", {
+      date: new Date(snap.date).toLocaleDateString(dateLocale, {
         month: "short",
         day: "numeric",
         year: "2-digit",
@@ -55,13 +59,13 @@ export default function CommitHistory({ history }: CommitHistoryProps) {
       (sum, lang) => sum + ((point[lang] as number) || 0),
       0
     );
-    point["Diğer"] = Math.max(0, Math.round((100 - topSum) * 100) / 100);
+    point[otherLabel] = Math.max(0, Math.round((100 - topSum) * 100) / 100);
     return point;
   });
 
   const displayLangs =
-    chartData.some((d) => (d["Diğer"] as number) > 0.5)
-      ? [...topLangs, "Diğer"]
+    chartData.some((d) => (d[otherLabel] as number) > 0.5)
+      ? [...topLangs, otherLabel]
       : topLangs;
 
   // Compute changes between first and last snapshot
@@ -80,7 +84,7 @@ export default function CommitHistory({ history }: CommitHistoryProps) {
       {/* Area Chart */}
       <div>
         <h4 className="text-xs font-semibold text-gray-500 dark:text-gray-400 mb-2 uppercase tracking-wide">
-          Dil Dağılımı Zaman Çizelgesi ({snapshots.length} commit)
+          {t("commit.timeline")} ({snapshots.length} {t("commit.commit")})
         </h4>
         <ResponsiveContainer width="100%" height={280}>
           <AreaChart data={chartData} margin={{ top: 5, right: 10, left: 0, bottom: 5 }}>
@@ -136,7 +140,7 @@ export default function CommitHistory({ history }: CommitHistoryProps) {
                     </div>
                     {commit?.totalBytes && (
                       <p className="text-gray-400 mt-2 pt-1 border-t border-gray-100 dark:border-gray-800">
-                        Toplam: {formatBytes(commit.totalBytes as number)}
+                        {t("commit.total")}: {formatBytes(commit.totalBytes as number)}
                       </p>
                     )}
                   </div>
@@ -150,12 +154,12 @@ export default function CommitHistory({ history }: CommitHistoryProps) {
                 dataKey={lang}
                 stackId="1"
                 stroke={
-                  lang === "Diğer"
+                  lang === otherLabel
                     ? "#9ca3af"
                     : getLanguageColor(lang, i)
                 }
                 fill={
-                  lang === "Diğer"
+                  lang === otherLabel
                     ? "#9ca3af"
                     : getLanguageColor(lang, i)
                 }
@@ -170,7 +174,7 @@ export default function CommitHistory({ history }: CommitHistoryProps) {
       {/* Change Summary */}
       <div>
         <h4 className="text-xs font-semibold text-gray-500 dark:text-gray-400 mb-2 uppercase tracking-wide">
-          İlk → Son Commit Değişimleri
+          {t("commit.changes")}
         </h4>
         <div className="grid grid-cols-2 sm:grid-cols-3 md:grid-cols-4 gap-2">
           {changes
@@ -223,7 +227,7 @@ export default function CommitHistory({ history }: CommitHistoryProps) {
               className="w-2.5 h-2.5 rounded-full inline-block"
               style={{
                 backgroundColor:
-                  lang === "Diğer" ? "#9ca3af" : getLanguageColor(lang, i),
+                  lang === otherLabel ? "#9ca3af" : getLanguageColor(lang, i),
               }}
             />
             <span className="text-gray-600 dark:text-gray-400">{lang}</span>

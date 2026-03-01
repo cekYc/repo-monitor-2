@@ -167,10 +167,30 @@ export const translations = {
   // Contribution Heatmap
   "heatmap.title": { tr: "📅 Katkı Haritası", en: "📅 Contribution Heatmap" },
   "heatmap.loading": { tr: "Katkı verileri yükleniyor...", en: "Loading contribution data..." },
-  "heatmap.events": { tr: "etkinlik", en: "events" },
+  "heatmap.events": { tr: "katkı", en: "contributions" },
   "heatmap.noData": { tr: "Katkı verisi bulunamadı", en: "No contribution data found" },
   "heatmap.less": { tr: "Az", en: "Less" },
   "heatmap.more": { tr: "Çok", en: "More" },
+  "heatmap.eventsOnly": { tr: "~90 gün (token ile tam veri)", en: "~90 days (full data with token)" },
+  "heatmap.eventsNote": { tr: "GitHub Events API sadece son ~90 günü döner. Token ekleyerek tam 365 günlük veri alabilirsiniz.", en: "GitHub Events API only returns the last ~90 days. Add a token to get full 365-day data." },
+
+  // Repo Export
+  "repos.export.button": { tr: "📸 Seçilenleri PNG İndir", en: "📸 Export Selected as PNG" },
+  "repos.export.selectAll": { tr: "Tümünü Seç", en: "Select All" },
+  "repos.export.deselectAll": { tr: "Seçimi Temizle", en: "Deselect All" },
+  "repos.export.selected": { tr: "seçili", en: "selected" },
+  "repos.export.exporting": { tr: "PNG oluşturuluyor...", en: "Generating PNG..." },
+
+  // Compare Enhancements
+  "compare.activity": { tr: "Aktivite", en: "Activity" },
+  "compare.avgRepoSize": { tr: "Ort. Repo Boyutu", en: "Avg Repo Size" },
+  "compare.topLang": { tr: "En Çok Dil", en: "Top Language" },
+  "compare.forks": { tr: "Toplam Fork", en: "Total Forks" },
+  "compare.languageCount": { tr: "Dil Sayısı", en: "Language Count" },
+  "compare.codePerRepo": { tr: "Repo Başına Kod", en: "Code per Repo" },
+  "compare.winner": { tr: "Kazanan", en: "Winner" },
+  "compare.tie": { tr: "Berabere", en: "Tie" },
+  "compare.exportPng": { tr: "📸 Karşılaştırmayı PNG İndir", en: "📸 Export Comparison as PNG" },
 
   // PWA
   "pwa.install": { tr: "Uygulamayı Yükle", en: "Install App" },

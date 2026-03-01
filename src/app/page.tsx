@@ -122,6 +122,11 @@ function HomeContent() {
   const [recentSearches, setRecentSearches] = useState<RecentSearch[]>([]);
   const autoSearchDone = useRef(false);
 
+  // Repo export selection state
+  const [selectedRepos, setSelectedRepos] = useState<Set<string>>(new Set());
+  const [repoExporting, setRepoExporting] = useState(false);
+  const repoExportRef = useRef<HTMLDivElement>(null);
+
   // Compare state
   const [compareAnalysis, setCompareAnalysis] = useState<UserAnalysis | null>(null);
   const [compareLoading, setCompareLoading] = useState(false);
@@ -143,6 +148,55 @@ function HomeContent() {
   const clearExclusions = useCallback(() => {
     setExcludedRepos(new Set());
   }, []);
+
+  const toggleSelectRepo = useCallback((repoName: string) => {
+    setSelectedRepos((prev) => {
+      const next = new Set(prev);
+      if (next.has(repoName)) next.delete(repoName);
+      else next.add(repoName);
+      return next;
+    });
+  }, []);
+
+  const handleExportSelectedRepos = useCallback(async () => {
+    if (!repoExportRef.current || selectedRepos.size === 0) return;
+    setRepoExporting(true);
+    try {
+      // Temporarily hide non-selected repo wrappers and checkboxes for clean export
+      const container = repoExportRef.current;
+      const wrappers = container.querySelectorAll<HTMLElement>("[data-repo-name]");
+      const hidden: HTMLElement[] = [];
+      wrappers.forEach((el) => {
+        const name = el.getAttribute("data-repo-name");
+        if (name && !selectedRepos.has(name)) {
+          el.style.display = "none";
+          hidden.push(el);
+        }
+      });
+      // Hide checkboxes
+      const checkboxes = container.querySelectorAll<HTMLElement>("[data-repo-checkbox]");
+      checkboxes.forEach((el) => (el.style.display = "none"));
+
+      const { toPng } = await import("html-to-image");
+      const dataUrl = await toPng(container, {
+        backgroundColor: document.documentElement.classList.contains("dark") ? "#111827" : "#ffffff",
+        pixelRatio: 2,
+      });
+
+      // Restore hidden elements
+      hidden.forEach((el) => (el.style.display = ""));
+      checkboxes.forEach((el) => (el.style.display = ""));
+
+      const link = document.createElement("a");
+      link.download = `repos-${lastUsername}-${selectedRepos.size}.png`;
+      link.href = dataUrl;
+      link.click();
+    } catch (err) {
+      console.error("Repo PNG export failed:", err);
+    } finally {
+      setRepoExporting(false);
+    }
+  }, [selectedRepos, lastUsername]);
 
   // Load recent searches on mount
   useEffect(() => {
@@ -524,20 +578,74 @@ function HomeContent() {
                   </select>
                 </div>
               </div>
+
+              {/* Selection Controls & Export */}
+              <div className="flex flex-wrap items-center gap-3 mt-4 pt-4 border-t border-gray-100 dark:border-gray-800">
+                <button
+                  onClick={() => {
+                    if (selectedRepos.size === sortedRepos.length) {
+                      setSelectedRepos(new Set());
+                    } else {
+                      setSelectedRepos(new Set(sortedRepos.map((r) => r.name)));
+                    }
+                  }}
+                  className="text-xs px-3 py-1.5 rounded-lg bg-gray-100 dark:bg-gray-800 text-gray-600 dark:text-gray-300 hover:bg-gray-200 dark:hover:bg-gray-700 transition-colors cursor-pointer"
+                >
+                  {selectedRepos.size === sortedRepos.length && sortedRepos.length > 0
+                    ? t("repos.export.deselectAll")
+                    : t("repos.export.selectAll")}
+                </button>
+                {selectedRepos.size > 0 && (
+                  <>
+                    <span className="text-xs text-gray-400">
+                      {selectedRepos.size} {t("repos.export.selected")}
+                    </span>
+                    <button
+                      onClick={handleExportSelectedRepos}
+                      disabled={repoExporting}
+                      className="text-xs px-3 py-1.5 rounded-lg bg-indigo-100 dark:bg-indigo-950/40 text-indigo-600 dark:text-indigo-400 hover:bg-indigo-200 dark:hover:bg-indigo-950/60 transition-colors cursor-pointer disabled:opacity-50 font-medium"
+                    >
+                      {repoExporting ? t("repos.export.exporting") : t("repos.export.button")}
+                    </button>
+                  </>
+                )}
+              </div>
             </div>
 
             {/* Repo Cards */}
-            <div className="grid gap-4">
+            <div className="grid gap-4" ref={repoExportRef}>
               {sortedRepos.map((repo, i) => (
-                <RepoCard
-                  key={repo.name}
-                  repo={repo}
-                  index={i}
-                  isExcluded={excludedRepos.has(repo.name)}
-                  onToggleExclude={toggleExcludeRepo}
-                  owner={analysis.user.login}
-                  token={lastToken}
-                />
+                <div key={repo.name} data-repo-name={repo.name}>
+                  <div className="flex gap-3 items-start">
+                    {/* Selection Checkbox */}
+                    <button
+                      type="button"
+                      data-repo-checkbox
+                      onClick={() => toggleSelectRepo(repo.name)}
+                      className={`mt-5 shrink-0 w-5 h-5 rounded border-2 flex items-center justify-center cursor-pointer transition-all ${
+                        selectedRepos.has(repo.name)
+                          ? "bg-indigo-500 border-indigo-500 text-white"
+                          : "border-gray-300 dark:border-gray-600 hover:border-indigo-400"
+                      }`}
+                    >
+                      {selectedRepos.has(repo.name) && (
+                        <svg className="w-3 h-3" fill="none" viewBox="0 0 24 24" stroke="currentColor" strokeWidth={3}>
+                          <path strokeLinecap="round" strokeLinejoin="round" d="M5 13l4 4L19 7" />
+                        </svg>
+                      )}
+                    </button>
+                    <div className="flex-1 min-w-0">
+                      <RepoCard
+                        repo={repo}
+                        index={i}
+                        isExcluded={excludedRepos.has(repo.name)}
+                        onToggleExclude={toggleExcludeRepo}
+                        owner={analysis.user.login}
+                        token={lastToken}
+                      />
+                    </div>
+                  </div>
+                </div>
               ))}
             </div>
 

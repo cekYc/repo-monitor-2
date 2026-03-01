@@ -23,6 +23,7 @@ export default function ContributionHeatmap({ username, token }: ContributionHea
   const [days, setDays] = useState<DayData[]>([]);
   const [maxCount, setMaxCount] = useState(1);
   const [totalEvents, setTotalEvents] = useState(0);
+  const [source, setSource] = useState<string>("");
   const [loading, setLoading] = useState(false);
   const [loaded, setLoaded] = useState(false);
   const [prevUsername, setPrevUsername] = useState("");
@@ -41,6 +42,7 @@ export default function ContributionHeatmap({ username, token }: ContributionHea
         setDays(data.days || []);
         setMaxCount(data.maxCount || 1);
         setTotalEvents(data.totalEvents || 0);
+        setSource(data.source || "events");
       }
     } catch {
       // ignore
@@ -157,9 +159,16 @@ export default function ContributionHeatmap({ username, token }: ContributionHea
     <div className="bg-white dark:bg-gray-900 rounded-2xl shadow-lg p-6 border border-gray-200 dark:border-gray-800">
       <div className="flex items-center justify-between mb-4">
         <h2 className="text-xl font-bold text-gray-800 dark:text-gray-100">{t("heatmap.title")}</h2>
-        <span className="text-sm text-gray-400 dark:text-gray-500">
-          {totalEvents} {t("heatmap.events")}
-        </span>
+        <div className="flex items-center gap-3">
+          {source === "events" && (
+            <span className="text-[10px] text-amber-500 dark:text-amber-400" title={t("heatmap.eventsNote")}>
+              ⚠️ {t("heatmap.eventsOnly")}
+            </span>
+          )}
+          <span className="text-sm text-gray-400 dark:text-gray-500">
+            {totalEvents} {t("heatmap.events")}
+          </span>
+        </div>
       </div>
 
       <div className="overflow-x-auto">

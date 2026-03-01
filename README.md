@@ -16,6 +16,12 @@ Analyze any GitHub user's public (non-fork) repositories and get a complete brea
 
 🇹🇷 [Türkçe dokümantasyon](README.tr.md)
 
+### Language Badge (powered by Repo Monitor)
+
+![cekYc Languages](https://ceky-repo-monitor.vercel.app/api/badge/cekYc)
+
+> Add your own badge: `![Languages](https://ceky-repo-monitor.vercel.app/api/badge/YOUR_USERNAME)`
+
 </div>
 
 ---
@@ -28,27 +34,54 @@ GitHub profiles show a tiny language bar, but it doesn't tell you much. If you w
 
 ## Features
 
+### Core Analysis
 - **Profile Overview** — Avatar, bio, follower count, total codebase size
 - **Overall Language Distribution** — Aggregated across all repos (Pie Chart + Bar Chart + Table)
 - **Per-Repo Breakdown** — Language bar, percentages, size, dates for each repository
 - **Expandable Detail View** — Click any repo card for a mini pie chart + full language table
-- **Sort & Filter** — Filter by language, sort by last update / stars / size / language count / name
-- **Fork Exclusion** — Only analyzes repositories the user authored (forks are excluded)
-- **No Token Required** — Works without authentication (60 req/hr); add a token for 5,000 req/hr
-- **Token Persistence** — Token is saved in localStorage, no need to re-enter
-- **Client-Side Caching** — Results cached for 30 minutes to preserve API rate limits
-- **Dark / Light Mode** — Toggle between themes instantly
+- **Commit History Timeline** — Stacked area chart showing language usage over time per repo
 - **12 Insight Metrics** — Dominant language, average repo size, most active repo, and more
+
+### Search & Navigation
+- **URL Sharing** — `ceky-repo-monitor.vercel.app/?user=cekYc` → auto-analyze
+- **Recent Searches** — Last 8 searches saved as clickable chips
+- **Sort & Filter** — Filter by language, sort by update date / stars / size / language count / name
+- **Fork Exclusion** — Only analyzes repositories the user authored
+
+### Comparison & Export
+- **User Comparison** — Compare two users side-by-side with head-to-head metric bars, winner badges, and grouped bar chart
+- **Export Profile as PNG** — Download the profile card + charts as a high-res image
+- **Export Repo Cards as PNG** — Select one or more repos and export them as a single image
+- **Export Comparison as PNG** — Download the full comparison view
+
+### Visualization
+- **Contribution Heatmap** — GitHub-style 365-day contribution calendar (full data with token via GraphQL API, ~90 days without)
+- **Embeddable Badge Generator** — SVG language badge for your GitHub README with Markdown/HTML copy
+- **Language-Based Suggestions** — "You love TypeScript — check these trending repos" powered by GitHub Search
+
+### Organization & PWA
+- **Organization Analysis** — Analyze any GitHub org's public repos with language distribution
+- **PWA Support** — Install as a native app, offline-capable with service worker
+- **Rate Limit Badge** — Live API rate limit countdown with color-coded warnings
+
+### UX
+- **Dark / Light Mode** — Toggle between themes instantly
+- **English / Turkish (i18n)** — Full bilingual support with 200+ translation keys
+- **Real-time Progress** — SSE streaming shows which repo is being analyzed
+- **Client-Side Caching** — Results cached for 30 minutes
+- **No Token Required** — Works without authentication (60 req/hr); add a token for 5,000 req/hr
+- **Token Persistence** — Token is saved in localStorage
 
 ## Tech Stack
 
 | Technology | Role |
 |---|---|
-| [**Next.js 16**](https://nextjs.org/) (App Router) | Framework, API routes, SSR |
+| [**Next.js 16**](https://nextjs.org/) (App Router, Turbopack) | Framework, SSE streaming, API routes |
 | [**TypeScript 5**](https://www.typescriptlang.org/) | Type safety |
 | [**Tailwind CSS 4**](https://tailwindcss.com/) | Utility-first styling |
-| [**Recharts**](https://recharts.org/) | Pie charts, bar charts |
+| [**Recharts**](https://recharts.org/) | Pie charts, bar charts, area charts |
 | [**Octokit**](https://github.com/octokit/rest.js) | GitHub REST API client |
+| [**html-to-image**](https://github.com/bubkoo/html-to-image) | PNG export |
 
 ## Getting Started
 
@@ -71,39 +104,62 @@ Open [http://localhost:3000](http://localhost:3000) in your browser.
 ### Usage
 
 1. Enter any GitHub username and click **Analyze**
-2. Optionally add a [GitHub Personal Access Token](https://github.com/settings/tokens) to increase the rate limit from 60 to 5,000 requests/hour
-3. Explore the charts, sort repos, filter by language
+2. Optionally add a [GitHub Personal Access Token](https://github.com/settings/tokens) to increase the rate limit from 60 to 5,000 requests/hour and enable full contribution heatmap data
+3. Explore the charts, sort repos, filter by language, compare users, export as PNG
 
 > **Tip:** The token is stored only in your browser's localStorage and is never sent anywhere other than GitHub's API.
+
+## API Endpoints
+
+| Endpoint | Description |
+|---|---|
+| `GET /api/analyze?username=` | Full user analysis (JSON) |
+| `GET /api/analyze-stream?username=` | SSE streaming analysis with progress |
+| `GET /api/analyze-org?org=` | Organization analysis |
+| `GET /api/badge/{username}` | SVG language badge (1hr cache) |
+| `GET /api/contributions?username=` | 365-day contribution data |
+| `GET /api/suggestions?languages=` | Trending repo suggestions |
+| `GET /api/commit-history?owner=&repo=` | Commit history by language |
+| `GET /api/rate-limit` | GitHub API rate limit status |
 
 ## Project Structure
 
 ```
 src/
 ├── app/
-│   ├── api/analyze/route.ts    # API endpoint — fetches & aggregates GitHub data
-│   ├── globals.css              # Global styles + dark mode variant
-│   ├── layout.tsx               # Root layout with ThemeProvider
-│   └── page.tsx                 # Main page (client component, state management)
+│   ├── api/
+│   │   ├── analyze/route.ts         # Batch user analysis
+│   │   ├── analyze-stream/route.ts  # SSE streaming analysis
+│   │   ├── analyze-org/route.ts     # Organization analysis
+│   │   ├── badge/[username]/route.ts # SVG badge generator
+│   │   ├── contributions/route.ts   # Contribution heatmap data
+│   │   ├── suggestions/route.ts     # Language-based suggestions
+│   │   ├── commit-history/route.ts  # Repo commit timeline
+│   │   └── rate-limit/route.ts      # Rate limit status
+│   ├── globals.css
+│   ├── layout.tsx                   # Root layout + PWA manifest
+│   └── page.tsx                     # Main page (client component)
 ├── components/
-│   ├── OverallStats.tsx         # Profile card, pie/bar charts, language table, insights
-│   ├── RepoCard.tsx             # Expandable repo cards with language breakdown
-│   ├── SearchForm.tsx           # Token + username form with persistence
-│   ├── ThemeProvider.tsx        # Dark/light mode context + FOUC prevention
-│   └── ThemeToggle.tsx          # Fixed-position theme toggle button
+│   ├── BadgeGenerator.tsx           # Embeddable badge with copy codes
+│   ├── CommitHistory.tsx            # Stacked area chart per repo
+│   ├── ContributionHeatmap.tsx      # GitHub-style 365-day heatmap
+│   ├── LocaleProvider.tsx           # i18n context provider
+│   ├── LocaleToggle.tsx             # Language switcher (TR/EN)
+│   ├── OrgAnalyzer.tsx              # Organization analysis panel
+│   ├── OverallStats.tsx             # Profile card + charts + PNG export
+│   ├── PwaInstallButton.tsx         # PWA install prompt
+│   ├── RateLimitBadge.tsx           # API rate limit indicator
+│   ├── RepoCard.tsx                 # Expandable repo cards
+│   ├── RepoSuggestions.tsx          # Trending repo suggestions
+│   ├── SearchForm.tsx               # Search + compare form
+│   ├── ThemeProvider.tsx            # Dark/light mode context
+│   ├── ThemeToggle.tsx              # Theme toggle button
+│   └── UserCompare.tsx              # Side-by-side user comparison
 └── lib/
-    ├── github.ts                # Octokit service, type definitions, data fetching
-    └── utils.ts                 # Color palette, formatBytes, formatDate helpers
+    ├── github.ts                    # Octokit service + type definitions
+    ├── i18n.ts                      # Translation keys (200+ TR/EN)
+    └── utils.ts                     # Colors, formatBytes, formatDate
 ```
-
-## How It Works
-
-1. The client sends a request to `/api/analyze?username=...` (optionally with a token)
-2. The API route uses Octokit to fetch all public, non-fork repos (paginated)
-3. For each repo, the GitHub Languages API returns byte counts per language
-4. Per-repo percentages are calculated, then aggregated into an overall distribution
-5. All data is returned as JSON and rendered with Recharts visualizations
-6. Results are cached in localStorage for 30 minutes to minimize API calls
 
 ## Contributing
 

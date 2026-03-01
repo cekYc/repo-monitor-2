@@ -177,11 +177,11 @@ export default function ContributionHeatmap({ username, token }: ContributionHea
             ))}
           </div>
 
-          <div className="flex gap-[2px]">
+          <div className="flex gap-0.5">
             {/* Day labels */}
-            <div className="flex flex-col gap-[2px] mr-1 justify-between py-[2px]">
+            <div className="flex flex-col gap-0.5 mr-1 justify-between py-0.5">
               {[0, 1, 2, 3, 4, 5, 6].map((dow) => (
-                <div key={dow} className="h-[12px] text-[9px] text-gray-400 dark:text-gray-500 leading-[12px] w-6 text-right pr-1">
+                <div key={dow} className="h-3 text-[9px] text-gray-400 dark:text-gray-500 leading-3 w-6 text-right pr-1">
                   {dow === 0 ? dayLabels[0] : dow === 2 ? dayLabels[1] : dow === 4 ? dayLabels[2] : ""}
                 </div>
               ))}
@@ -189,11 +189,11 @@ export default function ContributionHeatmap({ username, token }: ContributionHea
 
             {/* Weeks grid */}
             {weeks.map((week, wi) => (
-              <div key={wi} className="flex flex-col gap-[2px]">
+              <div key={wi} className="flex flex-col gap-0.5">
                 {week.map((day, di) => (
                   <div
                     key={`${wi}-${di}`}
-                    className={`w-[12px] h-[12px] rounded-sm ${day ? getColor(day.count) : "bg-transparent"} transition-colors`}
+                    className={`w-3 h-3 rounded-sm ${day ? getColor(day.count) : "bg-transparent"} transition-colors`}
                     title={day ? `${new Date(day.date).toLocaleDateString(dateLocale)} — ${day.count} ${t("heatmap.events")}` : ""}
                   />
                 ))}
@@ -204,11 +204,11 @@ export default function ContributionHeatmap({ username, token }: ContributionHea
           {/* Legend */}
           <div className="flex items-center justify-end gap-1 mt-3">
             <span className="text-[10px] text-gray-400 dark:text-gray-500 mr-1">{t("heatmap.less")}</span>
-            <div className="w-[12px] h-[12px] rounded-sm bg-gray-100 dark:bg-gray-800" />
-            <div className="w-[12px] h-[12px] rounded-sm bg-green-200 dark:bg-green-900" />
-            <div className="w-[12px] h-[12px] rounded-sm bg-green-400 dark:bg-green-700" />
-            <div className="w-[12px] h-[12px] rounded-sm bg-green-500 dark:bg-green-600" />
-            <div className="w-[12px] h-[12px] rounded-sm bg-green-600 dark:bg-green-500" />
+            <div className="w-3 h-3 rounded-sm bg-gray-100 dark:bg-gray-800" />
+            <div className="w-3 h-3 rounded-sm bg-green-200 dark:bg-green-900" />
+            <div className="w-3 h-3 rounded-sm bg-green-400 dark:bg-green-700" />
+            <div className="w-3 h-3 rounded-sm bg-green-500 dark:bg-green-600" />
+            <div className="w-3 h-3 rounded-sm bg-green-600 dark:bg-green-500" />
             <span className="text-[10px] text-gray-400 dark:text-gray-500 ml-1">{t("heatmap.more")}</span>
           </div>
         </div>

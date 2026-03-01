@@ -90,7 +90,7 @@ function addRecentSearch(username: string, avatarUrl?: string) {
   }
 }
 
-type SortKey = "updated" | "stars" | "size" | "languages" | "name";
+type SortKey = "updated" | "stars" | "size" | "languages" | "name" | "nameDesc" | "created" | "forks";
 
 // --- Progress State ---
 interface ProgressInfo {
@@ -381,6 +381,19 @@ function HomeContent() {
       case "name":
         repos.sort((a, b) => a.name.localeCompare(b.name));
         break;
+      case "nameDesc":
+        repos.sort((a, b) => b.name.localeCompare(a.name));
+        break;
+      case "created":
+        repos.sort(
+          (a, b) =>
+            new Date(b.created_at).getTime() -
+            new Date(a.created_at).getTime()
+        );
+        break;
+      case "forks":
+        repos.sort((a, b) => b.forks_count - a.forks_count);
+        break;
     }
 
     return repos;
@@ -583,10 +596,13 @@ function HomeContent() {
                     className="px-3 py-2 rounded-lg border border-gray-300 dark:border-gray-700 bg-gray-50 dark:bg-gray-800 text-sm text-gray-700 dark:text-gray-300 focus:ring-2 focus:ring-indigo-500 outline-none"
                   >
                     <option value="updated">{t("repos.sort.updated")}</option>
+                    <option value="created">{t("repos.sort.created")}</option>
                     <option value="stars">{t("repos.sort.stars")}</option>
+                    <option value="forks">{t("repos.sort.forks")}</option>
                     <option value="size">{t("repos.sort.size")}</option>
                     <option value="languages">{t("repos.sort.languages")}</option>
                     <option value="name">{t("repos.sort.name")}</option>
+                    <option value="nameDesc">{t("repos.sort.nameDesc")}</option>
                   </select>
                 </div>
               </div>

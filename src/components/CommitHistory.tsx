@@ -37,15 +37,17 @@ export default function CommitHistory({ history }: CommitHistoryProps) {
     .slice(0, 10)
     .map((l) => l.name);
 
-  // Build chart data: each point = one commit
-  const chartData = snapshots.map((snap) => {
+  // Build chart data: each point = one commit (unique idx for XAxis)
+  const chartData = snapshots.map((snap, idx) => {
     const point: Record<string, string | number> = {
+      idx,
       label: snap.shortSha,
       date: new Date(snap.date).toLocaleDateString(dateLocale, {
         month: "short",
         day: "numeric",
         year: "2-digit",
       }),
+      tickLabel: `${snap.shortSha} · ${new Date(snap.date).toLocaleDateString(dateLocale, { month: "short", day: "numeric" })}`,
       message: snap.message,
       totalBytes: snap.totalBytes,
     };
@@ -86,14 +88,39 @@ export default function CommitHistory({ history }: CommitHistoryProps) {
         <h4 className="text-xs font-semibold text-gray-500 dark:text-gray-400 mb-2 uppercase tracking-wide">
           {t("commit.timeline")} ({snapshots.length} {t("commit.commit")})
         </h4>
-        <ResponsiveContainer width="100%" height={280}>
-          <AreaChart data={chartData} margin={{ top: 5, right: 10, left: 0, bottom: 5 }}>
+        <ResponsiveContainer width="100%" height={chartData.length > 10 ? 320 : 280}>
+          <AreaChart data={chartData} margin={{ top: 5, right: 10, left: 0, bottom: chartData.length > 6 ? 60 : 5 }}>
             <CartesianGrid strokeDasharray="3 3" opacity={0.2} />
             <XAxis
-              dataKey="date"
-              fontSize={10}
+              dataKey="idx"
+              fontSize={9}
               tickLine={false}
               axisLine={false}
+              interval={0}
+              tick={({ x, y, payload }) => {
+                const d = chartData[payload.value];
+                if (!d) return <g />;
+                const showAll = chartData.length <= 20;
+                // For large datasets, show every Nth label
+                if (!showAll && payload.value % Math.ceil(chartData.length / 12) !== 0 && payload.value !== chartData.length - 1) {
+                  return <g />;
+                }
+                return (
+                  <g transform={`translate(${x},${y})`}>
+                    <text
+                      x={0}
+                      y={0}
+                      dy={10}
+                      textAnchor={chartData.length > 6 ? "end" : "middle"}
+                      fill="#9ca3af"
+                      fontSize={9}
+                      transform={chartData.length > 6 ? "rotate(-45)" : undefined}
+                    >
+                      {d.tickLabel as string}
+                    </text>
+                  </g>
+                );
+              }}
             />
             <YAxis
               fontSize={10}
@@ -103,16 +130,17 @@ export default function CommitHistory({ history }: CommitHistoryProps) {
               domain={[0, 100]}
             />
             <Tooltip
-              content={({ active, payload, label }) => {
+              content={({ active, payload }) => {
                 if (!active || !payload || payload.length === 0) return null;
-                const commit = chartData.find((d) => d.date === label);
+                const commit = payload[0]?.payload;
+                if (!commit) return null;
                 return (
                   <div className="bg-white dark:bg-gray-900 border border-gray-200 dark:border-gray-700 rounded-xl p-3 shadow-lg text-xs max-w-xs">
                     <p className="font-bold text-gray-800 dark:text-gray-100 mb-1">
-                      {commit?.label} — {label}
+                      {commit.label} — {commit.date}
                     </p>
                     <p className="text-gray-400 mb-2 truncate">
-                      {commit?.message as string}
+                      {commit.message as string}
                     </p>
                     <div className="space-y-1">
                       {payload

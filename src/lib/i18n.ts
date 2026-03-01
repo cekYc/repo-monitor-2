@@ -88,6 +88,9 @@ export const translations = {
   "repos.sort.size": { tr: "Kod Boyutu", en: "Code Size" },
   "repos.sort.languages": { tr: "Dil Sayısı", en: "Language Count" },
   "repos.sort.name": { tr: "İsim (A-Z)", en: "Name (A-Z)" },
+  "repos.sort.nameDesc": { tr: "İsim (Z-A)", en: "Name (Z-A)" },
+  "repos.sort.created": { tr: "Oluşturulma Tarihi", en: "Created Date" },
+  "repos.sort.forks": { tr: "Fork Sayısı", en: "Fork Count" },
   "repos.notFound": { tr: "Repo bulunamadı", en: "No repos found" },
   "repos.langNotFound": { tr: "dili kullanılan repo bulunamadı", en: "language — no repos found" },
 

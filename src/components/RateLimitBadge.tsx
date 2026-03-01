@@ -14,6 +14,7 @@ export default function RateLimitBadge({ token }: { token: string }) {
   const { t } = useLocale();
   const [info, setInfo] = useState<RateLimitInfo | null>(null);
   const [expanded, setExpanded] = useState(false);
+  const [now, setNow] = useState(() => Date.now());
 
   const fetchRateLimit = useCallback(async () => {
     try {
@@ -35,11 +36,20 @@ export default function RateLimitBadge({ token }: { token: string }) {
     return () => { clearTimeout(timeout); clearInterval(interval); };
   }, [fetchRateLimit]);
 
+  // Live countdown ticker — updates every second
+  useEffect(() => {
+    const tick = setInterval(() => setNow(Date.now()), 1000);
+    return () => clearInterval(tick);
+  }, []);
+
   if (!info) return null;
 
   const pct = Math.round((info.remaining / info.limit) * 100);
-  const resetDate = new Date(info.reset * 1000);
-  const resetStr = resetDate.toLocaleTimeString([], { hour: "2-digit", minute: "2-digit" });
+  const resetMs = info.reset * 1000;
+  const remaining = Math.max(0, Math.floor((resetMs - now) / 1000));
+  const mins = Math.floor(remaining / 60);
+  const secs = remaining % 60;
+  const countdownStr = `${String(mins).padStart(2, "0")}:${String(secs).padStart(2, "0")}`;
   const isLow = pct < 20;
 
   return (
@@ -73,7 +83,7 @@ export default function RateLimitBadge({ token }: { token: string }) {
           <div className="flex justify-between text-xs text-gray-500 dark:text-gray-400">
             <span>{info.used} used</span>
             <span>
-              {t("rateLimit.reset")}: {resetStr}
+              {t("rateLimit.reset")}: {remaining > 0 ? countdownStr : "—"}
             </span>
           </div>
 

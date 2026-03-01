@@ -1,6 +1,7 @@
 "use client";
 
-import { useState, useCallback, useMemo } from "react";
+import { useState, useCallback, useEffect, useRef, Suspense } from "react";
+import { useSearchParams, useRouter } from "next/navigation";
 import SearchForm from "@/components/SearchForm";
 import OverallStats from "@/components/OverallStats";
 import RepoCard from "@/components/RepoCard";
@@ -9,6 +10,8 @@ import { UserAnalysis } from "@/lib/github";
 
 const CACHE_PREFIX = "repo-monitor-cache-";
 const CACHE_TTL = 30 * 60 * 1000; // 30 dakika
+const RECENT_SEARCHES_KEY = "repo-monitor-recent-searches";
+const MAX_RECENT = 8;
 
 interface CachedData {
   timestamp: number;
@@ -42,9 +45,60 @@ function setCachedAnalysis(username: string, data: UserAnalysis) {
   }
 }
 
+// --- Recent Searches ---
+interface RecentSearch {
+  username: string;
+  avatarUrl?: string;
+  timestamp: number;
+}
+
+function getRecentSearches(): RecentSearch[] {
+  try {
+    const raw = localStorage.getItem(RECENT_SEARCHES_KEY);
+    return raw ? JSON.parse(raw) : [];
+  } catch {
+    return [];
+  }
+}
+
+function addRecentSearch(username: string, avatarUrl?: string) {
+  try {
+    let searches = getRecentSearches();
+    // Remove existing entry for this user
+    searches = searches.filter(
+      (s) => s.username.toLowerCase() !== username.toLowerCase()
+    );
+    // Add to front
+    searches.unshift({ username, avatarUrl, timestamp: Date.now() });
+    // Keep max
+    searches = searches.slice(0, MAX_RECENT);
+    localStorage.setItem(RECENT_SEARCHES_KEY, JSON.stringify(searches));
+  } catch {
+    // ignore
+  }
+}
+
 type SortKey = "updated" | "stars" | "size" | "languages" | "name";
 
+// --- Progress State ---
+interface ProgressInfo {
+  current: number;
+  total: number;
+  repoName: string;
+}
+
 export default function Home() {
+  return (
+    <Suspense>
+      <HomeContent />
+    </Suspense>
+  );
+}
+
+function HomeContent() {
+  const searchParams = useSearchParams();
+  const router = useRouter();
+
   const [analysis, setAnalysis] = useState<UserAnalysis | null>(null);
   const [loading, setLoading] = useState(false);
   const [error, setError] = useState<string | null>(null);
@@ -54,6 +108,9 @@ export default function Home() {
   const [lastUsername, setLastUsername] = useState("");
   const [lastToken, setLastToken] = useState("");
   const [excludedRepos, setExcludedRepos] = useState<Set<string>>(new Set());
+  const [progress, setProgress] = useState<ProgressInfo | null>(null);
+  const [recentSearches, setRecentSearches] = useState<RecentSearch[]>([]);
+  const autoSearchDone = useRef(false);
 
   const toggleExcludeRepo = useCallback((repoName: string) => {
     setExcludedRepos((prev) => {
@@ -71,6 +128,11 @@ export default function Home() {
     setExcludedRepos(new Set());
   }, []);
 
+  // Load recent searches on mount
+  useEffect(() => {
+    setRecentSearches(getRecentSearches());
+  }, []);
+
   const handleSearch = useCallback(async (username: string, token: string) => {
     setLoading(true);
     setError(null);
@@ -79,35 +141,97 @@ export default function Home() {
     setLastUsername(username);
     setLastToken(token);
     setExcludedRepos(new Set());
+    setProgress(null);
 
-    // Önce cache'e bak
+    // Update URL
+    const url = new URL(window.location.href);
+    url.searchParams.set("user", username);
+    router.replace(url.pathname + url.search, { scroll: false });
+
+    // Check cache first
     const cached = getCachedAnalysis(username);
     if (cached) {
       setAnalysis(cached);
       setCacheHit(true);
       setLoading(false);
+      addRecentSearch(username, cached.user.avatar_url);
+      setRecentSearches(getRecentSearches());
       return;
     }
 
+    // Use SSE streaming endpoint
     try {
-      const res = await fetch(
-        `/api/analyze?username=${encodeURIComponent(username)}&token=${encodeURIComponent(token)}`
-      );
-      const data = await res.json();
+      const params = new URLSearchParams({ username });
+      if (token) params.set("token", token);
 
-      if (!res.ok) {
+      const response = await fetch(`/api/analyze-stream?${params}`);
+
+      if (!response.ok) {
+        const data = await response.json();
         throw new Error(data.error || "Bir hata oluştu");
       }
 
-      // Cache'e kaydet
-      setCachedAnalysis(username, data);
-      setAnalysis(data);
+      const reader = response.body?.getReader();
+      if (!reader) throw new Error("Streaming desteklenmiyor");
+
+      const decoder = new TextDecoder();
+      let buffer = "";
+
+      while (true) {
+        const { done, value } = await reader.read();
+        if (done) break;
+
+        buffer += decoder.decode(value, { stream: true });
+
+        // Parse SSE events from buffer
+        const lines = buffer.split("\n");
+        buffer = "";
+
+        let eventType = "";
+        for (const line of lines) {
+          if (line.startsWith("event: ")) {
+            eventType = line.substring(7).trim();
+          } else if (line.startsWith("data: ")) {
+            const data = JSON.parse(line.substring(6));
+
+            if (eventType === "progress") {
+              setProgress(data);
+            } else if (eventType === "complete") {
+              setCachedAnalysis(username, data);
+              setAnalysis(data);
+              addRecentSearch(username, data.user?.avatar_url);
+              setRecentSearches(getRecentSearches());
+            } else if (eventType === "error") {
+              throw new Error(data.error);
+            }
+          } else if (line.trim() === "") {
+            // Event boundary, reset
+            eventType = "";
+          } else {
+            // Incomplete line, keep in buffer
+            buffer = line;
+          }
+        }
+      }
     } catch (err: unknown) {
       setError(err instanceof Error ? err.message : "Bir hata oluştu");
     } finally {
       setLoading(false);
+      setProgress(null);
     }
-  }, []);
+  }, [router]);
+
+  // Auto-search from URL query param
+  useEffect(() => {
+    if (autoSearchDone.current) return;
+    const userParam = searchParams.get("user");
+    if (userParam) {
+      autoSearchDone.current = true;
+      // Get token from localStorage
+      const savedToken = localStorage.getItem("repo-monitor-gh-token") || "";
+      handleSearch(userParam, savedToken);
+    }
+  }, [searchParams, handleSearch]);
 
   const handleForceRefresh = useCallback(async (username: string, token: string) => {
     // Cache'i temizle ve tekrar çek
@@ -159,13 +283,13 @@ export default function Home() {
   const sortedRepos = getSortedRepos();
 
   return (
-    <div className="min-h-screen bg-gradient-to-br from-gray-50 via-white to-gray-100 dark:from-gray-950 dark:via-gray-900 dark:to-gray-950">
+    <div className="min-h-screen bg-linear-to-br from-gray-50 via-white to-gray-100 dark:from-gray-950 dark:via-gray-900 dark:to-gray-950">
       <ThemeToggle />
 
       {/* Header */}
       <header className="py-8 text-center">
-        <h1 className="text-4xl font-extrabold bg-gradient-to-r from-indigo-600 via-purple-600 to-pink-500 bg-clip-text text-transparent">
-          Ceky's Repo Monitor
+        <h1 className="text-4xl font-extrabold bg-linear-to-r from-indigo-600 via-purple-600 to-pink-500 bg-clip-text text-transparent">
+          Ceky&apos;s Repo Monitor
         </h1>
         <p className="text-gray-500 dark:text-gray-400 mt-2">
           GitHub kullanıcılarının repolarını ve dil dağılımlarını analiz edin
@@ -173,34 +297,58 @@ export default function Home() {
       </header>
 
       <main className="max-w-6xl mx-auto px-4 pb-16 space-y-8">
-        <SearchForm onSearch={handleSearch} loading={loading} />
+        <SearchForm
+          onSearch={handleSearch}
+          loading={loading}
+          recentSearches={recentSearches}
+          initialUsername={searchParams.get("user") || ""}
+        />
 
-        {/* Loading State */}
+        {/* Loading State with Progress */}
         {loading && (
-          <div className="text-center py-16">
-            <div className="inline-flex items-center gap-3 bg-white dark:bg-gray-900 rounded-2xl px-8 py-4 shadow-lg border border-gray-200 dark:border-gray-800">
-              <svg
-                className="animate-spin h-6 w-6 text-indigo-600"
-                viewBox="0 0 24 24"
-                fill="none"
-              >
-                <circle
-                  className="opacity-25"
-                  cx="12"
-                  cy="12"
-                  r="10"
-                  stroke="currentColor"
-                  strokeWidth="4"
-                />
-                <path
-                  className="opacity-75"
-                  fill="currentColor"
-                  d="M4 12a8 8 0 018-8V0C5.373 0 0 5.373 0 12h4z"
-                />
-              </svg>
-              <span className="text-gray-700 dark:text-gray-300 font-medium">
-                Repolar analiz ediliyor, bu biraz sürebilir...
-              </span>
+          <div className="text-center py-12">
+            <div className="inline-flex flex-col items-center gap-4 bg-white dark:bg-gray-900 rounded-2xl px-8 py-6 shadow-lg border border-gray-200 dark:border-gray-800 min-w-[320px]">
+              <div className="flex items-center gap-3">
+                <svg
+                  className="animate-spin h-6 w-6 text-indigo-600"
+                  viewBox="0 0 24 24"
+                  fill="none"
+                >
+                  <circle
+                    className="opacity-25"
+                    cx="12"
+                    cy="12"
+                    r="10"
+                    stroke="currentColor"
+                    strokeWidth="4"
+                  />
+                  <path
+                    className="opacity-75"
+                    fill="currentColor"
+                    d="M4 12a8 8 0 018-8V0C5.373 0 0 5.373 0 12h4z"
+                  />
+                </svg>
+                <span className="text-gray-700 dark:text-gray-300 font-medium">
+                  {progress
+                    ? `Analiz ediliyor... (${progress.current}/${progress.total})`
+                    : "Repolar yükleniyor..."}
+                </span>
+              </div>
+              {progress && (
+                <>
+                  <div className="w-full bg-gray-200 dark:bg-gray-700 rounded-full h-2.5">
+                    <div
+                      className="bg-linear-to-r from-indigo-500 to-purple-500 h-2.5 rounded-full transition-all duration-300"
+                      style={{
+                        width: `${Math.round((progress.current / progress.total) * 100)}%`,
+                      }}
+                    />
+                  </div>
+                  <p className="text-xs text-gray-400 dark:text-gray-500 font-mono truncate max-w-70">
+                    {progress.repoName}
+                  </p>
+                </>
+              )}
             </div>
           </div>
         )}

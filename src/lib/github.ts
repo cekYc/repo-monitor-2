@@ -40,7 +40,8 @@ export interface UserAnalysis {
 
 export async function fetchUserAnalysis(
   username: string,
-  token?: string
+  token?: string,
+  onProgress?: (current: number, total: number, repoName: string) => void
 ): Promise<UserAnalysis> {
   const octokit = token ? new Octokit({ auth: token }) : new Octokit();
 
@@ -88,7 +89,10 @@ export async function fetchUserAnalysis(
   for (let i = 0; i < ownRepos.length; i += BATCH_SIZE) {
     const batch = ownRepos.slice(i, i + BATCH_SIZE);
     const results = await Promise.all(
-      batch.map(async (repo) => {
+      batch.map(async (repo, batchIdx) => {
+        if (onProgress) {
+          onProgress(i + batchIdx + 1, ownRepos.length, repo.name);
+        }
         const { data: languages } = await octokit.repos.listLanguages({
           owner: username,
           repo: repo.name,

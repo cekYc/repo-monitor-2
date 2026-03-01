@@ -17,7 +17,7 @@ interface CommitHistoryProps {
 }
 
 export default function CommitHistory({ history }: CommitHistoryProps) {
-  const { snapshots, allLanguages } = history;
+  const { snapshots } = history;
 
   if (snapshots.length < 2) {
     return (

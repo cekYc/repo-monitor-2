@@ -15,6 +15,7 @@ import {
 import { getLanguageColor, formatBytes } from "@/lib/utils";
 import { UserAnalysis } from "@/lib/github";
 import { useMemo } from "react";
+import Image from "next/image";
 
 interface OverallStatsProps {
   analysis: UserAnalysis;
@@ -116,11 +117,13 @@ export default function OverallStats({ analysis, excludedRepos, onClearExclusion
   return (
     <div className="space-y-8">
       {/* User Profile Card */}
-      <div className="bg-gradient-to-r from-indigo-600 via-purple-600 to-pink-500 rounded-2xl p-8 text-white shadow-xl">
+      <div className="bg-linear-to-r from-indigo-600 via-purple-600 to-pink-500 rounded-2xl p-8 text-white shadow-xl">
         <div className="flex flex-col md:flex-row items-center gap-6">
-          <img
+          <Image
             src={user.avatar_url}
             alt={user.login}
+            width={96}
+            height={96}
             className="w-24 h-24 rounded-full border-4 border-white/30 shadow-lg"
           />
           <div className="text-center md:text-left">
@@ -320,7 +323,7 @@ export default function OverallStats({ analysis, excludedRepos, onClearExclusion
                     <td className="py-2 px-3">
                       <div className="flex items-center gap-2">
                         <span
-                          className="w-3 h-3 rounded-full inline-block flex-shrink-0"
+                          className="w-3 h-3 rounded-full inline-block shrink-0"
                           style={{
                             backgroundColor: getLanguageColor(lang.name, i),
                           }}
@@ -485,7 +488,7 @@ function InsightCard({
   return (
     <div className="bg-gray-50 dark:bg-gray-800/50 rounded-xl p-4 border border-gray-100 dark:border-gray-800 hover:border-indigo-200 dark:hover:border-indigo-800 transition-colors">
       <div className="flex items-start gap-3">
-        <span className="text-xl flex-shrink-0">{icon}</span>
+        <span className="text-xl shrink-0">{icon}</span>
         <div className="min-w-0">
           <p className="text-xs font-medium text-gray-500 dark:text-gray-400 uppercase tracking-wide">
             {label}

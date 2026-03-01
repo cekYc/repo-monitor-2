@@ -1,6 +1,6 @@
 "use client";
 
-import { createContext, useContext, useEffect, useState } from "react";
+import { createContext, useContext, useEffect, useState, useSyncExternalStore } from "react";
 
 type Theme = "light" | "dark";
 
@@ -18,18 +18,25 @@ export function useTheme() {
   return useContext(ThemeContext);
 }
 
+function getInitialTheme(): Theme {
+  if (typeof window === "undefined") return "dark";
+  const saved = localStorage.getItem("repo-monitor-theme") as Theme | null;
+  return saved || "dark";
+}
+
+const emptySubscribe = () => () => {};
+
 export function ThemeProvider({ children }: { children: React.ReactNode }) {
-  const [theme, setTheme] = useState<Theme>("dark");
-  const [mounted, setMounted] = useState(false);
+  const [theme, setTheme] = useState<Theme>(getInitialTheme);
+  const mounted = useSyncExternalStore(
+    emptySubscribe,
+    () => true,
+    () => false
+  );
 
   useEffect(() => {
-    // Read saved preference or default to dark
-    const saved = localStorage.getItem("repo-monitor-theme") as Theme | null;
-    const initial = saved || "dark";
-    setTheme(initial);
-    document.documentElement.classList.toggle("dark", initial === "dark");
-    setMounted(true);
-  }, []);
+    document.documentElement.classList.toggle("dark", theme === "dark");
+  }, [theme]);
 
   const toggleTheme = () => {
     const next = theme === "dark" ? "light" : "dark";

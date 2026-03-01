@@ -86,7 +86,7 @@ export default function RepoCard({ repo, index, isExcluded, onToggleExclude, own
               </a>
               {dominantLang && (
                 <span
-                  className="text-[10px] font-semibold px-2 py-0.5 rounded-full text-white flex-shrink-0"
+                  className="text-[10px] font-semibold px-2 py-0.5 rounded-full text-white shrink-0"
                   style={{ backgroundColor: getLanguageColor(dominantLang.name, 0) }}
                 >
                   {dominantLang.name}
@@ -99,7 +99,7 @@ export default function RepoCard({ repo, index, isExcluded, onToggleExclude, own
               </p>
             )}
           </div>
-          <div className="flex items-center gap-2 flex-shrink-0">
+          <div className="flex items-center gap-2 shrink-0">
             {/* Exclude Toggle */}
             <button
               type="button"
@@ -250,7 +250,7 @@ export default function RepoCard({ repo, index, isExcluded, onToggleExclude, own
                   className="flex items-center gap-2 text-sm"
                 >
                   <span
-                    className="w-2.5 h-2.5 rounded-full inline-block flex-shrink-0"
+                    className="w-2.5 h-2.5 rounded-full inline-block shrink-0"
                     style={{
                       backgroundColor: getLanguageColor(lang.name, i),
                     }}

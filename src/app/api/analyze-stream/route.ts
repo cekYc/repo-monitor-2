@@ -1,12 +1,14 @@
 import { NextRequest } from "next/server";
 import { fetchUserAnalysis } from "@/lib/github";
+import { getSession } from "@/lib/auth";
 
 export const runtime = "nodejs";
 
 export async function GET(request: NextRequest) {
   const searchParams = request.nextUrl.searchParams;
   const username = searchParams.get("username");
-  const token = searchParams.get("token");
+  const session = await getSession();
+  const token = session?.githubToken;
 
   if (!username) {
     return new Response(

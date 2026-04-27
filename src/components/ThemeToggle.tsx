@@ -10,7 +10,8 @@ export default function ThemeToggle() {
   return (
     <button
       onClick={toggleTheme}
-      className="fixed top-4 right-4 z-50 p-3 rounded-full bg-white dark:bg-gray-800 shadow-lg border border-gray-200 dark:border-gray-700 hover:shadow-xl transition-all duration-300 hover:scale-110 cursor-pointer group"
+      // fixed, top-4, right-4 ve z-50 silindi.
+      className="p-3 rounded-full bg-white dark:bg-gray-800 shadow-lg border border-gray-200 dark:border-gray-700 hover:shadow-xl transition-all duration-300 hover:scale-110 cursor-pointer group"
       title={theme === "dark" ? t("theme.light") : t("theme.dark")}
     >
       {theme === "dark" ? (

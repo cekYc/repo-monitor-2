@@ -31,6 +31,9 @@ export default function AuthButton() {
     // React state'ini anında sıfırla (sayfayı beklemeden UI güncellenir)
     setUser(null);
 
+    // Yüklenme durumunu sıfırla (istek tamamlandığında)
+    setLoading(false);
+
     // Next.js sunucu bileşenlerine sayfayı tazelemesini söyle (cache'i ezer)
     router.refresh();
   };

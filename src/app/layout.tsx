@@ -4,6 +4,8 @@ import "./globals.css";
 import { ThemeProvider } from "@/components/ThemeProvider";
 import { LocaleProvider } from "@/components/LocaleProvider";
 import AuthButton from "@/components/AuthButton";
+import LocaleToggle from "@/components/LocaleToggle";
+import ThemeToggle from "@/components/ThemeToggle";
 
 const geistSans = Geist({
   variable: "--font-geist-sans",
@@ -65,10 +67,24 @@ export default function RootLayout({
       >
         <ThemeProvider>
           <LocaleProvider>
-            <header className="flex justify-end items-center px-6 py-3 border-b border-gray-200 dark:border-gray-800">
-              <AuthButton />
+            {/* YENİ HEADER DÜZENİ BURADA */}
+            <header className="absolute top-0 w-full flex justify-end items-center gap-2 px-4 py-3 z-50">
+              <div className="flex items-center gap-2 bg-white/50 dark:bg-gray-900/50 backdrop-blur-md px-2 py-1 rounded-2xl border border-gray-200 dark:border-gray-800">
+                {/* Locale ve Theme butonlarının kendi içlerindeki absolute taglerini kaldırmana gerek yok, 
+                    ancak CSS çakışmasını engellemek için onları bir div içinde topluyoruz */}
+                <div className="relative flex items-center gap-2">
+                  <LocaleToggle />
+                  <ThemeToggle />
+                </div>
+                <div className="w-px h-6 bg-gray-300 dark:bg-gray-700 mx-1"></div> {/* Ayırıcı dikey çizgi */}
+                <AuthButton />
+              </div>
             </header>
-            {children}
+            
+            {/* Sayfa içeriği üstten biraz boşluk bırakılarak başlıyor */}
+            <div className="pt-16">
+              {children}
+            </div>
           </LocaleProvider>
         </ThemeProvider>
       </body>

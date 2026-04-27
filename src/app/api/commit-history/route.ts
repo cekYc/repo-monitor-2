@@ -1,11 +1,13 @@
 import { NextRequest, NextResponse } from "next/server";
 import { fetchRepoCommitHistory } from "@/lib/github";
+import { getSession } from "@/lib/auth";
 
 export async function GET(request: NextRequest) {
   const searchParams = request.nextUrl.searchParams;
   const owner = searchParams.get("owner");
   const repo = searchParams.get("repo");
-  const token = searchParams.get("token");
+  const session = await getSession();
+  const token = session?.githubToken;
 
   if (!owner || !repo) {
     return NextResponse.json(

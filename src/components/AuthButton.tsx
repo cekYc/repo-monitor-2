@@ -2,6 +2,7 @@
 
 import { useState, useEffect } from "react";
 import Image from "next/image";
+import { useRouter } from "next/navigation";
 
 interface User {
   login: string;
@@ -11,6 +12,7 @@ interface User {
 export default function AuthButton() {
   const [user, setUser] = useState<User | null>(null);
   const [loading, setLoading] = useState(true);
+  const router = useRouter();
 
   useEffect(() => {
     fetch("/api/auth/session")
@@ -19,6 +21,19 @@ export default function AuthButton() {
       .catch(() => setUser(null))
       .finally(() => setLoading(false));
   }, []);
+
+  const handleSignOut = async () => {
+    setLoading(true); // Çıkış yaparken ufak bir yüklenme animasyonu gösterir
+
+    // Arka planda çıkış yap ve çerezleri sil
+    await fetch("/api/auth/signout", { method: "POST" });
+
+    // React state'ini anında sıfırla (sayfayı beklemeden UI güncellenir)
+    setUser(null);
+
+    // Next.js sunucu bileşenlerine sayfayı tazelemesini söyle (cache'i ezer)
+    router.refresh();
+  };
 
   if (loading) {
     return (
@@ -29,7 +44,6 @@ export default function AuthButton() {
   if (user) {
     return (
       <div className="flex items-center gap-2">
-        {/* Kullanıcı avatarı ve adı */}
         <Image
           src={user.avatarUrl}
           alt={user.login}
@@ -41,17 +55,16 @@ export default function AuthButton() {
           {user.login}
         </span>
 
-        {/* Çıkış formu — CSRF koruması için POST kullanıyoruz */}
-        <form action="/api/auth/signout" method="POST">
-          <button
-            type="submit"
-            className="rounded-lg border border-gray-300 px-3 py-1.5 text-xs font-medium text-gray-600
-                       hover:bg-gray-100 dark:border-gray-600 dark:text-gray-400
-                       dark:hover:bg-gray-800 transition-colors"
-          >
-            Çıkış
-          </button>
-        </form>
+        {/* 4. FORM YERİNE DOĞRUDAN BUTON VE ONCLICK KULLAN */}
+        <button
+          onClick={handleSignOut}
+          type="button"
+          className="rounded-lg border border-gray-300 px-3 py-1.5 text-xs font-medium text-gray-600
+                     hover:bg-gray-100 dark:border-gray-600 dark:text-gray-400
+                     dark:hover:bg-gray-800 transition-colors"
+        >
+          Çıkış
+        </button>
       </div>
     );
   }
@@ -63,7 +76,6 @@ export default function AuthButton() {
                  text-white hover:bg-gray-700 dark:bg-white dark:text-gray-900
                  dark:hover:bg-gray-200 transition-colors"
     >
-      {/* GitHub SVG ikonu */}
       <svg
         viewBox="0 0 24 24"
         className="h-4 w-4 fill-current"

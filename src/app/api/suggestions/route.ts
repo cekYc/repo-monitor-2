@@ -1,12 +1,14 @@
 import { NextRequest, NextResponse } from "next/server";
 import { Octokit } from "@octokit/rest";
+import { getSession } from "@/lib/auth";
 
 export const runtime = "nodejs";
 
 export async function GET(request: NextRequest) {
   const searchParams = request.nextUrl.searchParams;
   const languages = searchParams.get("languages"); // comma-separated
-  const token = searchParams.get("token");
+  const session = await getSession();
+  const token = session?.githubToken;
 
   if (!languages) {
     return NextResponse.json(

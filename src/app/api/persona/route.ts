@@ -1,6 +1,7 @@
 import { NextRequest, NextResponse } from "next/server";
 import { Octokit } from "@octokit/rest";
 import { serverCache, personaCacheKey } from "@/lib/cache";
+import { getSession } from "@/lib/auth";
 
 export const runtime = "nodejs";
 
@@ -61,7 +62,8 @@ interface PersonaResult {
 export async function GET(request: NextRequest) {
   const searchParams = request.nextUrl.searchParams;
   const username = searchParams.get("username");
-  const token = searchParams.get("token");
+  const session = await getSession();
+  const token = session?.githubToken;
 
   if (!username) {
     return NextResponse.json({ error: "username required" }, { status: 400 });

@@ -2,6 +2,7 @@ import { NextRequest } from "next/server";
 import { Octokit } from "@octokit/rest";
 import { getLanguageColor } from "@/lib/utils";
 import { serverCache } from "@/lib/cache";
+import { getSession } from "@/lib/auth"; 
 
 export const runtime = "nodejs";
 
@@ -10,11 +11,16 @@ export async function GET(
   { params }: { params: Promise<{ username: string }> }
 ) {
   const { username } = await params;
-  const token = request.nextUrl.searchParams.get("token");
+  
+  // 2. ESKİ YÖNTEMİ SİL (const token = request.nextUrl.searchParams.get("token");)
+  // VE YERİNE GÜVENLİ ÇEREZ YÖNTEMİNİ EKLE:
+  const session = await getSession();
+  const token = session?.githubToken;
 
-  // Check badge cache first
-  const cacheKey = `badge:${username.toLowerCase()}`;
+  // 3. CACHE KEY GÜNCELLEMESİ (Private ve Public rozetlerin önbelleği karışmasın)
+  const cacheKey = `badge:${username.toLowerCase()}` + (token ? "-auth" : "");
   const cached = serverCache.get<string>(cacheKey);
+  
   if (cached.status === "fresh" || cached.status === "stale") {
     return new Response(cached.data, {
       headers: {
@@ -24,6 +30,8 @@ export async function GET(
       },
     });
   }
+  
+  // ... kodun geri kalanı aynı kalacak (const octokit = token ? ...)
 
   const octokit = token ? new Octokit({ auth: token }) : new Octokit();
 

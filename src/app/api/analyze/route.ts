@@ -1,11 +1,11 @@
 import { NextRequest, NextResponse } from "next/server";
 import { fetchUserAnalysis } from "@/lib/github";
 import { serverCache, userCacheKey } from "@/lib/cache";
+import { getSession } from "@/lib/auth";
 
 export async function GET(request: NextRequest) {
   const searchParams = request.nextUrl.searchParams;
   const username = searchParams.get("username");
-  const token = searchParams.get("token");
   const forceRefresh = searchParams.get("refresh") === "1";
 
   if (!username) {
@@ -15,9 +15,14 @@ export async function GET(request: NextRequest) {
     );
   }
 
+  // Token artık cookie'deki JWT'den okunuyor — query param'dan değil!
+  // Bu sayede token asla URL geçmişine, log'lara veya proxy'lere düşmez.
+  const session = await getSession();
+  const token = session?.githubToken;
+
   const cacheKey = userCacheKey(username);
 
-  // Check server cache (unless force refresh)
+  // Sunucu önbelleği kontrolü
   if (!forceRefresh) {
     const cached = serverCache.get(cacheKey);
     if (cached.status === "fresh") {
@@ -26,10 +31,9 @@ export async function GET(request: NextRequest) {
       });
     }
     if (cached.status === "stale") {
-      // Return stale data immediately, revalidate in background
       if (!serverCache.isRevalidating(cacheKey)) {
         serverCache.markRevalidating(cacheKey);
-        fetchUserAnalysis(username, token || undefined)
+        fetchUserAnalysis(username, token)
           .then((data) => serverCache.set(cacheKey, data))
           .catch(() => {})
           .finally(() => serverCache.unmarkRevalidating(cacheKey));
@@ -41,7 +45,7 @@ export async function GET(request: NextRequest) {
   }
 
   try {
-    const analysis = await fetchUserAnalysis(username, token || undefined);
+    const analysis = await fetchUserAnalysis(username, token);
     serverCache.set(cacheKey, analysis);
     return NextResponse.json(analysis, {
       headers: { "X-Cache": "MISS" },
@@ -56,17 +60,19 @@ export async function GET(request: NextRequest) {
         { status: 404 }
       );
     }
-
     if (message.includes("Bad credentials")) {
       return NextResponse.json(
-        { error: "Geçersiz GitHub API token" },
+        { error: "Geçersiz GitHub token. Lütfen tekrar giriş yapın." },
         { status: 401 }
       );
     }
-
     if (message.includes("rate limit") || message.includes("API rate limit")) {
       return NextResponse.json(
-        { error: "API istek limiti aşıldı. Token kullanarak limiti artırabilirsiniz." },
+        {
+          error: session
+            ? "API istek limiti aşıldı."
+            : "API istek limiti aşıldı. GitHub ile giriş yaparak limiti artırabilirsiniz.",
+        },
         { status: 429 }
       );
     }

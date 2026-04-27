@@ -2,15 +2,16 @@
   "name": "repo-monitor2",
   "version": "0.1.0",
   "private": true,
-  "scripts": {
-    "dev": "next dev",
-    "build": "next build",
-    "start": "next start",
-    "lint": "eslint"
-  },
+"scripts": {
+ "dev": "next dev",
+  "build": "next build",
+  "start": "next start",
+  "lint": "eslint"
+},
   "dependencies": {
     "@octokit/rest": "^22.0.1",
     "html-to-image": "^1.11.13",
+    "jose": "^5.10.0",
     "next": "16.1.6",
     "react": "19.2.3",
     "react-dom": "19.2.3",

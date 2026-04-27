@@ -64,10 +64,12 @@ export default function RepoCard({ repo, index, isExcluded, onToggleExclude, own
       }`}
       style={{ animationDelay: `${index * 50}ms` }}
     >
-      {/* Clickable Header */}
-      <button
-        type="button"
+      {/* Header — div kullanıyoruz, button içinde button olmasın diye */}
+      <div
+        role={hasLanguages ? "button" : undefined}
+        tabIndex={hasLanguages ? 0 : undefined}
         onClick={() => hasLanguages && setExpanded(!expanded)}
+        onKeyDown={(e) => e.key === "Enter" && hasLanguages && setExpanded(!expanded)}
         className={`w-full text-left p-5 transition-colors ${
           hasLanguages
             ? "cursor-pointer hover:bg-gray-50 dark:hover:bg-gray-800/50"
@@ -76,7 +78,7 @@ export default function RepoCard({ repo, index, isExcluded, onToggleExclude, own
       >
         <div className="flex items-start justify-between gap-3">
           <div className="min-w-0 flex-1">
-            <div className="flex items-center gap-2">
+            <div className="flex items-center gap-2 flex-wrap">
               <a
                 href={repo.html_url}
                 target="_blank"
@@ -86,6 +88,12 @@ export default function RepoCard({ repo, index, isExcluded, onToggleExclude, own
               >
                 {repo.name}
               </a>
+              {/* Private badge */}
+              {repo.private && (
+                <span className="text-[10px] font-semibold px-2 py-0.5 rounded-full bg-gray-100 dark:bg-gray-800 text-gray-500 dark:text-gray-400 border border-gray-300 dark:border-gray-700">
+                  🔒 private
+                </span>
+              )}
               {dominantLang && (
                 <span
                   className="text-[10px] font-semibold px-2 py-0.5 rounded-full text-white shrink-0"
@@ -128,8 +136,8 @@ export default function RepoCard({ repo, index, isExcluded, onToggleExclude, own
               )}
             </button>
             <div className="flex items-center gap-3 text-xs text-gray-500 dark:text-gray-400">
-            <span title="Yıldız">⭐ {repo.stargazers_count}</span>
-            <span title="Fork">🍴 {repo.forks_count}</span>
+              <span title="Yıldız">⭐ {repo.stargazers_count}</span>
+              <span title="Fork">🍴 {repo.forks_count}</span>
             </div>
             {hasLanguages && (
               <svg
@@ -155,7 +163,7 @@ export default function RepoCard({ repo, index, isExcluded, onToggleExclude, own
           <span>📝 {repo.languagePercentages.length} {t("repo.langs")}</span>
         </div>
 
-        {/* Language Bar (always visible) */}
+        {/* Language Bar */}
         {hasLanguages && (
           <div className="mt-4">
             <div className="flex rounded-full overflow-hidden h-3 bg-gray-200 dark:bg-gray-700">
@@ -176,9 +184,7 @@ export default function RepoCard({ repo, index, isExcluded, onToggleExclude, own
                 <div key={lang.name} className="flex items-center gap-1.5 text-xs">
                   <span
                     className="w-2.5 h-2.5 rounded-full inline-block"
-                    style={{
-                      backgroundColor: getLanguageColor(lang.name, i),
-                    }}
+                    style={{ backgroundColor: getLanguageColor(lang.name, i) }}
                   />
                   <span className="text-gray-700 dark:text-gray-300 font-medium">
                     {lang.name}
@@ -200,13 +206,12 @@ export default function RepoCard({ repo, index, isExcluded, onToggleExclude, own
             {t("repo.noLangs")}
           </div>
         )}
-      </button>
+      </div>
 
-      {/* Expanded Detail — all repos can toggle this */}
+      {/* Expanded Detail */}
       {expanded && hasLanguages && (
         <div className="border-t border-gray-200 dark:border-gray-800 p-5 bg-gray-50 dark:bg-gray-950">
           <div className="grid grid-cols-1 md:grid-cols-2 gap-6">
-            {/* Mini Pie Chart */}
             <div>
               <ResponsiveContainer width="100%" height={220}>
                 <PieChart>
@@ -244,18 +249,12 @@ export default function RepoCard({ repo, index, isExcluded, onToggleExclude, own
               </ResponsiveContainer>
             </div>
 
-            {/* All Languages Table */}
             <div className="space-y-1.5">
               {repo.languagePercentages.map((lang, i) => (
-                <div
-                  key={lang.name}
-                  className="flex items-center gap-2 text-sm"
-                >
+                <div key={lang.name} className="flex items-center gap-2 text-sm">
                   <span
                     className="w-2.5 h-2.5 rounded-full inline-block shrink-0"
-                    style={{
-                      backgroundColor: getLanguageColor(lang.name, i),
-                    }}
+                    style={{ backgroundColor: getLanguageColor(lang.name, i) }}
                   />
                   <span className="font-medium text-gray-700 dark:text-gray-300 w-24 truncate">
                     {lang.name}
@@ -280,7 +279,7 @@ export default function RepoCard({ repo, index, isExcluded, onToggleExclude, own
             </div>
           </div>
 
-          {/* Commit History Section */}
+          {/* Commit History */}
           <div className="mt-5 pt-4 border-t border-gray-200 dark:border-gray-800">
             <button
               type="button"

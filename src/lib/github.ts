@@ -17,6 +17,7 @@ export interface RepoInfo {
   languages: RepoLanguages;
   languagePercentages: { name: string; value: number; bytes: number }[];
   totalBytes: number;
+  private: boolean;
 }
 
 export interface UserProfile {
@@ -59,30 +60,64 @@ export async function fetchUserAnalysis(
     following: userData.following,
   };
 
-  // Fetch all public repos (paginated), only non-forks owned by the user
-  let page = 1;
-  const perPage = 100;
-  let allRepos: Awaited<
-    ReturnType<typeof octokit.repos.listForUser>
-  >["data"] = [];
-
-  while (true) {
-    const { data: repos } = await octokit.repos.listForUser({
-      username,
-      type: "owner",
-      per_page: perPage,
-      page,
-      sort: "updated",
-    });
-    allRepos = allRepos.concat(repos);
-    if (repos.length < perPage) break;
-    page++;
+  // Token varsa authenticated kullanıcının kendi repoları mı kontrol et
+  let isOwnProfile = false;
+  if (token) {
+    try {
+      const { data: authUser } = await octokit.users.getAuthenticated();
+      isOwnProfile = authUser.login.toLowerCase() === username.toLowerCase();
+    } catch {
+      isOwnProfile = false;
+    }
   }
 
-  // Filter: only non-fork repos
+  let page = 1;
+  const perPage = 100;
+  let allRepos: {
+    name: string;
+    fork: boolean;
+    description: string | null;
+    html_url: string;
+    stargazers_count?: number;
+    forks_count?: number;
+    size?: number;
+    created_at?: string | null;
+    updated_at?: string | null;
+    private: boolean;
+  }[] = [];
+
+  if (isOwnProfile && token) {
+    // Kendi profili → private repolar dahil listForAuthenticatedUser
+    while (true) {
+const { data: repos } = await octokit.repos.listForAuthenticatedUser({
+  per_page: perPage,
+  page,
+  sort: "updated",
+  affiliation: "owner",  // sadece bu kalıyor
+});
+      allRepos = allRepos.concat(repos);
+      if (repos.length < perPage) break;
+      page++;
+    }
+  } else {
+    // Başkasının profili → sadece public repolar
+    while (true) {
+      const { data: repos } = await octokit.repos.listForUser({
+        username,
+        type: "owner",
+        per_page: perPage,
+        page,
+        sort: "updated",
+      });
+      allRepos = allRepos.concat(repos.map(r => ({ ...r, private: false })));
+      if (repos.length < perPage) break;
+      page++;
+    }
+  }
+
+  // Fork olmayanları filtrele
   const ownRepos = allRepos.filter((r) => !r.fork);
 
-  // Fetch languages for each repo in parallel (batched)
   const BATCH_SIZE = 10;
   const repoInfos: RepoInfo[] = [];
 
@@ -111,7 +146,6 @@ export async function fetchUserAnalysis(
           })
         );
 
-        // Sort by percentage descending
         languagePercentages.sort((a, b) => b.value - a.value);
 
         return {
@@ -126,13 +160,13 @@ export async function fetchUserAnalysis(
           languages,
           languagePercentages,
           totalBytes,
+          private: repo.private ?? false,
         } satisfies RepoInfo;
       })
     );
     repoInfos.push(...results);
   }
 
-  // Calculate overall language distribution
   const overallMap: Record<string, number> = {};
   let totalBytes = 0;
 
@@ -146,10 +180,7 @@ export async function fetchUserAnalysis(
   const overallLanguages = Object.entries(overallMap)
     .map(([name, bytes]) => ({
       name,
-      value:
-        totalBytes > 0
-          ? Math.round((bytes / totalBytes) * 10000) / 100
-          : 0,
+      value: totalBytes > 0 ? Math.round((bytes / totalBytes) * 10000) / 100 : 0,
       bytes,
     }))
     .sort((a, b) => b.value - a.value);
@@ -170,7 +201,7 @@ export interface CommitLanguageSnapshot {
   shortSha: string;
   date: string;
   message: string;
-  languages: Record<string, number>; // lang -> bytes
+  languages: Record<string, number>;
   languagePercentages: { name: string; value: number; bytes: number }[];
   totalBytes: number;
 }
@@ -178,7 +209,7 @@ export interface CommitLanguageSnapshot {
 export interface RepoCommitHistory {
   repoName: string;
   snapshots: CommitLanguageSnapshot[];
-  allLanguages: string[]; // union of all languages across snapshots
+  allLanguages: string[];
 }
 
 export async function fetchRepoCommitHistory(
@@ -189,14 +220,12 @@ export async function fetchRepoCommitHistory(
 ): Promise<RepoCommitHistory> {
   const octokit = token ? new Octokit({ auth: token }) : new Octokit();
 
-  // Fetch recent commits
   const { data: commits } = await octokit.repos.listCommits({
     owner,
     repo,
     per_page: Math.min(limit, 30),
   });
 
-  // Sample commits evenly if there are many (take first, some middle, and last)
   let selectedCommits = commits;
   if (commits.length > limit) {
     const step = Math.floor(commits.length / limit);
@@ -204,13 +233,11 @@ export async function fetchRepoCommitHistory(
     for (let i = 0; i < commits.length && selectedCommits.length < limit; i += step) {
       selectedCommits.push(commits[i]);
     }
-    // Always include the last (oldest)
     if (selectedCommits[selectedCommits.length - 1] !== commits[commits.length - 1]) {
       selectedCommits.push(commits[commits.length - 1]);
     }
   }
 
-  // For each commit, get the tree and compute languages
   const snapshots: CommitLanguageSnapshot[] = [];
   const allLangsSet = new Set<string>();
 
@@ -249,18 +276,16 @@ export async function fetchRepoCommitHistory(
         sha: commit.sha,
         shortSha: commit.sha.substring(0, 7),
         date: commit.commit.author?.date || commit.commit.committer?.date || "",
-        message: commit.commit.message.split("\n")[0], // first line only
+        message: commit.commit.message.split("\n")[0],
         languages: langMap,
         languagePercentages,
         totalBytes: total,
       });
     } catch {
-      // Skip if tree fetch fails (e.g. too large)
       continue;
     }
   }
 
-  // Reverse so oldest is first (chronological order)
   snapshots.reverse();
 
   return {
@@ -308,7 +333,6 @@ export async function fetchOrgAnalysis(
     public_repos: orgData.public_repos,
   };
 
-  // Fetch all public repos (paginated)
   let page = 1;
   const perPage = 100;
   let allRepos: Awaited<ReturnType<typeof octokit.repos.listForOrg>>["data"] = [];
@@ -326,7 +350,6 @@ export async function fetchOrgAnalysis(
     page++;
   }
 
-  // Filter: only non-fork repos
   const ownRepos = allRepos.filter((r) => !r.fork);
 
   const BATCH_SIZE = 10;
@@ -365,6 +388,7 @@ export async function fetchOrgAnalysis(
           languages,
           languagePercentages,
           totalBytes,
+          private: false,
         } satisfies RepoInfo;
       })
     );

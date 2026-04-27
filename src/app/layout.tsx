@@ -3,6 +3,7 @@ import { Geist, Geist_Mono } from "next/font/google";
 import "./globals.css";
 import { ThemeProvider } from "@/components/ThemeProvider";
 import { LocaleProvider } from "@/components/LocaleProvider";
+import AuthButton from "@/components/AuthButton";
 
 const geistSans = Geist({
   variable: "--font-geist-sans",
@@ -63,7 +64,12 @@ export default function RootLayout({
         className={`${geistSans.variable} ${geistMono.variable} antialiased`}
       >
         <ThemeProvider>
-          <LocaleProvider>{children}</LocaleProvider>
+          <LocaleProvider>
+            <header className="flex justify-end items-center px-6 py-3 border-b border-gray-200 dark:border-gray-800">
+              <AuthButton />
+            </header>
+            {children}
+          </LocaleProvider>
         </ThemeProvider>
       </body>
     </html>

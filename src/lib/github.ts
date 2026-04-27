@@ -216,14 +216,14 @@ export async function fetchRepoCommitHistory(
   owner: string,
   repo: string,
   token?: string,
-  limit: number = 15
+  limit: number = 30
 ): Promise<RepoCommitHistory> {
   const octokit = token ? new Octokit({ auth: token }) : new Octokit();
 
   const { data: commits } = await octokit.repos.listCommits({
     owner,
     repo,
-    per_page: Math.min(limit, 30),
+    per_page: Math.min(limit, 50),
   });
 
   let selectedCommits = commits;

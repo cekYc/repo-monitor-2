@@ -20,7 +20,8 @@ export async function GET(request: NextRequest) {
   const session = await getSession();
   const token = session?.githubToken;
 
-  const cacheKey = userCacheKey(username);
+  // Token varsa cache key'in sonuna "-auth" ekleyerek public ve private cache'leri ayır
+const cacheKey = userCacheKey(username) + (token ? "-auth" : "");
 
   // Sunucu önbelleği kontrolü
   if (!forceRefresh) {

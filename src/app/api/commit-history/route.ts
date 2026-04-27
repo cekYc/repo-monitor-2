@@ -21,7 +21,7 @@ export async function GET(request: NextRequest) {
       owner,
       repo,
       token || undefined,
-      15
+      30 // Son 30 commit'i al
     );
     return NextResponse.json(history);
   } catch (error: unknown) {

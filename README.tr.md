@@ -26,6 +26,22 @@ GitHub kullanıcılarının **kendi yazdığı** repolarını analiz eden, her p
 
 ## Özellikler
 
+### 📌 Takip & İzleme _(yeni)_
+- **İzleme Listesi** — Herhangi bir kullanıcıyı veya repoyu "izle"; liste tarayıcında (IndexedDB) tutulur, hesap gerekmez
+- **Değişim Diff'i** — Her kontrol bir snapshot olarak kaydedilir ve bir öncekiyle karşılaştırılır: yeni repolar, yıldız/fork artışı, yeni sürümler, açık issue/PR değişimleri ve dil oranı kaymaları kompakt değişim rozetleri olarak görünür
+- **Başlangıç → Değişim** — İlk kontrol başlangıç noktasını kaydeder; sonraki kontroller tam olarak neyin değiştiğini gösterir
+- **Sparkline & Geçmiş** — Her öğe için son snapshot'lara dayalı trend çizgisi (öğe başına 60 kayıt saklanır)
+- **Tümünü / Tek Tek Kontrol** — Tüm listeyi veya tek bir öğeyi talep üzerine yenile (rate-limit dostu, sıralı)
+
+### 🔬 Derin Repo Analizi _(yeni)_
+- **Özel repo sayfası** — `/repo/{owner}/{repo}`, GitHub'ın tek ekranda göstermediği her şeyle
+- **Bus Factor** — Tüm commitlerin %50'sinden fazlasını kaç kişinin üstlendiği, düşük/sağlıklı değerlendirmesiyle
+- **Katkıcı Dağılımı** — En çok katkı yapanlar, avatar ve katkı barlarıyla
+- **Commit Temposu** — Son günlük aktivite + güne göre + saate göre (UTC) commit dağılımı
+- **Sürüm Zaman Çizelgesi** — Tarihleriyle son sürümler ve toplam sürüm sayısı
+- **Issue / PR Ayrımı** — Gerçek açık-issue ve açık-PR sayıları (PR'lar pagination header'larından sayılır)
+- **Proje Sağlığı** — README / CI / Lisans varlığı, arşiv durumu, oluşturma & son commit tarihleri
+
 ### Kimlik Doğrulama
 - **GitHub OAuth ile Giriş** — GitHub hesabınızla OAuth 2.0 üzerinden oturum açın
 - **Private Repo Erişimi** — Kendi profilinizi analiz ederken private repolarınız da dahil edilir
@@ -133,6 +149,7 @@ Tarayıcıda [http://localhost:3000](http://localhost:3000) adresine gidin.
 | `GET /api/analyze?username=` | Tam kullanıcı analizi — token oturum cookie'sinden okunur |
 | `GET /api/analyze-stream?username=` | SSE streaming analiz + ilerleme |
 | `GET /api/analyze-org?org=` | Organizasyon analizi |
+| `GET /api/repo-analysis?owner=&repo=` | Derin tek-repo analizi (katkıcılar, bus factor, commit temposu, sürümler, sağlık) |
 | `GET /api/badge/{username}` | SVG dil badge'i (1 saat cache) |
 | `GET /api/contributions?username=` | 365 günlük katkı verisi |
 | `GET /api/suggestions?languages=` | Trending repo önerileri |

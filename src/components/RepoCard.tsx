@@ -10,6 +10,7 @@ import {
 import { getLanguageColor, formatBytes, formatDate } from "@/lib/utils";
 import { RepoInfo, RepoCommitHistory } from "@/lib/github";
 import { useState } from "react";
+import Link from "next/link";
 import CommitHistory from "./CommitHistory";
 import { useLocale } from "@/components/LocaleProvider";
 
@@ -281,29 +282,41 @@ export default function RepoCard({ repo, index, isExcluded, onToggleExclude, own
 
           {/* Commit History */}
           <div className="mt-5 pt-4 border-t border-gray-200 dark:border-gray-800">
-            <button
-              type="button"
-              onClick={loadCommitHistory}
-              disabled={historyLoading}
-              className="inline-flex items-center gap-2 px-4 py-2 rounded-xl bg-indigo-50 dark:bg-indigo-950/30 text-indigo-600 dark:text-indigo-400 text-sm font-medium hover:bg-indigo-100 dark:hover:bg-indigo-950/50 transition-colors cursor-pointer disabled:opacity-50"
-            >
-              {historyLoading ? (
-                <>
-                  <svg className="animate-spin h-4 w-4" viewBox="0 0 24 24" fill="none">
-                    <circle className="opacity-25" cx="12" cy="12" r="10" stroke="currentColor" strokeWidth="4" />
-                    <path className="opacity-75" fill="currentColor" d="M4 12a8 8 0 018-8V0C5.373 0 0 5.373 0 12h4z" />
-                  </svg>
-                  Commit geçmişi yükleniyor...
-                </>
-              ) : (
-                <>
-                  <svg className="w-4 h-4" fill="none" viewBox="0 0 24 24" strokeWidth={2} stroke="currentColor">
-                    <path strokeLinecap="round" strokeLinejoin="round" d="M12 6v6h4.5m4.5 0a9 9 0 11-18 0 9 9 0 0118 0z" />
-                  </svg>
-                  {showHistory && commitHistory ? t("repo.commitHistory.hide") : t("repo.commitHistory.load")}
-                </>
-              )}
-            </button>
+            <div className="flex flex-wrap items-center gap-3">
+              <Link
+                href={`/repo/${owner}/${repo.name}`}
+                className="inline-flex items-center gap-2 px-4 py-2 rounded-xl bg-purple-50 dark:bg-purple-950/30 text-purple-600 dark:text-purple-400 text-sm font-medium hover:bg-purple-100 dark:hover:bg-purple-950/50 transition-colors cursor-pointer"
+              >
+                <svg className="w-4 h-4" fill="none" viewBox="0 0 24 24" strokeWidth={2} stroke="currentColor">
+                  <path strokeLinecap="round" strokeLinejoin="round" d="M10.5 6a7.5 7.5 0 107.5 7.5h-7.5V6z" />
+                  <path strokeLinecap="round" strokeLinejoin="round" d="M13.5 10.5H21A7.5 7.5 0 0013.5 3v7.5z" />
+                </svg>
+                {t("dash.openDeepDive")}
+              </Link>
+              <button
+                type="button"
+                onClick={loadCommitHistory}
+                disabled={historyLoading}
+                className="inline-flex items-center gap-2 px-4 py-2 rounded-xl bg-indigo-50 dark:bg-indigo-950/30 text-indigo-600 dark:text-indigo-400 text-sm font-medium hover:bg-indigo-100 dark:hover:bg-indigo-950/50 transition-colors cursor-pointer disabled:opacity-50"
+              >
+                {historyLoading ? (
+                  <>
+                    <svg className="animate-spin h-4 w-4" viewBox="0 0 24 24" fill="none">
+                      <circle className="opacity-25" cx="12" cy="12" r="10" stroke="currentColor" strokeWidth="4" />
+                      <path className="opacity-75" fill="currentColor" d="M4 12a8 8 0 018-8V0C5.373 0 0 5.373 0 12h4z" />
+                    </svg>
+                    Commit geçmişi yükleniyor...
+                  </>
+                ) : (
+                  <>
+                    <svg className="w-4 h-4" fill="none" viewBox="0 0 24 24" strokeWidth={2} stroke="currentColor">
+                      <path strokeLinecap="round" strokeLinejoin="round" d="M12 6v6h4.5m4.5 0a9 9 0 11-18 0 9 9 0 0118 0z" />
+                    </svg>
+                    {showHistory && commitHistory ? t("repo.commitHistory.hide") : t("repo.commitHistory.load")}
+                  </>
+                )}
+              </button>
+            </div>
 
             {historyError && (
               <p className="text-red-500 text-xs mt-2">❌ {historyError}</p>

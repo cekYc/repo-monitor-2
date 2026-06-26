@@ -4,6 +4,30 @@
 
 ---
 
+## ~~🟣 Takip & Derinlemesine Analiz~~ ✅ Tamamlandı
+
+> Uygulamanın "Monitor" kimliğini gerçekten karşılayan iki ana sütun. Tek seferlik snapshot aracından, zaman içinde değişimi takip eden + repoları derinlemesine inceleyen bir araca dönüşüm.
+
+### ~~A. İzleme Listesi (Watchlist) + Zaman İçinde Diff~~ ✅
+- Client-side kalıcılık: `src/lib/watchlist.ts` — IndexedDB store (watches + snapshots, öğe başına 60 snapshot)
+- Kullanıcı/repo "izle" toggle'ı (`WatchButton`) — profil sonuçlarında ve repo kartlarında
+- `Dashboard` bileşeni: izlenenler listesi, "Tümünü kontrol et" / "Şimdi kontrol et"
+- Baseline → delta mantığı: ilk kontrol başlangıç kaydı, sonraki kontroller diff rozetleri
+- Diff: yeni/silinen repolar, yıldız/fork/issue/PR/sürüm/katkıcı deltası, dil oranı kayması, yeni sürüm etiketi
+- Sparkline trend çizgisi + son kontrol zamanı (relative)
+- Ana sayfada sekme navigasyonu (Analiz / İzleme)
+
+### ~~B. Derin Tek-Repo Analizi~~ ✅
+- `/api/repo-analysis` — `fetchRepoDeepAnalysis` (github.ts), SWR server cache
+- `/repo/[owner]/[repo]` özel sayfa + `RepoDeepDive` bileşeni
+- Bus factor (>%50 commit sahipliği) + düşük/sağlıklı değerlendirme
+- Katkıcı dağılımı (avatar + bar), commit temposu (günlük + güne göre + saate göre)
+- Sürüm zaman çizelgesi, gerçek issue/PR ayrımı (Link header pagination)
+- Proje sağlığı (README/CI/Lisans), dil dağılımı
+- Repo kartlarından "🔬 Derin analiz" linki
+
+---
+
 ## ~~🔴 Yüksek Öncelik~~ ✅ Tamamlandı
 
 ### ~~1. URL ile Paylaşılabilir Profiller~~ ✅

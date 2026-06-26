@@ -144,3 +144,7 @@ export function contributionsCacheKey(username: string): string {
 export function extensionsCacheKey(username: string, extensions: string): string {
   return `extensions:${username.toLowerCase()}:${extensions}`;
 }
+
+export function repoDeepCacheKey(owner: string, repo: string): string {
+  return `repo-deep:${owner.toLowerCase()}/${repo.toLowerCase()}`;
+}

@@ -295,6 +295,244 @@ export async function fetchRepoCommitHistory(
   };
 }
 
+// --- Deep Single-Repo Analysis ---
+
+export interface DeepContributor {
+  login: string;
+  avatar_url: string;
+  html_url: string;
+  contributions: number;
+}
+
+export interface DeepRelease {
+  tag: string;
+  name: string | null;
+  publishedAt: string;
+  url: string;
+}
+
+export interface DayCount {
+  date: string; // YYYY-MM-DD
+  count: number;
+}
+
+export interface RepoDeepAnalysis {
+  owner: string;
+  repo: string;
+  fullName: string;
+  description: string | null;
+  html_url: string;
+  homepage: string | null;
+  defaultBranch: string;
+  license: string | null;
+  topics: string[];
+  isArchived: boolean;
+  createdAt: string;
+  updatedAt: string;
+  pushedAt: string;
+  // headline metrics
+  stars: number;
+  forks: number;
+  watchers: number;
+  openIssues: number;
+  openPRs: number;
+  sizeKb: number;
+  // languages
+  languages: { name: string; value: number; bytes: number }[];
+  totalBytes: number;
+  // contributors + bus factor
+  contributors: DeepContributor[];
+  contributorCount: number;
+  busFactor: number; // # of contributors that together own >50% of commits
+  busFactorPct: number; // their combined share (0-100)
+  // commit activity (derived from recent commits)
+  commitActivity: DayCount[];
+  recentCommits: number; // commits in the analysed window
+  windowDays: number;
+  commitsByWeekday: number[]; // length 7, Sun..Sat
+  commitsByHour: number[]; // length 24
+  lastCommitDate: string | null;
+  // releases
+  releases: DeepRelease[];
+  releaseCount: number;
+  // hygiene
+  hasReadme: boolean;
+  hasCI: boolean;
+}
+
+function parseLastPage(linkHeader: string | undefined): number | null {
+  if (!linkHeader) return null;
+  const match = linkHeader.match(/[?&]page=(\d+)>;\s*rel="last"/);
+  return match ? parseInt(match[1], 10) : null;
+}
+
+export async function fetchRepoDeepAnalysis(
+  owner: string,
+  repo: string,
+  token?: string
+): Promise<RepoDeepAnalysis> {
+  const octokit = token ? new Octokit({ auth: token }) : new Octokit();
+
+  const { data: r } = await octokit.repos.get({ owner, repo });
+
+  // Run the independent calls in parallel; each guarded so one failure
+  // doesn't sink the whole analysis.
+  const [languages, contributorsResult, commits, releaseInfo, openPRs, hasReadme, hasCI] =
+    await Promise.all([
+      octokit.repos
+        .listLanguages({ owner, repo })
+        .then((res) => res.data)
+        .catch(() => ({} as RepoLanguages)),
+      octokit.repos
+        .listContributors({ owner, repo, per_page: 100, anon: "0" })
+        .then((res) => res.data)
+        .catch(() => []),
+      octokit.repos
+        .listCommits({ owner, repo, per_page: 100 })
+        .then((res) => res.data)
+        .catch(() => []),
+      octokit.repos
+        .listReleases({ owner, repo, per_page: 100 })
+        .then((res) => res.data)
+        .catch(() => []),
+      octokit.pulls
+        .list({ owner, repo, state: "open", per_page: 1 })
+        .then((res) => {
+          const last = parseLastPage(res.headers.link);
+          if (last != null) return last;
+          return res.data.length;
+        })
+        .catch(() => 0),
+      octokit.repos
+        .getReadme({ owner, repo })
+        .then(() => true)
+        .catch(() => false),
+      octokit.repos
+        .getContent({ owner, repo, path: ".github/workflows" })
+        .then((res) => Array.isArray(res.data) && res.data.length > 0)
+        .catch(() => false),
+    ]);
+
+  // Languages → percentages
+  const totalBytes = Object.values(languages).reduce((s, b) => s + b, 0);
+  const languagePercentages = Object.entries(languages)
+    .map(([name, bytes]) => ({
+      name,
+      value: totalBytes > 0 ? Math.round((bytes / totalBytes) * 10000) / 100 : 0,
+      bytes,
+    }))
+    .sort((a, b) => b.value - a.value);
+
+  // Contributors + bus factor
+  const contributors: DeepContributor[] = contributorsResult
+    .map((c) => ({
+      login: c.login ?? "",
+      avatar_url: c.avatar_url ?? "",
+      html_url: c.html_url ?? "",
+      contributions: c.contributions ?? 0,
+    }))
+    .filter((c) => c.login !== "")
+    .sort((a, b) => b.contributions - a.contributions);
+
+  const totalContributions = contributors.reduce(
+    (s, c) => s + c.contributions,
+    0
+  );
+  let busFactor = 0;
+  let running = 0;
+  for (const c of contributors) {
+    running += c.contributions;
+    busFactor++;
+    if (totalContributions > 0 && running / totalContributions > 0.5) break;
+  }
+  const busFactorPct =
+    totalContributions > 0
+      ? Math.round((running / totalContributions) * 100)
+      : 0;
+
+  // Commit activity from the recent commit window
+  const dayMap = new Map<string, number>();
+  const commitsByWeekday = new Array(7).fill(0);
+  const commitsByHour = new Array(24).fill(0);
+  let oldestDate: number | null = null;
+  let newestDate: number | null = null;
+
+  for (const c of commits) {
+    const iso = c.commit.author?.date || c.commit.committer?.date;
+    if (!iso) continue;
+    const d = new Date(iso);
+    const ts = d.getTime();
+    if (oldestDate === null || ts < oldestDate) oldestDate = ts;
+    if (newestDate === null || ts > newestDate) newestDate = ts;
+    const dayKey = iso.substring(0, 10);
+    dayMap.set(dayKey, (dayMap.get(dayKey) ?? 0) + 1);
+    commitsByWeekday[d.getUTCDay()]++;
+    commitsByHour[d.getUTCHours()]++;
+  }
+
+  const commitActivity: DayCount[] = Array.from(dayMap.entries())
+    .map(([date, count]) => ({ date, count }))
+    .sort((a, b) => a.date.localeCompare(b.date));
+
+  const windowDays =
+    oldestDate !== null && newestDate !== null
+      ? Math.max(
+          1,
+          Math.round((newestDate - oldestDate) / (1000 * 60 * 60 * 24))
+        )
+      : 0;
+
+  // Releases
+  const releases: DeepRelease[] = releaseInfo
+    .slice(0, 8)
+    .map((rel) => ({
+      tag: rel.tag_name,
+      name: rel.name ?? null,
+      publishedAt: rel.published_at ?? rel.created_at ?? "",
+      url: rel.html_url,
+    }));
+
+  const openIssues = Math.max(0, (r.open_issues_count ?? 0) - openPRs);
+
+  return {
+    owner,
+    repo,
+    fullName: r.full_name,
+    description: r.description,
+    html_url: r.html_url,
+    homepage: r.homepage || null,
+    defaultBranch: r.default_branch,
+    license: r.license?.name ?? null,
+    topics: r.topics ?? [],
+    isArchived: r.archived ?? false,
+    createdAt: r.created_at ?? "",
+    updatedAt: r.updated_at ?? "",
+    pushedAt: r.pushed_at ?? "",
+    stars: r.stargazers_count ?? 0,
+    forks: r.forks_count ?? 0,
+    watchers: r.subscribers_count ?? r.watchers_count ?? 0,
+    openIssues,
+    openPRs,
+    sizeKb: r.size ?? 0,
+    languages: languagePercentages,
+    totalBytes,
+    contributors: contributors.slice(0, 20),
+    contributorCount: contributors.length,
+    busFactor,
+    busFactorPct,
+    commitActivity,
+    recentCommits: commits.length,
+    windowDays,
+    commitsByWeekday,
+    commitsByHour,
+    lastCommitDate: newestDate !== null ? new Date(newestDate).toISOString() : null,
+    releases,
+    releaseCount: releaseInfo.length,
+    hasReadme,
+    hasCI,
+  };
+}
+
 // --- Organization Analysis ---
 
 export interface OrgProfile {

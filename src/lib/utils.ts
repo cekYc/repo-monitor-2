@@ -67,6 +67,32 @@ export function formatDate(dateStr: string): string {
   });
 }
 
+// Compact relative time, e.g. "3h ago" / "3sa önce". Falls back to a date.
+export function formatRelative(timestamp: number, locale: "tr" | "en"): string {
+  const diff = Date.now() - timestamp;
+  const sec = Math.floor(diff / 1000);
+  const min = Math.floor(sec / 60);
+  const hr = Math.floor(min / 60);
+  const day = Math.floor(hr / 24);
+
+  if (locale === "tr") {
+    if (sec < 60) return "az önce";
+    if (min < 60) return `${min} dk önce`;
+    if (hr < 24) return `${hr} sa önce`;
+    if (day < 30) return `${day} gün önce`;
+    return formatDate(new Date(timestamp).toISOString());
+  }
+  if (sec < 60) return "just now";
+  if (min < 60) return `${min}m ago`;
+  if (hr < 24) return `${hr}h ago`;
+  if (day < 30) return `${day}d ago`;
+  return new Date(timestamp).toLocaleDateString("en-US", {
+    year: "numeric",
+    month: "short",
+    day: "numeric",
+  });
+}
+
 // File extension to language mapping (GitHub Linguist-compatible)
 const EXT_TO_LANGUAGE: Record<string, string> = {
   // JavaScript / TypeScript

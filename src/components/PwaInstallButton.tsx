@@ -28,10 +28,13 @@ export default function PwaInstallButton() {
 
     window.addEventListener("beforeinstallprompt", handler);
 
-    // Check if already installed
-    if (window.matchMedia("(display-mode: standalone)").matches) {
-      setInstalled(true);
-    }
+    // Check if already installed (client-only detection)
+    const checkInstalled = () => {
+      if (window.matchMedia("(display-mode: standalone)").matches) {
+        setInstalled(true);
+      }
+    };
+    checkInstalled();
 
     return () => window.removeEventListener("beforeinstallprompt", handler);
   }, []);

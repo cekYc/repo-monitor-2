@@ -17,6 +17,8 @@ import PwaInstallButton from "@/components/PwaInstallButton";
 import HealthScore from "@/components/HealthScore";
 import DeveloperPersona from "@/components/DeveloperPersona";
 import CustomExtensionScanner from "@/components/CustomExtensionScanner";
+import Dashboard from "@/components/Dashboard";
+import WatchButton from "@/components/WatchButton";
 import { useLocale } from "@/components/LocaleProvider";
 import { UserAnalysis } from "@/lib/github";
 
@@ -123,6 +125,7 @@ function HomeContent() {
   const [excludedRepos, setExcludedRepos] = useState<Set<string>>(new Set());
   const [progress, setProgress] = useState<ProgressInfo | null>(null);
   const [recentSearches, setRecentSearches] = useState<RecentSearch[]>([]);
+  const [view, setView] = useState<"analyze" | "watchlist">("analyze");
   const autoSearchDone = useRef(false);
 
   // Repo export selection state
@@ -324,6 +327,13 @@ function HomeContent() {
     handleSearch(username, token);
   }, [handleSearch]);
 
+  // From the watchlist: jump to the Analyze tab and run analysis for a user.
+  const handleAnalyzeUser = useCallback((login: string) => {
+    setView("analyze");
+    const savedToken = localStorage.getItem("repo-monitor-gh-token") || "";
+    handleSearch(login, savedToken);
+  }, [handleSearch]);
+
   // Compare handler
   const handleCompare = useCallback(async (username: string, token: string) => {
     setCompareLoading(true);
@@ -415,6 +425,36 @@ function HomeContent() {
       </header>
 
       <main className="max-w-6xl mx-auto px-4 pb-16 space-y-8">
+        {/* Tab navigation */}
+        <div className="flex justify-center">
+          <div className="inline-flex rounded-xl bg-gray-100 dark:bg-gray-800 p-1">
+            <button
+              onClick={() => setView("analyze")}
+              className={`px-5 py-2 rounded-lg text-sm font-medium transition-colors cursor-pointer ${
+                view === "analyze"
+                  ? "bg-white dark:bg-gray-700 text-indigo-600 dark:text-indigo-400 shadow-sm"
+                  : "text-gray-500 dark:text-gray-400 hover:text-gray-700 dark:hover:text-gray-200"
+              }`}
+            >
+              {t("nav.analyze")}
+            </button>
+            <button
+              onClick={() => setView("watchlist")}
+              className={`px-5 py-2 rounded-lg text-sm font-medium transition-colors cursor-pointer ${
+                view === "watchlist"
+                  ? "bg-white dark:bg-gray-700 text-indigo-600 dark:text-indigo-400 shadow-sm"
+                  : "text-gray-500 dark:text-gray-400 hover:text-gray-700 dark:hover:text-gray-200"
+              }`}
+            >
+              {t("nav.watchlist")}
+            </button>
+          </div>
+        </div>
+
+        {view === "watchlist" ? (
+          <Dashboard onAnalyzeUser={handleAnalyzeUser} />
+        ) : (
+        <>
         <SearchForm
           onSearch={handleSearch}
           onCompare={handleCompare}
@@ -503,6 +543,16 @@ function HomeContent() {
                 </button>
               </div>
             )}
+
+            {/* Watch this profile */}
+            <div className="flex items-center justify-end gap-2">
+              <span className="text-xs text-gray-400">{t("dash.subtitle")}</span>
+              <WatchButton
+                type="user"
+                label={analysis.user.login}
+                avatarUrl={analysis.user.avatar_url}
+              />
+            </div>
 
             <OverallStats
               analysis={analysis}
@@ -682,6 +732,8 @@ function HomeContent() {
               </div>
             )}
           </>
+        )}
+        </>
         )}
       </main>
 

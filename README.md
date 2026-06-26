@@ -34,6 +34,22 @@ GitHub profiles show a tiny language bar, but it doesn't tell you much. If you w
 
 ## Features
 
+### 📌 Tracking & Monitoring _(new)_
+- **Watchlist** — "Watch" any user or repo; your list lives in the browser (IndexedDB), no account needed
+- **Change Diffs** — Every check is snapshotted and compared to the last one: new repos, star/fork growth, new releases, open issue/PR shifts, and language-share movement appear as compact change chips
+- **Baseline → Delta** — First check records a baseline; subsequent checks surface exactly what changed since then
+- **Sparklines & History** — Per-item trend line over the last snapshots (up to 60 kept per item)
+- **Check All / Check Now** — Refresh the whole list or a single item on demand (rate-limit friendly, sequential)
+
+### 🔬 Deep Repo Analysis _(new)_
+- **Dedicated repo page** — `/repo/{owner}/{repo}` with everything GitHub doesn't show on one screen
+- **Bus Factor** — How many contributors own >50% of all commits, with a low/healthy verdict
+- **Contributor Breakdown** — Top contributors with avatars and contribution bars
+- **Commit Cadence** — Recent daily activity + commits by weekday + by hour (UTC)
+- **Releases Timeline** — Latest releases with dates and total release count
+- **Issue / PR Split** — Real open-issue vs open-PR counts (PRs counted via pagination headers)
+- **Project Hygiene** — README / CI / License presence, archived flag, creation & last-commit dates
+
 ### Authentication
 - **GitHub OAuth Login** — Sign in with your GitHub account via OAuth 2.0
 - **Private Repository Access** — When signed in as yourself, your private repos are included in the analysis
@@ -153,6 +169,7 @@ Open [http://localhost:3000](http://localhost:3000) in your browser.
 | `GET /api/analyze?username=` | Full user analysis (JSON) — reads token from session cookie |
 | `GET /api/analyze-stream?username=` | SSE streaming analysis with progress |
 | `GET /api/analyze-org?org=` | Organization analysis |
+| `GET /api/repo-analysis?owner=&repo=` | Deep single-repo analysis (contributors, bus factor, commit cadence, releases, hygiene) |
 | `GET /api/badge/{username}` | SVG language badge (1hr cache) |
 | `GET /api/contributions?username=` | 365-day contribution data |
 | `GET /api/suggestions?languages=` | Trending repo suggestions |

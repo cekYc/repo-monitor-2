@@ -57,14 +57,14 @@ export default function OrgAnalyzer({ token }: OrgAnalyzerProps) {
     })) ?? [];
 
   return (
-    <div className="bg-white dark:bg-gray-900 rounded-2xl shadow-lg border border-gray-200 dark:border-gray-800 overflow-hidden">
+    <div className="bg-surface rounded-2xl border border-hairline overflow-hidden">
       {/* Toggle Header */}
       <button
         type="button"
         onClick={() => setExpanded(!expanded)}
         className="w-full flex items-center justify-between p-5 text-left hover:bg-gray-50 dark:hover:bg-gray-800/50 transition-colors cursor-pointer"
       >
-        <h2 className="text-lg font-bold text-gray-800 dark:text-gray-100">
+        <h2 className="text-lg font-bold text-fg">
           {t("org.title")}
         </h2>
         <svg
@@ -79,7 +79,7 @@ export default function OrgAnalyzer({ token }: OrgAnalyzerProps) {
       </button>
 
       {expanded && (
-        <div className="px-5 pb-5 space-y-4 border-t border-gray-100 dark:border-gray-800 pt-4">
+        <div className="px-5 pb-5 space-y-4 border-t border-hairline pt-4">
           <div className="flex gap-2">
             <input
               type="text"
@@ -87,7 +87,7 @@ export default function OrgAnalyzer({ token }: OrgAnalyzerProps) {
               value={orgName}
               onChange={(e) => setOrgName(e.target.value)}
               onKeyDown={(e) => e.key === "Enter" && handleAnalyze()}
-              className="flex-1 px-4 py-2.5 rounded-xl border border-gray-300 dark:border-gray-700 bg-gray-50 dark:bg-gray-800 text-gray-800 dark:text-gray-200 placeholder-gray-400 focus:ring-2 focus:ring-indigo-500 focus:border-transparent outline-none transition-all text-sm"
+              className="flex-1 px-4 py-2.5 rounded-xl border border-hairline bg-panel text-fg placeholder-gray-400 focus:ring-2 focus:ring-indigo-500 focus:border-transparent outline-none transition-all text-sm"
             />
             <button
               onClick={handleAnalyze}
@@ -117,7 +117,7 @@ export default function OrgAnalyzer({ token }: OrgAnalyzerProps) {
           {analysis && (
             <div className="space-y-6">
               {/* Org Profile Card */}
-              <div className="bg-linear-to-r from-teal-600 via-cyan-600 to-blue-500 rounded-2xl p-6 text-white shadow-lg">
+              <div className="bg-linear-to-r from-teal-600 via-cyan-600 to-blue-500 rounded-2xl p-6 text-white">
                 <div className="flex items-center gap-4">
                   <Image
                     src={analysis.org.avatar_url}
@@ -160,7 +160,7 @@ export default function OrgAnalyzer({ token }: OrgAnalyzerProps) {
               {/* Charts */}
               <div className="grid grid-cols-1 lg:grid-cols-2 gap-6">
                 <div>
-                  <h3 className="text-sm font-semibold text-gray-500 dark:text-gray-400 mb-3 uppercase tracking-wide">
+                  <h3 className="text-sm font-semibold text-muted mb-3 uppercase tracking-wide">
                     {t("stats.pie.title")}
                   </h3>
                   <ResponsiveContainer width="100%" height={300}>
@@ -193,7 +193,7 @@ export default function OrgAnalyzer({ token }: OrgAnalyzerProps) {
                 </div>
 
                 <div>
-                  <h3 className="text-sm font-semibold text-gray-500 dark:text-gray-400 mb-3 uppercase tracking-wide">
+                  <h3 className="text-sm font-semibold text-muted mb-3 uppercase tracking-wide">
                     {t("stats.bar.title")}
                   </h3>
                   <ResponsiveContainer width="100%" height={Math.max(300, barData.length * 28)}>

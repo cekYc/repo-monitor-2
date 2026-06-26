@@ -254,8 +254,27 @@ export const translations = {
   "extensions.saved": { tr: "Uzantılar kaydedildi", en: "Extensions saved" },
 
   // --- Navigation / Tabs ---
-  "nav.analyze": { tr: "🔍 Analiz", en: "🔍 Analyze" },
-  "nav.watchlist": { tr: "📌 İzleme", en: "📌 Watchlist" },
+  "nav.analyze": { tr: "Analiz", en: "Analyze" },
+  "nav.watchlist": { tr: "İzleme", en: "Watchlist" },
+  "nav.overview": { tr: "Genel Bakış", en: "Overview" },
+  "nav.compare": { tr: "Karşılaştır", en: "Compare" },
+  "nav.searchPlaceholder": { tr: "Kullanıcı, org veya owner/repo ara…", en: "Search a user, org, or owner/repo…" },
+  "nav.tagline": { tr: "GitHub takip & analiz", en: "GitHub tracking & analysis" },
+
+  // --- Overview ---
+  "overview.welcomeTitle": { tr: "GitHub'ı izlemeye başla", en: "Start monitoring GitHub" },
+  "overview.welcomeBody": {
+    tr: "Bir kullanıcı veya repo ara, analiz et ve değişimleri zaman içinde takip etmek için izlemeye al.",
+    en: "Search a user or repo, analyze it, and add it to your watchlist to track changes over time.",
+  },
+  "overview.watching": { tr: "İzlenenler", en: "Watching" },
+  "overview.recent": { tr: "Son aramalar", en: "Recent searches" },
+  "overview.quickAnalyze": { tr: "Hızlı analiz", en: "Quick analyze" },
+  "overview.viewAll": { tr: "Tümünü gör", en: "View all" },
+  "overview.changesPending": { tr: "değişiklik bekliyor", en: "with changes" },
+  "overview.allQuiet": { tr: "Her şey sakin", en: "All quiet" },
+  "overview.noWatches": { tr: "Henüz izlenen yok", en: "Nothing watched yet" },
+  "analyze.modules": { tr: "Gelişmiş modüller", en: "Advanced modules" },
 
   // --- Watch Button ---
   "watch.add": { tr: "İzle", en: "Watch" },

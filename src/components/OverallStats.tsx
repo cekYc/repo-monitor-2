@@ -155,57 +155,42 @@ export default function OverallStats({ analysis, excludedRepos, onClearExclusion
 
       <div ref={exportRef} className="space-y-8">
       {/* User Profile Card */}
-      <div className="bg-linear-to-r from-indigo-600 via-purple-600 to-pink-500 rounded-2xl p-8 text-white shadow-xl">
-        <div className="flex flex-col md:flex-row items-center gap-6">
+      <div className="bg-surface rounded-2xl p-6 border border-hairline">
+        <div className="flex flex-col sm:flex-row items-center sm:items-start gap-5">
           <Image
             src={user.avatar_url}
             alt={user.login}
-            width={96}
-            height={96}
-            className="w-24 h-24 rounded-full border-4 border-white/30 shadow-lg"
+            width={80}
+            height={80}
+            className="w-20 h-20 rounded-full shrink-0"
           />
-          <div className="text-center md:text-left">
-            <h1 className="text-3xl font-bold">
-              {user.name || user.login}
-            </h1>
+          <div className="text-center sm:text-left min-w-0 flex-1">
+            <h1 className="text-2xl font-semibold text-fg">{user.name || user.login}</h1>
             <a
               href={user.html_url}
               target="_blank"
               rel="noopener noreferrer"
-              className="text-white/80 hover:text-white transition-colors"
+              className="text-muted hover:text-accent-text transition-colors text-sm"
             >
               @{user.login}
             </a>
-            {user.bio && (
-              <p className="mt-2 text-white/90 max-w-xl">{user.bio}</p>
-            )}
-            <div className="flex flex-wrap gap-6 mt-4 justify-center md:justify-start">
-              <div>
-                <span className="text-2xl font-bold">{totalRepos}</span>
-                <span className="text-white/70 ml-1 text-sm">{t("stats.repo")}</span>
-              </div>
-              <div>
-                <span className="text-2xl font-bold">{user.followers}</span>
-                <span className="text-white/70 ml-1 text-sm">{t("stats.followers")}</span>
-              </div>
-              <div>
-                <span className="text-2xl font-bold">{user.following}</span>
-                <span className="text-white/70 ml-1 text-sm">{t("stats.following")}</span>
-              </div>
-              <div>
-                <span className="text-2xl font-bold">
-                  {formatBytes(totalBytes)}
-                </span>
-                <span className="text-white/70 ml-1 text-sm">{t("stats.totalCode")}</span>
-              </div>
-              <div>
-                <span className="text-2xl font-bold">
-                  {overallLanguages.length}
-                </span>
-                <span className="text-white/70 ml-1 text-sm">{t("stats.language")}</span>
-              </div>
-            </div>
+            {user.bio && <p className="mt-2 text-muted max-w-xl text-sm">{user.bio}</p>}
           </div>
+        </div>
+
+        <div className="grid grid-cols-2 sm:grid-cols-5 gap-3 mt-6 pt-5 border-t border-hairline">
+          {[
+            { v: totalRepos, l: t("stats.repo") },
+            { v: user.followers, l: t("stats.followers") },
+            { v: user.following, l: t("stats.following") },
+            { v: formatBytes(totalBytes), l: t("stats.totalCode") },
+            { v: overallLanguages.length, l: t("stats.language") },
+          ].map((s, i) => (
+            <div key={i} className="text-center sm:text-left">
+              <div className="text-xl font-semibold text-fg tnum">{typeof s.v === "number" ? s.v.toLocaleString() : s.v}</div>
+              <div className="text-xs text-faint mt-0.5">{s.l}</div>
+            </div>
+          ))}
         </div>
       </div>
 
@@ -231,14 +216,14 @@ export default function OverallStats({ analysis, excludedRepos, onClearExclusion
       )}
 
       {/* Overall Language Distribution */}
-      <div className="bg-white dark:bg-gray-900 rounded-2xl shadow-lg p-6 border border-gray-200 dark:border-gray-800">
-        <h2 className="text-xl font-bold mb-6 text-gray-800 dark:text-gray-100">
+      <div className="bg-surface rounded-2xl p-6 border border-hairline">
+        <h2 className="text-base font-semibold mb-6 text-fg">
           {t("stats.distribution.title")}
         </h2>
         <div className="grid grid-cols-1 lg:grid-cols-2 gap-8">
           {/* Pie Chart */}
           <div>
-            <h3 className="text-sm font-semibold text-gray-500 dark:text-gray-400 mb-3 uppercase tracking-wide">
+            <h3 className="text-xs font-semibold text-faint mb-3 uppercase tracking-wide">
               {t("stats.pie.title")}
             </h3>
             <ResponsiveContainer width="100%" height={350}>
@@ -282,7 +267,7 @@ export default function OverallStats({ analysis, excludedRepos, onClearExclusion
 
           {/* Bar Chart */}
           <div>
-            <h3 className="text-sm font-semibold text-gray-500 dark:text-gray-400 mb-3 uppercase tracking-wide">
+            <h3 className="text-xs font-semibold text-faint mb-3 uppercase tracking-wide">
               {t("stats.bar.title")}
             </h3>
             <ResponsiveContainer width="100%" height={Math.max(350, barData.length * 36)}>
@@ -331,23 +316,23 @@ export default function OverallStats({ analysis, excludedRepos, onClearExclusion
 
         {/* Language Legend Table */}
         <div className="mt-6">
-          <h3 className="text-sm font-semibold text-gray-500 dark:text-gray-400 mb-3 uppercase tracking-wide">
+          <h3 className="text-xs font-semibold text-faint mb-3 uppercase tracking-wide">
             {t("stats.table.title")}
           </h3>
           <div className="overflow-x-auto">
             <table className="w-full text-sm">
               <thead>
-                <tr className="border-b border-gray-200 dark:border-gray-700">
-                  <th className="py-2 px-3 text-left font-semibold text-gray-600 dark:text-gray-300">
+                <tr className="border-b border-hairline">
+                  <th className="py-2 px-3 text-left font-semibold text-muted">
                     {t("stats.table.lang")}
                   </th>
-                  <th className="py-2 px-3 text-right font-semibold text-gray-600 dark:text-gray-300">
+                  <th className="py-2 px-3 text-right font-semibold text-muted">
                     {t("stats.table.percent")}
                   </th>
-                  <th className="py-2 px-3 text-right font-semibold text-gray-600 dark:text-gray-300">
+                  <th className="py-2 px-3 text-right font-semibold text-muted">
                     {t("stats.table.size")}
                   </th>
-                  <th className="py-2 px-3 text-left font-semibold text-gray-600 dark:text-gray-300 w-1/2">
+                  <th className="py-2 px-3 text-left font-semibold text-muted w-1/2">
                     {t("stats.table.ratio")}
                   </th>
                 </tr>
@@ -356,7 +341,7 @@ export default function OverallStats({ analysis, excludedRepos, onClearExclusion
                 {overallLanguages.map((lang, i) => (
                   <tr
                     key={lang.name}
-                    className="border-b border-gray-100 dark:border-gray-800 hover:bg-gray-50 dark:hover:bg-gray-800/50 transition-colors"
+                    className="border-b border-hairline hover:bg-panel transition-colors"
                   >
                     <td className="py-2 px-3">
                       <div className="flex items-center gap-2">
@@ -366,19 +351,19 @@ export default function OverallStats({ analysis, excludedRepos, onClearExclusion
                             backgroundColor: getLanguageColor(lang.name, i),
                           }}
                         />
-                        <span className="font-medium text-gray-800 dark:text-gray-200">
+                        <span className="font-medium text-fg">
                           {lang.name}
                         </span>
                       </div>
                     </td>
-                    <td className="py-2 px-3 text-right font-mono text-gray-700 dark:text-gray-300">
+                    <td className="py-2 px-3 text-right font-mono text-fg">
                       %{lang.value}
                     </td>
-                    <td className="py-2 px-3 text-right font-mono text-gray-700 dark:text-gray-300">
+                    <td className="py-2 px-3 text-right font-mono text-fg">
                       {formatBytes(lang.bytes)}
                     </td>
                     <td className="py-2 px-3">
-                      <div className="w-full bg-gray-200 dark:bg-gray-700 rounded-full h-2.5">
+                      <div className="w-full bg-panel rounded-full h-2.5">
                         <div
                           className="h-2.5 rounded-full transition-all duration-500"
                           style={{
@@ -398,8 +383,8 @@ export default function OverallStats({ analysis, excludedRepos, onClearExclusion
 
       {/* Insights Panel */}
       {insights && (
-        <div className="bg-white dark:bg-gray-900 rounded-2xl shadow-lg p-6 border border-gray-200 dark:border-gray-800">
-          <h2 className="text-xl font-bold mb-6 text-gray-800 dark:text-gray-100">
+        <div className="bg-surface rounded-2xl p-6 border border-hairline">
+          <h2 className="text-base font-semibold mb-6 text-fg">
             {t("insights.title")}
           </h2>
           <div className="grid grid-cols-1 sm:grid-cols-2 lg:grid-cols-3 gap-4">
@@ -525,20 +510,20 @@ function InsightCard({
   color?: string;
 }) {
   return (
-    <div className="bg-gray-50 dark:bg-gray-800/50 rounded-xl p-4 border border-gray-100 dark:border-gray-800 hover:border-indigo-200 dark:hover:border-indigo-800 transition-colors">
+    <div className="bg-panel rounded-xl p-4 transition-colors">
       <div className="flex items-start gap-3">
         <span className="text-xl shrink-0">{icon}</span>
         <div className="min-w-0">
-          <p className="text-xs font-medium text-gray-500 dark:text-gray-400 uppercase tracking-wide">
+          <p className="text-xs font-medium text-faint uppercase tracking-wide">
             {label}
           </p>
           <p
-            className="text-lg font-bold text-gray-800 dark:text-gray-100 truncate mt-0.5"
+            className="text-lg font-semibold text-fg truncate mt-0.5 tnum"
             style={color ? { color } : undefined}
           >
             {value}
           </p>
-          <p className="text-xs text-gray-400 dark:text-gray-500 mt-0.5 truncate">
+          <p className="text-xs text-faint mt-0.5 truncate">
             {detail}
           </p>
         </div>

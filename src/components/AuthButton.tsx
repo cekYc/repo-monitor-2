@@ -40,7 +40,7 @@ export default function AuthButton() {
 
   if (loading) {
     return (
-      <div className="h-9 w-32 animate-pulse rounded-lg bg-gray-200 dark:bg-gray-700" />
+      <div className="h-9 w-28 animate-pulse rounded-lg bg-panel" />
     );
   }
 
@@ -50,21 +50,18 @@ export default function AuthButton() {
         <Image
           src={user.avatarUrl}
           alt={user.login}
-          width={28}
-          height={28}
-          className="rounded-full ring-2 ring-gray-300 dark:ring-gray-600"
+          width={26}
+          height={26}
+          className="rounded-full"
         />
-        <span className="text-sm font-medium text-gray-700 dark:text-gray-300">
+        <span className="text-sm font-medium text-fg hidden sm:inline">
           {user.login}
         </span>
-
-        {/* 4. FORM YERİNE DOĞRUDAN BUTON VE ONCLICK KULLAN */}
         <button
           onClick={handleSignOut}
           type="button"
-          className="rounded-lg border border-gray-300 px-3 py-1.5 text-xs font-medium text-gray-600
-                     hover:bg-gray-100 dark:border-gray-600 dark:text-gray-400
-                     dark:hover:bg-gray-800 transition-colors"
+          className="rounded-lg border border-hairline px-2.5 py-1.5 text-xs font-medium text-muted
+                     hover:bg-panel hover:text-fg transition-colors cursor-pointer"
         >
           Çıkış
         </button>
@@ -75,9 +72,8 @@ export default function AuthButton() {
   return (
     <a
       href="/api/auth/signin"
-      className="flex items-center gap-2 rounded-lg bg-gray-900 px-4 py-2 text-sm font-medium
-                 text-white hover:bg-gray-700 dark:bg-white dark:text-gray-900
-                 dark:hover:bg-gray-200 transition-colors"
+      className="flex items-center gap-2 rounded-lg bg-accent px-3.5 py-2 text-sm font-medium
+                 text-accent-fg hover:bg-accent-hover transition-colors"
     >
       <svg
         viewBox="0 0 24 24"

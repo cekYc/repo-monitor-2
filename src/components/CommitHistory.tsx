@@ -85,7 +85,7 @@ export default function CommitHistory({ history }: CommitHistoryProps) {
     <div className="space-y-4">
       {/* Area Chart */}
       <div>
-        <h4 className="text-xs font-semibold text-gray-500 dark:text-gray-400 mb-2 uppercase tracking-wide">
+        <h4 className="text-xs font-semibold text-muted mb-2 uppercase tracking-wide">
           {t("commit.timeline")} ({snapshots.length} {t("commit.commit")})
         </h4>
         <ResponsiveContainer width="100%" height={chartData.length > 10 ? 320 : 280}>
@@ -135,8 +135,8 @@ export default function CommitHistory({ history }: CommitHistoryProps) {
                 const commit = payload[0]?.payload;
                 if (!commit) return null;
                 return (
-                  <div className="bg-white dark:bg-gray-900 border border-gray-200 dark:border-gray-700 rounded-xl p-3 shadow-lg text-xs max-w-xs">
-                    <p className="font-bold text-gray-800 dark:text-gray-100 mb-1">
+                  <div className="bg-surface border border-hairline rounded-xl p-3 text-xs max-w-xs">
+                    <p className="font-bold text-fg mb-1">
                       {commit.label} — {commit.date}
                     </p>
                     <p className="text-gray-400 mb-2 truncate">
@@ -156,7 +156,7 @@ export default function CommitHistory({ history }: CommitHistoryProps) {
                                 className="w-2 h-2 rounded-full inline-block"
                                 style={{ backgroundColor: p.color }}
                               />
-                              <span className="text-gray-700 dark:text-gray-300">
+                              <span className="text-fg">
                                 {p.dataKey as string}
                               </span>
                             </div>
@@ -167,7 +167,7 @@ export default function CommitHistory({ history }: CommitHistoryProps) {
                         ))}
                     </div>
                     {commit?.totalBytes && (
-                      <p className="text-gray-400 mt-2 pt-1 border-t border-gray-100 dark:border-gray-800">
+                      <p className="text-gray-400 mt-2 pt-1 border-t border-hairline">
                         {t("commit.total")}: {formatBytes(commit.totalBytes as number)}
                       </p>
                     )}
@@ -201,7 +201,7 @@ export default function CommitHistory({ history }: CommitHistoryProps) {
 
       {/* Change Summary */}
       <div>
-        <h4 className="text-xs font-semibold text-gray-500 dark:text-gray-400 mb-2 uppercase tracking-wide">
+        <h4 className="text-xs font-semibold text-muted mb-2 uppercase tracking-wide">
           {t("commit.changes")}
         </h4>
         <div className="grid grid-cols-2 sm:grid-cols-3 md:grid-cols-4 gap-2">
@@ -210,14 +210,14 @@ export default function CommitHistory({ history }: CommitHistoryProps) {
             .map((c, i) => (
               <div
                 key={c.lang}
-                className="bg-white dark:bg-gray-900 rounded-lg p-2.5 border border-gray-100 dark:border-gray-800 text-xs"
+                className="bg-surface rounded-lg p-2.5 border border-hairline text-xs"
               >
                 <div className="flex items-center gap-1.5 mb-1">
                   <span
                     className="w-2.5 h-2.5 rounded-full inline-block"
                     style={{ backgroundColor: getLanguageColor(c.lang, i) }}
                   />
-                  <span className="font-semibold text-gray-700 dark:text-gray-300 truncate">
+                  <span className="font-semibold text-fg truncate">
                     {c.lang}
                   </span>
                 </div>
@@ -226,7 +226,7 @@ export default function CommitHistory({ history }: CommitHistoryProps) {
                     {c.first.toFixed(1)}%
                   </span>
                   <span className="text-gray-300 dark:text-gray-600">→</span>
-                  <span className="text-gray-700 dark:text-gray-200 font-mono font-bold">
+                  <span className="text-fg font-mono font-bold">
                     {c.last.toFixed(1)}%
                   </span>
                   {c.diff !== 0 && (
@@ -258,7 +258,7 @@ export default function CommitHistory({ history }: CommitHistoryProps) {
                   lang === otherLabel ? "#9ca3af" : getLanguageColor(lang, i),
               }}
             />
-            <span className="text-gray-600 dark:text-gray-400">{lang}</span>
+            <span className="text-muted">{lang}</span>
           </div>
         ))}
       </div>

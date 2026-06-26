@@ -82,7 +82,7 @@ export default function HealthScore({ username, token }: HealthScoreProps) {
   const config = GRADE_CONFIG[gradeKey];
 
   return (
-    <div className="bg-white dark:bg-gray-900 rounded-2xl shadow-lg border border-gray-200 dark:border-gray-800 overflow-hidden">
+    <div className="bg-surface rounded-2xl border border-hairline overflow-hidden">
       {/* Header — always visible */}
       <button
         onClick={fetchHealth}
@@ -90,7 +90,7 @@ export default function HealthScore({ username, token }: HealthScoreProps) {
         className="w-full px-5 py-4 flex items-center justify-between cursor-pointer hover:bg-gray-50 dark:hover:bg-gray-800/50 transition-colors"
       >
         <div className="flex items-center gap-3">
-          <span className="text-lg font-bold text-gray-800 dark:text-gray-100">
+          <span className="text-lg font-bold text-fg">
             {t("health.title")}
           </span>
           {data && (
@@ -117,7 +117,7 @@ export default function HealthScore({ username, token }: HealthScoreProps) {
 
       {/* Content */}
       {expanded && data && (
-        <div className="px-5 pb-5 space-y-5 border-t border-gray-100 dark:border-gray-800">
+        <div className="px-5 pb-5 space-y-5 border-t border-hairline">
           {/* Overall Score Gauge */}
           <div className="flex flex-col items-center py-4">
             <div className={`relative w-32 h-32 rounded-full flex items-center justify-center ring-8 ${config.ring}`}>
@@ -162,12 +162,12 @@ export default function HealthScore({ username, token }: HealthScoreProps) {
               return (
                 <div
                   key={key}
-                  className="bg-gray-50 dark:bg-gray-800/50 rounded-xl p-3 text-center"
+                  className="bg-panel rounded-xl p-3 text-center"
                 >
-                  <div className="text-2xl font-bold text-gray-800 dark:text-gray-100">
+                  <div className="text-2xl font-bold text-fg">
                     {percentage}%
                   </div>
-                  <div className="text-xs text-gray-500 dark:text-gray-400 mt-1">
+                  <div className="text-xs text-muted mt-1">
                     {label}
                   </div>
                 </div>
@@ -177,7 +177,7 @@ export default function HealthScore({ username, token }: HealthScoreProps) {
 
           {/* Per-Repo Breakdown */}
           <div>
-            <h3 className="text-sm font-semibold text-gray-700 dark:text-gray-300 mb-3">
+            <h3 className="text-sm font-semibold text-fg mb-3">
               {t("health.repoBreakdown")}
             </h3>
             <div className="space-y-2 max-h-80 overflow-y-auto pr-1">
@@ -194,10 +194,10 @@ export default function HealthScore({ username, token }: HealthScoreProps) {
                 return (
                   <div
                     key={repo.name}
-                    className="flex items-center gap-3 bg-gray-50 dark:bg-gray-800/30 rounded-lg p-2.5"
+                    className="flex items-center gap-3 bg-panel/30 rounded-lg p-2.5"
                   >
                     <div className="flex-1 min-w-0">
-                      <span className="text-sm font-medium text-gray-800 dark:text-gray-200 truncate block">
+                      <span className="text-sm font-medium text-fg truncate block">
                         {repo.name}
                       </span>
                       <div className="flex gap-1.5 mt-1">
@@ -210,7 +210,7 @@ export default function HealthScore({ username, token }: HealthScoreProps) {
                       </div>
                     </div>
                     <div className="flex items-center gap-2 shrink-0">
-                      <div className="w-16 bg-gray-200 dark:bg-gray-700 rounded-full h-1.5">
+                      <div className="w-16 bg-panel rounded-full h-1.5">
                         <div
                           className={`h-1.5 rounded-full ${repoConfig.bg}`}
                           style={{ width: `${repo.score}%`, opacity: 0.8 }}

@@ -114,18 +114,18 @@ export default function CustomExtensionScanner({ username, token }: CustomExtens
   }, [username, token, extensions]);
 
   return (
-    <div className="bg-white dark:bg-gray-900 rounded-2xl shadow-lg border border-gray-200 dark:border-gray-800 overflow-hidden">
+    <div className="bg-surface rounded-2xl border border-hairline overflow-hidden">
       {/* Header */}
       <button
         onClick={() => setExpanded((v) => !v)}
         className="w-full px-5 py-4 flex items-center justify-between cursor-pointer hover:bg-gray-50 dark:hover:bg-gray-800/50 transition-colors"
       >
         <div className="flex items-center gap-3">
-          <span className="text-lg font-bold text-gray-800 dark:text-gray-100">
+          <span className="text-lg font-bold text-fg">
             {t("extensions.title")}
           </span>
           {extensions.length > 0 && (
-            <span className="text-xs px-2 py-0.5 rounded-full bg-gray-100 dark:bg-gray-800 text-gray-500 dark:text-gray-400">
+            <span className="text-xs px-2 py-0.5 rounded-full bg-panel text-muted">
               {extensions.map((e) => e.ext).join(", ")}
             </span>
           )}
@@ -139,16 +139,16 @@ export default function CustomExtensionScanner({ username, token }: CustomExtens
       </button>
 
       {expanded && (
-        <div className="px-5 pb-5 space-y-4 border-t border-gray-100 dark:border-gray-800">
+        <div className="px-5 pb-5 space-y-4 border-t border-hairline">
           {/* Description */}
-          <p className="text-sm text-gray-500 dark:text-gray-400 mt-3">
+          <p className="text-sm text-muted mt-3">
             {t("extensions.description")}
           </p>
 
           {/* Add Extension Form */}
           <div className="flex flex-wrap gap-2 items-end">
             <div className="flex-1 min-w-24">
-              <label className="text-xs text-gray-500 dark:text-gray-400 mb-1 block">
+              <label className="text-xs text-muted mb-1 block">
                 Extension
               </label>
               <input
@@ -156,11 +156,11 @@ export default function CustomExtensionScanner({ username, token }: CustomExtens
                 value={newExt}
                 onChange={(e) => setNewExt(e.target.value)}
                 placeholder={t("extensions.extPlaceholder")}
-                className="w-full px-3 py-2 rounded-lg border border-gray-300 dark:border-gray-700 bg-gray-50 dark:bg-gray-800 text-sm text-gray-800 dark:text-gray-200 outline-none focus:ring-2 focus:ring-indigo-500"
+                className="w-full px-3 py-2 rounded-lg border border-hairline bg-panel text-sm text-fg outline-none focus:ring-2 focus:ring-indigo-500"
               />
             </div>
             <div className="flex-1 min-w-28">
-              <label className="text-xs text-gray-500 dark:text-gray-400 mb-1 block">
+              <label className="text-xs text-muted mb-1 block">
                 Language
               </label>
               <input
@@ -168,18 +168,18 @@ export default function CustomExtensionScanner({ username, token }: CustomExtens
                 value={newLang}
                 onChange={(e) => setNewLang(e.target.value)}
                 placeholder={t("extensions.langPlaceholder")}
-                className="w-full px-3 py-2 rounded-lg border border-gray-300 dark:border-gray-700 bg-gray-50 dark:bg-gray-800 text-sm text-gray-800 dark:text-gray-200 outline-none focus:ring-2 focus:ring-indigo-500"
+                className="w-full px-3 py-2 rounded-lg border border-hairline bg-panel text-sm text-fg outline-none focus:ring-2 focus:ring-indigo-500"
               />
             </div>
             <div className="w-20">
-              <label className="text-xs text-gray-500 dark:text-gray-400 mb-1 block">
+              <label className="text-xs text-muted mb-1 block">
                 Color
               </label>
               <input
                 type="color"
                 value={newColor}
                 onChange={(e) => setNewColor(e.target.value)}
-                className="w-full h-9 rounded-lg border border-gray-300 dark:border-gray-700 cursor-pointer"
+                className="w-full h-9 rounded-lg border border-hairline cursor-pointer"
               />
             </div>
             <button
@@ -197,13 +197,13 @@ export default function CustomExtensionScanner({ username, token }: CustomExtens
               {extensions.map((ext) => (
                 <div
                   key={ext.ext}
-                  className="flex items-center gap-2 px-3 py-1.5 rounded-full border border-gray-200 dark:border-gray-700 bg-gray-50 dark:bg-gray-800/50"
+                  className="flex items-center gap-2 px-3 py-1.5 rounded-full border border-hairline bg-panel"
                 >
                   <div
                     className="w-3 h-3 rounded-full shrink-0"
                     style={{ backgroundColor: ext.color }}
                   />
-                  <span className="text-sm text-gray-800 dark:text-gray-200 font-mono">
+                  <span className="text-sm text-fg font-mono">
                     {ext.ext}
                   </span>
                   <span className="text-xs text-gray-500">→ {ext.lang}</span>
@@ -245,7 +245,7 @@ export default function CustomExtensionScanner({ username, token }: CustomExtens
           {/* Results */}
           {results && (
             <div className="space-y-3">
-              <h3 className="text-sm font-semibold text-gray-700 dark:text-gray-300">
+              <h3 className="text-sm font-semibold text-fg">
                 {t("extensions.results")} ({results.totalFilesFound} {t("extensions.files")})
               </h3>
 
@@ -258,7 +258,7 @@ export default function CustomExtensionScanner({ username, token }: CustomExtens
               {results.extensions.map((ext) => (
                 <div
                   key={ext.extension}
-                  className="border border-gray-200 dark:border-gray-700 rounded-xl overflow-hidden"
+                  className="border border-hairline rounded-xl overflow-hidden"
                 >
                   <button
                     onClick={() =>
@@ -271,7 +271,7 @@ export default function CustomExtensionScanner({ username, token }: CustomExtens
                         className="w-4 h-4 rounded-full shrink-0"
                         style={{ backgroundColor: ext.color }}
                       />
-                      <span className="font-mono text-sm font-medium text-gray-800 dark:text-gray-200">
+                      <span className="font-mono text-sm font-medium text-fg">
                         {ext.extension}
                       </span>
                       <span className="text-xs text-gray-500">→ {ext.language}</span>
@@ -298,7 +298,7 @@ export default function CustomExtensionScanner({ username, token }: CustomExtens
                           className="py-1 flex items-center gap-2 text-xs"
                         >
                           <span className="text-gray-400 font-mono">{f.repo}/</span>
-                          <span className="text-gray-600 dark:text-gray-300 font-mono truncate">
+                          <span className="text-muted font-mono truncate">
                             {f.path}
                           </span>
                         </div>

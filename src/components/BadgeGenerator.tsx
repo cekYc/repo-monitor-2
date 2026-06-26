@@ -34,11 +34,11 @@ export default function BadgeGenerator({ username, token }: BadgeGeneratorProps)
   };
 
   return (
-    <div className="bg-white dark:bg-gray-900 rounded-2xl shadow-lg p-6 border border-gray-200 dark:border-gray-800">
-      <h2 className="text-xl font-bold text-gray-800 dark:text-gray-100 mb-1">
+    <div className="bg-surface rounded-2xl p-6 border border-hairline">
+      <h2 className="text-xl font-bold text-fg mb-1">
         {t("badge.title")}
       </h2>
-      <p className="text-sm text-gray-500 dark:text-gray-400 mb-5">
+      <p className="text-sm text-muted mb-5">
         {t("badge.description")}
       </p>
 
@@ -47,7 +47,7 @@ export default function BadgeGenerator({ username, token }: BadgeGeneratorProps)
         <h3 className="text-xs font-semibold text-gray-400 dark:text-gray-500 uppercase tracking-wide mb-2">
           {t("badge.preview")}
         </h3>
-        <div className="bg-gray-50 dark:bg-gray-800 rounded-xl p-4 border border-gray-100 dark:border-gray-800 overflow-x-auto">
+        <div className="bg-panel rounded-xl p-4 border border-hairline overflow-x-auto">
           {/* eslint-disable-next-line @next/next/no-img-element */}
           <img src={badgePreviewUrl} alt={`${username}'s Languages`} className="max-w-full" />
         </div>
@@ -66,7 +66,7 @@ export default function BadgeGenerator({ username, token }: BadgeGeneratorProps)
             {copied === "md" ? `✓ ${t("badge.copied")}` : t("badge.copy")}
           </button>
         </div>
-        <pre className="bg-gray-50 dark:bg-gray-800 rounded-lg p-3 text-xs font-mono text-gray-700 dark:text-gray-300 overflow-x-auto border border-gray-100 dark:border-gray-700 select-all">
+        <pre className="bg-panel rounded-lg p-3 text-xs font-mono text-fg overflow-x-auto border border-gray-100 dark:border-gray-700 select-all">
           {markdownCode}
         </pre>
       </div>
@@ -84,7 +84,7 @@ export default function BadgeGenerator({ username, token }: BadgeGeneratorProps)
             {copied === "html" ? `✓ ${t("badge.copied")}` : t("badge.copy")}
           </button>
         </div>
-        <pre className="bg-gray-50 dark:bg-gray-800 rounded-lg p-3 text-xs font-mono text-gray-700 dark:text-gray-300 overflow-x-auto border border-gray-100 dark:border-gray-700 select-all">
+        <pre className="bg-panel rounded-lg p-3 text-xs font-mono text-fg overflow-x-auto border border-gray-100 dark:border-gray-700 select-all">
           {htmlCode}
         </pre>
       </div>

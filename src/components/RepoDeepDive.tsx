@@ -29,11 +29,11 @@ function StatCard({
   accent?: string;
 }) {
   return (
-    <div className="bg-white dark:bg-gray-900 rounded-xl border border-gray-200 dark:border-gray-800 p-4 text-center">
-      <div className={`text-2xl font-extrabold ${accent ?? "text-gray-800 dark:text-gray-100"}`}>
+    <div className="bg-panel rounded-xl p-4 text-center">
+      <div className={`text-2xl font-semibold tnum ${accent ?? "text-fg"}`}>
         {value}
       </div>
-      <div className="text-xs text-gray-500 dark:text-gray-400 mt-1">{label}</div>
+      <div className="text-xs text-muted mt-1">{label}</div>
     </div>
   );
 }
@@ -71,7 +71,7 @@ export default function RepoDeepDive({ data }: RepoDeepDiveProps) {
   return (
     <div className="space-y-6">
       {/* Header */}
-      <div className="bg-white dark:bg-gray-900 rounded-2xl shadow-lg border border-gray-200 dark:border-gray-800 p-6">
+      <div className="bg-surface rounded-2xl border border-hairline p-6">
         <div className="flex items-start justify-between gap-4 flex-wrap">
           <div className="min-w-0">
             <div className="flex items-center gap-2 flex-wrap">
@@ -90,7 +90,7 @@ export default function RepoDeepDive({ data }: RepoDeepDiveProps) {
               )}
             </div>
             {data.description && (
-              <p className="text-gray-500 dark:text-gray-400 mt-2 max-w-2xl">
+              <p className="text-muted mt-2 max-w-2xl">
                 {data.description}
               </p>
             )}
@@ -136,13 +136,13 @@ export default function RepoDeepDive({ data }: RepoDeepDiveProps) {
             {data.busFactor}
           </div>
           <div className="min-w-0">
-            <div className="font-bold text-gray-800 dark:text-gray-100 flex items-center gap-2">
+            <div className="font-bold text-fg flex items-center gap-2">
               🚌 {t("deep.busFactor")}
-              <span className="text-xs font-normal text-gray-500 dark:text-gray-400">
+              <span className="text-xs font-normal text-muted">
                 ({data.busFactorPct}% {t("deep.ofCommits")})
               </span>
             </div>
-            <p className="text-sm text-gray-500 dark:text-gray-400 mt-0.5">
+            <p className="text-sm text-muted mt-0.5">
               {t("deep.busFactorDesc")}
             </p>
             <p className={`text-sm font-medium mt-1 ${busFactorLow ? "text-rose-600 dark:text-rose-400" : "text-emerald-600 dark:text-emerald-400"}`}>
@@ -154,11 +154,11 @@ export default function RepoDeepDive({ data }: RepoDeepDiveProps) {
 
       <div className="grid grid-cols-1 lg:grid-cols-2 gap-6">
         {/* Languages */}
-        <div className="bg-white dark:bg-gray-900 rounded-2xl shadow-lg border border-gray-200 dark:border-gray-800 p-6">
-          <h3 className="font-bold text-gray-800 dark:text-gray-100 mb-4">{t("deep.languages")}</h3>
+        <div className="bg-surface rounded-2xl border border-hairline p-6">
+          <h3 className="font-bold text-fg mb-4">{t("deep.languages")}</h3>
           {data.languages.length > 0 ? (
             <>
-              <div className="flex rounded-full overflow-hidden h-3 bg-gray-200 dark:bg-gray-700">
+              <div className="flex rounded-full overflow-hidden h-3 bg-panel">
                 {data.languages.map((lang, i) => (
                   <div
                     key={lang.name}
@@ -178,10 +178,10 @@ export default function RepoDeepDive({ data }: RepoDeepDiveProps) {
                       className="w-2.5 h-2.5 rounded-full inline-block shrink-0"
                       style={{ backgroundColor: getLanguageColor(lang.name, i) }}
                     />
-                    <span className="font-medium text-gray-700 dark:text-gray-300 w-28 truncate">
+                    <span className="font-medium text-fg w-28 truncate">
                       {lang.name}
                     </span>
-                    <div className="flex-1 bg-gray-200 dark:bg-gray-700 rounded-full h-2">
+                    <div className="flex-1 bg-panel rounded-full h-2">
                       <div
                         className="h-2 rounded-full"
                         style={{
@@ -190,21 +190,21 @@ export default function RepoDeepDive({ data }: RepoDeepDiveProps) {
                         }}
                       />
                     </div>
-                    <span className="font-mono text-xs text-gray-500 w-12 text-right">%{lang.value}</span>
+                    <span className="font-mono text-xs text-muted w-12 text-right">%{lang.value}</span>
                   </div>
                 ))}
               </div>
             </>
           ) : (
-            <p className="text-sm text-gray-400 italic">{t("deep.noReleases")}</p>
+            <p className="text-sm text-faint italic">{t("deep.noReleases")}</p>
           )}
         </div>
 
         {/* Contributors */}
-        <div className="bg-white dark:bg-gray-900 rounded-2xl shadow-lg border border-gray-200 dark:border-gray-800 p-6">
-          <h3 className="font-bold text-gray-800 dark:text-gray-100 mb-4">
+        <div className="bg-surface rounded-2xl border border-hairline p-6">
+          <h3 className="font-bold text-fg mb-4">
             {t("deep.contributors")}
-            <span className="text-xs font-normal text-gray-400 ml-2">{data.contributorCount}</span>
+            <span className="text-xs font-normal text-faint ml-2">{data.contributorCount}</span>
           </h3>
           <div className="space-y-2.5 max-h-80 overflow-y-auto pr-1">
             {data.contributors.map((c) => (
@@ -217,16 +217,16 @@ export default function RepoDeepDive({ data }: RepoDeepDiveProps) {
               >
                 {/* eslint-disable-next-line @next/next/no-img-element */}
                 <img src={c.avatar_url} alt={c.login} className="w-7 h-7 rounded-full shrink-0" />
-                <span className="text-sm font-medium text-gray-700 dark:text-gray-300 w-32 truncate group-hover:text-indigo-500">
+                <span className="text-sm font-medium text-fg w-32 truncate group-hover:text-indigo-500">
                   {c.login}
                 </span>
-                <div className="flex-1 bg-gray-100 dark:bg-gray-800 rounded-full h-2.5">
+                <div className="flex-1 bg-panel rounded-full h-2.5">
                   <div
-                    className="h-2.5 rounded-full bg-linear-to-r from-indigo-500 to-purple-500"
+                    className="h-2.5 rounded-full bg-accent"
                     style={{ width: `${(c.contributions / maxContrib) * 100}%` }}
                   />
                 </div>
-                <span className="font-mono text-xs text-gray-500 w-12 text-right">
+                <span className="font-mono text-xs text-muted w-12 text-right">
                   {c.contributions.toLocaleString()}
                 </span>
               </a>
@@ -236,10 +236,10 @@ export default function RepoDeepDive({ data }: RepoDeepDiveProps) {
       </div>
 
       {/* Commit cadence */}
-      <div className="bg-white dark:bg-gray-900 rounded-2xl shadow-lg border border-gray-200 dark:border-gray-800 p-6">
+      <div className="bg-surface rounded-2xl border border-hairline p-6">
         <div className="flex items-baseline justify-between flex-wrap gap-2 mb-4">
-          <h3 className="font-bold text-gray-800 dark:text-gray-100">{t("deep.commitCadence")}</h3>
-          <span className="text-xs text-gray-400">
+          <h3 className="font-bold text-fg">{t("deep.commitCadence")}</h3>
+          <span className="text-xs text-faint">
             {data.recentCommits} {t("deep.commitsAnalyzed")}
             {data.windowDays > 0 && ` · ${data.windowDays} ${t("deep.days")}`}
           </span>
@@ -248,7 +248,7 @@ export default function RepoDeepDive({ data }: RepoDeepDiveProps) {
         {/* Recent daily activity */}
         {dailyData.length > 1 && (
           <div className="mb-6">
-            <p className="text-xs text-gray-500 dark:text-gray-400 mb-2">{t("deep.recentActivity")}</p>
+            <p className="text-xs text-muted mb-2">{t("deep.recentActivity")}</p>
             <ResponsiveContainer width="100%" height={120}>
               <BarChart data={dailyData}>
                 <XAxis dataKey="label" tick={{ fontSize: 9, fill: "#9ca3af" }} interval="preserveStartEnd" />
@@ -262,7 +262,7 @@ export default function RepoDeepDive({ data }: RepoDeepDiveProps) {
 
         <div className="grid grid-cols-1 md:grid-cols-2 gap-6">
           <div>
-            <p className="text-xs text-gray-500 dark:text-gray-400 mb-2">{t("deep.byWeekday")}</p>
+            <p className="text-xs text-muted mb-2">{t("deep.byWeekday")}</p>
             <ResponsiveContainer width="100%" height={140}>
               <BarChart data={weekdayData}>
                 <XAxis dataKey="label" tick={{ fontSize: 10, fill: "#9ca3af" }} />
@@ -277,7 +277,7 @@ export default function RepoDeepDive({ data }: RepoDeepDiveProps) {
             </ResponsiveContainer>
           </div>
           <div>
-            <p className="text-xs text-gray-500 dark:text-gray-400 mb-2">{t("deep.byHour")}</p>
+            <p className="text-xs text-muted mb-2">{t("deep.byHour")}</p>
             <ResponsiveContainer width="100%" height={140}>
               <BarChart data={hourData}>
                 <XAxis dataKey="label" tick={{ fontSize: 8, fill: "#9ca3af" }} interval={2} />
@@ -292,13 +292,13 @@ export default function RepoDeepDive({ data }: RepoDeepDiveProps) {
 
       {/* Releases + Hygiene */}
       <div className="grid grid-cols-1 lg:grid-cols-2 gap-6">
-        <div className="bg-white dark:bg-gray-900 rounded-2xl shadow-lg border border-gray-200 dark:border-gray-800 p-6">
+        <div className="bg-surface rounded-2xl border border-hairline p-6">
           <div className="flex items-baseline justify-between mb-4">
-            <h3 className="font-bold text-gray-800 dark:text-gray-100">{t("deep.releases")}</h3>
-            <span className="text-xs text-gray-400">{data.releaseCount} {t("deep.totalReleases")}</span>
+            <h3 className="font-bold text-fg">{t("deep.releases")}</h3>
+            <span className="text-xs text-faint">{data.releaseCount} {t("deep.totalReleases")}</span>
           </div>
           {data.releases.length > 0 ? (
-            <ol className="relative border-l border-gray-200 dark:border-gray-700 ml-2 space-y-4">
+            <ol className="relative border-l border-hairline-strong ml-2 space-y-4">
               {data.releases.map((r) => (
                 <li key={r.tag} className="ml-4">
                   <div className="absolute w-2.5 h-2.5 bg-indigo-500 rounded-full -left-[5px] mt-1.5" />
@@ -311,34 +311,34 @@ export default function RepoDeepDive({ data }: RepoDeepDiveProps) {
                     {r.tag}
                   </a>
                   {r.name && r.name !== r.tag && (
-                    <span className="text-sm text-gray-500 dark:text-gray-400 ml-2">{r.name}</span>
+                    <span className="text-sm text-muted ml-2">{r.name}</span>
                   )}
                   {r.publishedAt && (
-                    <div className="text-xs text-gray-400 mt-0.5">{formatDate(r.publishedAt)}</div>
+                    <div className="text-xs text-faint mt-0.5">{formatDate(r.publishedAt)}</div>
                   )}
                 </li>
               ))}
             </ol>
           ) : (
-            <p className="text-sm text-gray-400 italic">{t("deep.noReleases")}</p>
+            <p className="text-sm text-faint italic">{t("deep.noReleases")}</p>
           )}
         </div>
 
-        <div className="bg-white dark:bg-gray-900 rounded-2xl shadow-lg border border-gray-200 dark:border-gray-800 p-6">
-          <h3 className="font-bold text-gray-800 dark:text-gray-100 mb-4">{t("deep.hygiene")}</h3>
+        <div className="bg-surface rounded-2xl border border-hairline p-6">
+          <h3 className="font-bold text-fg mb-4">{t("deep.hygiene")}</h3>
           <div className="space-y-3">
             <HygieneRow label={t("deep.readme")} ok={data.hasReadme} />
             <HygieneRow label={t("deep.ci")} ok={data.hasCI} />
             <HygieneRow label={t("deep.license")} ok={!!data.license} detail={data.license ?? undefined} />
           </div>
-          <div className="grid grid-cols-2 gap-3 mt-5 pt-4 border-t border-gray-100 dark:border-gray-800 text-sm">
+          <div className="grid grid-cols-2 gap-3 mt-5 pt-4 border-t border-hairline text-sm">
             <div>
-              <div className="text-xs text-gray-400">{t("deep.created")}</div>
-              <div className="text-gray-700 dark:text-gray-300">{data.createdAt ? formatDate(data.createdAt) : "—"}</div>
+              <div className="text-xs text-faint">{t("deep.created")}</div>
+              <div className="text-fg">{data.createdAt ? formatDate(data.createdAt) : "—"}</div>
             </div>
             <div>
-              <div className="text-xs text-gray-400">{t("deep.lastCommit")}</div>
-              <div className="text-gray-700 dark:text-gray-300">
+              <div className="text-xs text-faint">{t("deep.lastCommit")}</div>
+              <div className="text-fg">
                 {data.lastCommitDate ? formatDate(data.lastCommitDate) : "—"}
               </div>
             </div>
@@ -357,8 +357,8 @@ export default function RepoDeepDive({ data }: RepoDeepDiveProps) {
 function HygieneRow({ label, ok, detail }: { label: string; ok: boolean; detail?: string }) {
   return (
     <div className="flex items-center justify-between">
-      <span className="text-sm text-gray-700 dark:text-gray-300">{label}</span>
-      <span className={`text-sm font-medium ${ok ? "text-emerald-500" : "text-gray-400"}`}>
+      <span className="text-sm text-fg">{label}</span>
+      <span className={`text-sm font-medium ${ok ? "text-emerald-500" : "text-faint"}`}>
         {ok ? `✓ ${detail ?? ""}`.trim() : "✗"}
       </span>
     </div>

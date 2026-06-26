@@ -67,7 +67,7 @@ export default function ContributionHeatmap({ username, token }: ContributionHea
   }, [fetchContributions, loaded, username]);
 
   const getColor = (count: number): string => {
-    if (count === 0) return "bg-gray-100 dark:bg-gray-800";
+    if (count === 0) return "bg-panel";
     const intensity = count / maxCount;
     if (intensity > 0.75) return "bg-green-600 dark:bg-green-500";
     if (intensity > 0.5) return "bg-green-500 dark:bg-green-600";
@@ -131,8 +131,8 @@ export default function ContributionHeatmap({ username, token }: ContributionHea
 
   if (loading) {
     return (
-      <div className="bg-white dark:bg-gray-900 rounded-2xl shadow-lg p-6 border border-gray-200 dark:border-gray-800">
-        <h2 className="text-xl font-bold text-gray-800 dark:text-gray-100 mb-4">{t("heatmap.title")}</h2>
+      <div className="bg-surface rounded-2xl p-6 border border-hairline">
+        <h2 className="text-xl font-bold text-fg mb-4">{t("heatmap.title")}</h2>
         <div className="text-center py-6 text-gray-400 text-sm">
           <svg className="animate-spin h-4 w-4 inline mr-2" viewBox="0 0 24 24" fill="none">
             <circle className="opacity-25" cx="12" cy="12" r="10" stroke="currentColor" strokeWidth="4" />
@@ -146,8 +146,8 @@ export default function ContributionHeatmap({ username, token }: ContributionHea
 
   if (loaded && days.length === 0) {
     return (
-      <div className="bg-white dark:bg-gray-900 rounded-2xl shadow-lg p-6 border border-gray-200 dark:border-gray-800">
-        <h2 className="text-xl font-bold text-gray-800 dark:text-gray-100 mb-4">{t("heatmap.title")}</h2>
+      <div className="bg-surface rounded-2xl p-6 border border-hairline">
+        <h2 className="text-xl font-bold text-fg mb-4">{t("heatmap.title")}</h2>
         <p className="text-gray-400 text-sm text-center py-4">{t("heatmap.noData")}</p>
       </div>
     );
@@ -156,9 +156,9 @@ export default function ContributionHeatmap({ username, token }: ContributionHea
   if (!loaded) return null;
 
   return (
-    <div className="bg-white dark:bg-gray-900 rounded-2xl shadow-lg p-6 border border-gray-200 dark:border-gray-800">
+    <div className="bg-surface rounded-2xl p-6 border border-hairline">
       <div className="flex items-center justify-between mb-4">
-        <h2 className="text-xl font-bold text-gray-800 dark:text-gray-100">{t("heatmap.title")}</h2>
+        <h2 className="text-xl font-bold text-fg">{t("heatmap.title")}</h2>
         <div className="flex items-center gap-3">
           {source === "events" && (
             <span className="text-[10px] text-amber-500 dark:text-amber-400" title={t("heatmap.eventsNote")}>
@@ -213,7 +213,7 @@ export default function ContributionHeatmap({ username, token }: ContributionHea
           {/* Legend */}
           <div className="flex items-center justify-end gap-1 mt-3">
             <span className="text-[10px] text-gray-400 dark:text-gray-500 mr-1">{t("heatmap.less")}</span>
-            <div className="w-3 h-3 rounded-sm bg-gray-100 dark:bg-gray-800" />
+            <div className="w-3 h-3 rounded-sm bg-panel" />
             <div className="w-3 h-3 rounded-sm bg-green-200 dark:bg-green-900" />
             <div className="w-3 h-3 rounded-sm bg-green-400 dark:bg-green-700" />
             <div className="w-3 h-3 rounded-sm bg-green-500 dark:bg-green-600" />

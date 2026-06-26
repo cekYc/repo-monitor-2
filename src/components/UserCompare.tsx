@@ -101,7 +101,7 @@ export default function UserCompare({ userA, userB }: UserCompareProps) {
   return (
     <div className="space-y-6" ref={compareRef}>
       <div className="flex items-center justify-between">
-        <h2 className="text-xl font-bold text-gray-800 dark:text-gray-100">
+        <h2 className="text-xl font-bold text-fg">
           {t("compare.title")}
         </h2>
         <button
@@ -138,14 +138,14 @@ export default function UserCompare({ userA, userB }: UserCompareProps) {
                   className="w-12 h-12 rounded-full"
                 />
                 <div className="min-w-0 flex-1">
-                  <p className="font-bold text-gray-800 dark:text-gray-100 truncate">
+                  <p className="font-bold text-fg truncate">
                     {analysis.user.name || analysis.user.login}
                   </p>
                   <a
                     href={analysis.user.html_url}
                     target="_blank"
                     rel="noopener noreferrer"
-                    className="text-sm text-gray-500 dark:text-gray-400 hover:text-indigo-500 transition-colors"
+                    className="text-sm text-muted hover:text-indigo-500 transition-colors"
                   >
                     @{analysis.user.login}
                   </a>
@@ -154,29 +154,29 @@ export default function UserCompare({ userA, userB }: UserCompareProps) {
                   wins > (idx === 0 ? winsB : winsA)
                     ? "bg-green-100 dark:bg-green-900/50 text-green-700 dark:text-green-400"
                     : wins === (idx === 0 ? winsB : winsA)
-                    ? "bg-gray-100 dark:bg-gray-800 text-gray-500"
-                    : "bg-gray-100 dark:bg-gray-800 text-gray-400"
+                    ? "bg-panel text-gray-500"
+                    : "bg-panel text-gray-400"
                 }`}>
                   {wins > (idx === 0 ? winsB : winsA) ? `🏆 ${t("compare.winner")}` : wins === (idx === 0 ? winsB : winsA) ? t("compare.tie") : ""}
                 </div>
               </div>
               <div className="grid grid-cols-3 gap-3 text-center text-sm">
                 <div>
-                  <p className="text-lg font-bold text-gray-800 dark:text-gray-100">{analysis.totalRepos}</p>
+                  <p className="text-lg font-bold text-fg">{analysis.totalRepos}</p>
                   <p className="text-xs text-gray-500">{t("compare.totalRepos")}</p>
                 </div>
                 <div>
-                  <p className="text-lg font-bold text-gray-800 dark:text-gray-100">{stars}</p>
+                  <p className="text-lg font-bold text-fg">{stars}</p>
                   <p className="text-xs text-gray-500">{t("compare.totalStars")}</p>
                 </div>
                 <div>
-                  <p className="text-lg font-bold text-gray-800 dark:text-gray-100">{forks}</p>
+                  <p className="text-lg font-bold text-fg">{forks}</p>
                   <p className="text-xs text-gray-500">{t("compare.forks")}</p>
                 </div>
               </div>
-              <div className="mt-3 pt-3 border-t border-gray-200/50 dark:border-gray-700/50 flex items-center justify-between text-xs text-gray-500 dark:text-gray-400">
-                <span>{t("compare.topLang")}: <strong className="text-gray-700 dark:text-gray-300">{topLang}</strong></span>
-                <span>{t("compare.totalCode")}: <strong className="text-gray-700 dark:text-gray-300">{formatBytes(analysis.totalBytes)}</strong></span>
+              <div className="mt-3 pt-3 border-t border-gray-200/50 dark:border-gray-700/50 flex items-center justify-between text-xs text-muted">
+                <span>{t("compare.topLang")}: <strong className="text-fg">{topLang}</strong></span>
+                <span>{t("compare.totalCode")}: <strong className="text-fg">{formatBytes(analysis.totalBytes)}</strong></span>
               </div>
             </div>
           );
@@ -184,8 +184,8 @@ export default function UserCompare({ userA, userB }: UserCompareProps) {
       </div>
 
       {/* Head-to-Head Metric Bars */}
-      <div className="bg-white dark:bg-gray-900 rounded-2xl shadow-lg p-5 border border-gray-200 dark:border-gray-800">
-        <h3 className="text-sm font-semibold text-gray-500 dark:text-gray-400 mb-4 uppercase tracking-wide">
+      <div className="bg-surface rounded-2xl p-5 border border-hairline">
+        <h3 className="text-sm font-semibold text-muted mb-4 uppercase tracking-wide">
           ⚔️ Head-to-Head
         </h3>
         <div className="space-y-3">
@@ -205,7 +205,7 @@ export default function UserCompare({ userA, userB }: UserCompareProps) {
                     {m.fmtB}
                   </span>
                 </div>
-                <div className="flex h-2 rounded-full overflow-hidden bg-gray-100 dark:bg-gray-800">
+                <div className="flex h-2 rounded-full overflow-hidden bg-panel">
                   <div
                     className="bg-indigo-500 transition-all duration-500 rounded-l-full"
                     style={{ width: `${pctA}%` }}
@@ -232,7 +232,7 @@ export default function UserCompare({ userA, userB }: UserCompareProps) {
             {shared.map((lang, i) => (
               <span
                 key={lang}
-                className="inline-flex items-center gap-1 text-xs px-2 py-1 rounded-full bg-white dark:bg-gray-900 border border-green-200 dark:border-green-800 text-gray-700 dark:text-gray-300"
+                className="inline-flex items-center gap-1 text-xs px-2 py-1 rounded-full bg-surface border border-green-200 dark:border-green-800 text-fg"
               >
                 <span
                   className="w-2 h-2 rounded-full inline-block"
@@ -256,7 +256,7 @@ export default function UserCompare({ userA, userB }: UserCompareProps) {
               uniqueA.map((lang, i) => (
                 <span
                   key={lang}
-                  className="inline-flex items-center gap-1 text-xs px-2 py-1 rounded-full bg-white dark:bg-gray-900 border border-indigo-200 dark:border-indigo-800 text-gray-700 dark:text-gray-300"
+                  className="inline-flex items-center gap-1 text-xs px-2 py-1 rounded-full bg-surface border border-indigo-200 dark:border-indigo-800 text-fg"
                 >
                   <span
                     className="w-2 h-2 rounded-full inline-block"
@@ -281,7 +281,7 @@ export default function UserCompare({ userA, userB }: UserCompareProps) {
               uniqueB.map((lang, i) => (
                 <span
                   key={lang}
-                  className="inline-flex items-center gap-1 text-xs px-2 py-1 rounded-full bg-white dark:bg-gray-900 border border-purple-200 dark:border-purple-800 text-gray-700 dark:text-gray-300"
+                  className="inline-flex items-center gap-1 text-xs px-2 py-1 rounded-full bg-surface border border-purple-200 dark:border-purple-800 text-fg"
                 >
                   <span
                     className="w-2 h-2 rounded-full inline-block"
@@ -296,8 +296,8 @@ export default function UserCompare({ userA, userB }: UserCompareProps) {
       </div>
 
       {/* Comparison Bar Chart */}
-      <div className="bg-white dark:bg-gray-900 rounded-2xl shadow-lg p-6 border border-gray-200 dark:border-gray-800">
-        <h3 className="text-sm font-semibold text-gray-500 dark:text-gray-400 mb-4 uppercase tracking-wide">
+      <div className="bg-surface rounded-2xl p-6 border border-hairline">
+        <h3 className="text-sm font-semibold text-muted mb-4 uppercase tracking-wide">
           {t("compare.langDistribution")}
         </h3>
         <ResponsiveContainer width="100%" height={Math.max(400, chartData.length * 40)}>

@@ -58,10 +58,10 @@ export default function RepoCard({ repo, index, isExcluded, onToggleExclude, own
 
   return (
     <div
-      className={`bg-white dark:bg-gray-900 rounded-2xl shadow-md border overflow-hidden hover:shadow-lg transition-all duration-300 ${
+      className={`bg-surface rounded-2xl border overflow-hidden hover:border-hairline-strong transition-colors ${
         isExcluded
           ? "border-amber-300 dark:border-amber-700 opacity-60"
-          : "border-gray-200 dark:border-gray-800"
+          : "border-hairline"
       }`}
       style={{ animationDelay: `${index * 50}ms` }}
     >
@@ -73,7 +73,7 @@ export default function RepoCard({ repo, index, isExcluded, onToggleExclude, own
         onKeyDown={(e) => e.key === "Enter" && hasLanguages && setExpanded(!expanded)}
         className={`w-full text-left p-5 transition-colors ${
           hasLanguages
-            ? "cursor-pointer hover:bg-gray-50 dark:hover:bg-gray-800/50"
+            ? "cursor-pointer hover:bg-panel"
             : "cursor-default"
         }`}
       >
@@ -91,7 +91,7 @@ export default function RepoCard({ repo, index, isExcluded, onToggleExclude, own
               </a>
               {/* Private badge */}
               {repo.private && (
-                <span className="text-[10px] font-semibold px-2 py-0.5 rounded-full bg-gray-100 dark:bg-gray-800 text-gray-500 dark:text-gray-400 border border-gray-300 dark:border-gray-700">
+                <span className="text-[10px] font-semibold px-2 py-0.5 rounded-full bg-panel text-muted border border-hairline">
                   🔒 private
                 </span>
               )}
@@ -105,7 +105,7 @@ export default function RepoCard({ repo, index, isExcluded, onToggleExclude, own
               )}
             </div>
             {repo.description && (
-              <p className="text-sm text-gray-500 dark:text-gray-400 mt-1 line-clamp-2">
+              <p className="text-sm text-muted mt-1 line-clamp-2">
                 {repo.description}
               </p>
             )}
@@ -121,7 +121,7 @@ export default function RepoCard({ repo, index, isExcluded, onToggleExclude, own
               className={`p-1.5 rounded-lg transition-all cursor-pointer ${
                 isExcluded
                   ? "bg-amber-100 dark:bg-amber-900/50 text-amber-600 dark:text-amber-400 hover:bg-amber-200 dark:hover:bg-amber-800"
-                  : "bg-gray-100 dark:bg-gray-800 text-gray-400 dark:text-gray-500 hover:bg-red-50 dark:hover:bg-red-950/30 hover:text-red-500 dark:hover:text-red-400"
+                  : "bg-panel text-faint hover:bg-danger-soft hover:text-danger"
               }`}
               title={isExcluded ? t("repo.include") : t("repo.exclude")}
             >
@@ -136,13 +136,13 @@ export default function RepoCard({ repo, index, isExcluded, onToggleExclude, own
                 </svg>
               )}
             </button>
-            <div className="flex items-center gap-3 text-xs text-gray-500 dark:text-gray-400">
+            <div className="flex items-center gap-3 text-xs text-muted">
               <span title="Yıldız">⭐ {repo.stargazers_count}</span>
               <span title="Fork">🍴 {repo.forks_count}</span>
             </div>
             {hasLanguages && (
               <svg
-                className={`w-4 h-4 text-gray-400 transition-transform duration-300 ${
+                className={`w-4 h-4 text-faint transition-transform duration-300 ${
                   expanded ? "rotate-180" : ""
                 }`}
                 fill="none"
@@ -156,7 +156,7 @@ export default function RepoCard({ repo, index, isExcluded, onToggleExclude, own
           </div>
         </div>
 
-        <div className="flex flex-wrap gap-3 mt-3 text-xs text-gray-500 dark:text-gray-400">
+        <div className="flex flex-wrap gap-3 mt-3 text-xs text-muted">
           <span>📦 {formatBytes(repo.totalBytes)} {t("repo.code")}</span>
           <span>💾 {repo.size} KB {t("repo.repo")}</span>
           <span>📅 {formatDate(repo.created_at)}</span>
@@ -167,7 +167,7 @@ export default function RepoCard({ repo, index, isExcluded, onToggleExclude, own
         {/* Language Bar */}
         {hasLanguages && (
           <div className="mt-4">
-            <div className="flex rounded-full overflow-hidden h-3 bg-gray-200 dark:bg-gray-700">
+            <div className="flex rounded-full overflow-hidden h-3 bg-panel">
               {repo.languagePercentages.map((lang, i) => (
                 <div
                   key={lang.name}
@@ -187,10 +187,10 @@ export default function RepoCard({ repo, index, isExcluded, onToggleExclude, own
                     className="w-2.5 h-2.5 rounded-full inline-block"
                     style={{ backgroundColor: getLanguageColor(lang.name, i) }}
                   />
-                  <span className="text-gray-700 dark:text-gray-300 font-medium">
+                  <span className="text-fg font-medium">
                     {lang.name}
                   </span>
-                  <span className="text-gray-400">%{lang.value}</span>
+                  <span className="text-faint">%{lang.value}</span>
                 </div>
               ))}
               {repo.languagePercentages.length > 5 && (
@@ -203,7 +203,7 @@ export default function RepoCard({ repo, index, isExcluded, onToggleExclude, own
         )}
 
         {!hasLanguages && (
-          <div className="mt-4 text-sm text-gray-400 italic">
+          <div className="mt-4 text-sm text-faint italic">
             {t("repo.noLangs")}
           </div>
         )}
@@ -211,7 +211,7 @@ export default function RepoCard({ repo, index, isExcluded, onToggleExclude, own
 
       {/* Expanded Detail */}
       {expanded && hasLanguages && (
-        <div className="border-t border-gray-200 dark:border-gray-800 p-5 bg-gray-50 dark:bg-gray-950">
+        <div className="border-t border-hairline p-5 bg-panel">
           <div className="grid grid-cols-1 md:grid-cols-2 gap-6">
             <div>
               <ResponsiveContainer width="100%" height={220}>
@@ -257,10 +257,10 @@ export default function RepoCard({ repo, index, isExcluded, onToggleExclude, own
                     className="w-2.5 h-2.5 rounded-full inline-block shrink-0"
                     style={{ backgroundColor: getLanguageColor(lang.name, i) }}
                   />
-                  <span className="font-medium text-gray-700 dark:text-gray-300 w-24 truncate">
+                  <span className="font-medium text-fg w-24 truncate">
                     {lang.name}
                   </span>
-                  <div className="flex-1 bg-gray-200 dark:bg-gray-700 rounded-full h-2">
+                  <div className="flex-1 bg-panel rounded-full h-2">
                     <div
                       className="h-2 rounded-full"
                       style={{
@@ -272,7 +272,7 @@ export default function RepoCard({ repo, index, isExcluded, onToggleExclude, own
                   <span className="font-mono text-xs text-gray-500 w-14 text-right">
                     %{lang.value}
                   </span>
-                  <span className="font-mono text-xs text-gray-400 w-16 text-right">
+                  <span className="font-mono text-xs text-faint w-16 text-right">
                     {formatBytes(lang.bytes)}
                   </span>
                 </div>
@@ -281,7 +281,7 @@ export default function RepoCard({ repo, index, isExcluded, onToggleExclude, own
           </div>
 
           {/* Commit History */}
-          <div className="mt-5 pt-4 border-t border-gray-200 dark:border-gray-800">
+          <div className="mt-5 pt-4 border-t border-hairline">
             <div className="flex flex-wrap items-center gap-3">
               <Link
                 href={`/repo/${owner}/${repo.name}`}

@@ -56,9 +56,9 @@ export default function RateLimitBadge({ token }: { token: string }) {
     <div className="fixed bottom-4 right-4 z-50">
       {/* Expanded overlay */}
       {expanded && (
-        <div className="mb-2 bg-white dark:bg-gray-900 rounded-xl shadow-xl border border-gray-200 dark:border-gray-700 p-4 w-64 text-sm animate-in fade-in slide-in-from-bottom-2 duration-200">
+        <div className="mb-2 bg-surface rounded-xl border border-hairline p-4 w-64 text-sm animate-in fade-in slide-in-from-bottom-2 duration-200">
           <div className="flex items-center justify-between mb-3">
-            <span className="font-bold text-gray-800 dark:text-gray-100">
+            <span className="font-bold text-fg">
               {t("rateLimit.label")}
             </span>
             <span className="text-xs text-gray-400">
@@ -67,7 +67,7 @@ export default function RateLimitBadge({ token }: { token: string }) {
           </div>
 
           {/* Progress bar */}
-          <div className="w-full bg-gray-200 dark:bg-gray-700 rounded-full h-2 mb-2">
+          <div className="w-full bg-panel rounded-full h-2 mb-2">
             <div
               className={`h-2 rounded-full transition-all duration-500 ${
                 isLow
@@ -80,7 +80,7 @@ export default function RateLimitBadge({ token }: { token: string }) {
             />
           </div>
 
-          <div className="flex justify-between text-xs text-gray-500 dark:text-gray-400">
+          <div className="flex justify-between text-xs text-muted">
             <span>{info.used} used</span>
             <span>
               {t("rateLimit.reset")}: {remaining > 0 ? countdownStr : "—"}
@@ -98,10 +98,10 @@ export default function RateLimitBadge({ token }: { token: string }) {
       {/* Toggle button */}
       <button
         onClick={() => setExpanded(!expanded)}
-        className={`flex items-center gap-2 px-3 py-2 rounded-full shadow-lg border transition-all duration-300 hover:scale-105 cursor-pointer text-xs font-medium ${
+        className={`flex items-center gap-2 px-3 py-2 rounded-full border transition-all duration-300 hover:scale-105 cursor-pointer text-xs font-medium ${
           isLow
             ? "bg-red-50 dark:bg-red-950/50 border-red-300 dark:border-red-800 text-red-600 dark:text-red-400"
-            : "bg-white dark:bg-gray-800 border-gray-200 dark:border-gray-700 text-gray-600 dark:text-gray-300"
+            : "bg-white dark:bg-gray-800 border-hairline text-muted"
         }`}
       >
         <span

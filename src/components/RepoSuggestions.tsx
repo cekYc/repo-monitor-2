@@ -54,11 +54,11 @@ export default function RepoSuggestions({ topLanguages, token }: RepoSuggestions
   if (!loaded && !loading) return null;
 
   return (
-    <div className="bg-white dark:bg-gray-900 rounded-2xl shadow-lg p-6 border border-gray-200 dark:border-gray-800">
-      <h2 className="text-xl font-bold text-gray-800 dark:text-gray-100 mb-1">
+    <div className="bg-surface rounded-2xl p-6 border border-hairline">
+      <h2 className="text-xl font-bold text-fg mb-1">
         {t("suggestions.title")}
       </h2>
-      <p className="text-sm text-gray-500 dark:text-gray-400 mb-5">
+      <p className="text-sm text-muted mb-5">
         {t("suggestions.description")}
       </p>
 
@@ -86,20 +86,20 @@ export default function RepoSuggestions({ topLanguages, token }: RepoSuggestions
               href={repo.html_url}
               target="_blank"
               rel="noopener noreferrer"
-              className="block bg-gray-50 dark:bg-gray-800/50 rounded-xl p-4 border border-gray-100 dark:border-gray-800 hover:border-indigo-200 dark:hover:border-indigo-800 transition-colors group"
+              className="block bg-panel rounded-xl p-4 border border-hairline hover:border-indigo-200 dark:hover:border-indigo-800 transition-colors group"
             >
               <div className="flex items-start justify-between gap-2 mb-2">
                 <h3 className="text-sm font-bold text-indigo-600 dark:text-indigo-400 group-hover:underline truncate">
                   {repo.name}
                 </h3>
                 {repo.language && (
-                  <span className="text-[10px] font-semibold px-2 py-0.5 rounded-full bg-gray-200 dark:bg-gray-700 text-gray-600 dark:text-gray-300 shrink-0">
+                  <span className="text-[10px] font-semibold px-2 py-0.5 rounded-full bg-panel text-muted shrink-0">
                     {repo.language}
                   </span>
                 )}
               </div>
               {repo.description && (
-                <p className="text-xs text-gray-500 dark:text-gray-400 line-clamp-2 mb-2">
+                <p className="text-xs text-muted line-clamp-2 mb-2">
                   {repo.description}
                 </p>
               )}

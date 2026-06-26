@@ -109,7 +109,7 @@ export default function DeveloperPersona({ username, token }: DeveloperPersonaPr
   const earnedBadges = data?.badges.filter((b) => b.earned) || [];
 
   return (
-    <div className="bg-white dark:bg-gray-900 rounded-2xl shadow-lg border border-gray-200 dark:border-gray-800 overflow-hidden">
+    <div className="bg-surface rounded-2xl border border-hairline overflow-hidden">
       {/* Header */}
       <button
         onClick={fetchPersona}
@@ -117,7 +117,7 @@ export default function DeveloperPersona({ username, token }: DeveloperPersonaPr
         className="w-full px-5 py-4 flex items-center justify-between cursor-pointer hover:bg-gray-50 dark:hover:bg-gray-800/50 transition-colors"
       >
         <div className="flex items-center gap-3">
-          <span className="text-lg font-bold text-gray-800 dark:text-gray-100">
+          <span className="text-lg font-bold text-fg">
             {t("persona.title")}
           </span>
           {data && earnedBadges.length > 0 && (
@@ -151,11 +151,11 @@ export default function DeveloperPersona({ username, token }: DeveloperPersonaPr
 
       {/* Content */}
       {expanded && data && (
-        <div className="px-5 pb-5 space-y-6 border-t border-gray-100 dark:border-gray-800">
+        <div className="px-5 pb-5 space-y-6 border-t border-hairline">
           {/* Badges */}
           {earnedBadges.length > 0 && (
             <div>
-              <h3 className="text-sm font-semibold text-gray-700 dark:text-gray-300 mb-3 mt-4">
+              <h3 className="text-sm font-semibold text-fg mb-3 mt-4">
                 {t("persona.badges")}
               </h3>
               <div className="grid grid-cols-2 sm:grid-cols-3 gap-3">
@@ -166,7 +166,7 @@ export default function DeveloperPersona({ username, token }: DeveloperPersonaPr
                   return (
                     <div
                       key={badge.id}
-                      className={`relative overflow-hidden rounded-xl border border-gray-200 dark:border-gray-700 p-3 bg-linear-to-br ${cfg.gradient} bg-opacity-10`}
+                      className={`relative overflow-hidden rounded-xl border border-hairline p-3 bg-linear-to-br ${cfg.gradient} bg-opacity-10`}
                     >
                       <div className="absolute inset-0 opacity-5 bg-linear-to-br from-white to-transparent" />
                       <div className="relative z-10 flex items-start gap-2">
@@ -200,27 +200,27 @@ export default function DeveloperPersona({ username, token }: DeveloperPersonaPr
             <>
               {/* Stats Row */}
               <div className="grid grid-cols-3 gap-3">
-                <div className="bg-gray-50 dark:bg-gray-800/50 rounded-xl p-3 text-center">
-                  <div className="text-xl font-bold text-gray-800 dark:text-gray-100">
+                <div className="bg-panel rounded-xl p-3 text-center">
+                  <div className="text-xl font-bold text-fg">
                     {`${data.peakHour.toString().padStart(2, "0")}:00`}
                   </div>
-                  <div className="text-xs text-gray-500 dark:text-gray-400">
+                  <div className="text-xs text-muted">
                     {t("persona.productivePeak")}
                   </div>
                 </div>
-                <div className="bg-gray-50 dark:bg-gray-800/50 rounded-xl p-3 text-center">
-                  <div className="text-xl font-bold text-gray-800 dark:text-gray-100">
+                <div className="bg-panel rounded-xl p-3 text-center">
+                  <div className="text-xl font-bold text-fg">
                     {dayNames[data.peakDay]}
                   </div>
-                  <div className="text-xs text-gray-500 dark:text-gray-400">
+                  <div className="text-xs text-muted">
                     {t("persona.activeDays")}
                   </div>
                 </div>
-                <div className="bg-gray-50 dark:bg-gray-800/50 rounded-xl p-3 text-center">
-                  <div className="text-xl font-bold text-gray-800 dark:text-gray-100">
+                <div className="bg-panel rounded-xl p-3 text-center">
+                  <div className="text-xl font-bold text-fg">
                     {data.longestStreak}
                   </div>
-                  <div className="text-xs text-gray-500 dark:text-gray-400">
+                  <div className="text-xs text-muted">
                     🔥 Streak
                   </div>
                 </div>
@@ -228,7 +228,7 @@ export default function DeveloperPersona({ username, token }: DeveloperPersonaPr
 
               {/* Commit Hour Distribution */}
               <div>
-                <h3 className="text-sm font-semibold text-gray-700 dark:text-gray-300 mb-3">
+                <h3 className="text-sm font-semibold text-fg mb-3">
                   {t("persona.commitHours")}
                 </h3>
                 <div className="h-48">
@@ -262,7 +262,7 @@ export default function DeveloperPersona({ username, token }: DeveloperPersonaPr
 
               {/* Day Distribution */}
               <div>
-                <h3 className="text-sm font-semibold text-gray-700 dark:text-gray-300 mb-3">
+                <h3 className="text-sm font-semibold text-fg mb-3">
                   {t("persona.activeDays")}
                 </h3>
                 <div className="h-40">

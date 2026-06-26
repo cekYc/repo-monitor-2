@@ -69,8 +69,8 @@ export default function WatchButton({
       title={watching ? t("watch.remove") : t("watch.add")}
       className={`inline-flex items-center gap-1.5 rounded-lg font-medium transition-all cursor-pointer disabled:opacity-50 ${pad} ${
         watching
-          ? "bg-indigo-600 text-white hover:bg-indigo-700"
-          : "bg-gray-100 dark:bg-gray-800 text-gray-600 dark:text-gray-300 hover:bg-gray-200 dark:hover:bg-gray-700"
+          ? "bg-accent text-accent-fg hover:bg-accent-hover"
+          : "bg-panel text-muted hover:text-fg"
       }`}
     >
       {watching ? (

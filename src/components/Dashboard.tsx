@@ -180,7 +180,7 @@ export default function Dashboard({ onAnalyzeUser }: DashboardProps) {
 
   if (!loaded) {
     return (
-      <div className="text-center py-16 text-gray-400">
+      <div className="text-center py-16 text-faint">
         <svg className="animate-spin h-6 w-6 mx-auto" viewBox="0 0 24 24" fill="none">
           <circle className="opacity-25" cx="12" cy="12" r="10" stroke="currentColor" strokeWidth="4" />
           <path className="opacity-75" fill="currentColor" d="M4 12a8 8 0 018-8V0C5.373 0 0 5.373 0 12h4z" />
@@ -191,16 +191,16 @@ export default function Dashboard({ onAnalyzeUser }: DashboardProps) {
 
   return (
     <div className="space-y-5">
-      <div className="bg-white dark:bg-gray-900 rounded-2xl shadow-lg border border-gray-200 dark:border-gray-800 p-5 flex items-center justify-between gap-4 flex-wrap">
+      <div className="bg-surface rounded-2xl border border-hairline p-5 flex items-center justify-between gap-4 flex-wrap">
         <div>
-          <h2 className="text-xl font-bold text-gray-800 dark:text-gray-100">{t("dash.title")}</h2>
-          <p className="text-sm text-gray-500 dark:text-gray-400 mt-0.5">{t("dash.subtitle")}</p>
+          <h2 className="text-lg font-semibold text-fg">{t("dash.title")}</h2>
+          <p className="text-sm text-muted mt-0.5">{t("dash.subtitle")}</p>
         </div>
         {items.length > 0 && (
           <button
             onClick={checkAll}
             disabled={checkingAll}
-            className="inline-flex items-center gap-2 px-4 py-2 rounded-xl bg-indigo-600 text-white text-sm font-medium hover:bg-indigo-700 transition-colors cursor-pointer disabled:opacity-50"
+            className="inline-flex items-center gap-2 px-4 py-2 rounded-xl bg-accent text-accent-fg text-sm font-medium hover:bg-accent-hover transition-colors cursor-pointer disabled:opacity-50"
           >
             {checkingAll ? (
               <>
@@ -218,9 +218,9 @@ export default function Dashboard({ onAnalyzeUser }: DashboardProps) {
       </div>
 
       {items.length === 0 ? (
-        <div className="text-center py-16 bg-white dark:bg-gray-900 rounded-2xl border border-dashed border-gray-300 dark:border-gray-700">
-          <div className="text-5xl mb-4">📡</div>
-          <p className="text-gray-500 dark:text-gray-400 max-w-md mx-auto px-4">{t("dash.empty")}</p>
+        <div className="text-center py-16 bg-surface rounded-2xl border border-dashed border-hairline-strong">
+          <div className="text-4xl mb-4 opacity-60">📡</div>
+          <p className="text-muted max-w-md mx-auto px-4 text-sm">{t("dash.empty")}</p>
         </div>
       ) : (
         <div className="grid gap-4">
@@ -302,25 +302,25 @@ function WatchCard({
   const isRepo = watch.type === "repo";
 
   return (
-    <div className="bg-white dark:bg-gray-900 rounded-2xl shadow-md border border-gray-200 dark:border-gray-800 p-5">
+    <div className="bg-surface rounded-2xl border border-hairline p-5">
       <div className="flex items-start justify-between gap-3 flex-wrap">
         <div className="flex items-center gap-3 min-w-0">
           {watch.avatarUrl ? (
             // eslint-disable-next-line @next/next/no-img-element
             <img src={watch.avatarUrl} alt={watch.label} className="w-10 h-10 rounded-full shrink-0" />
           ) : (
-            <div className="w-10 h-10 rounded-full bg-linear-to-br from-indigo-500 to-purple-500 flex items-center justify-center text-white text-lg shrink-0">
+            <div className="w-10 h-10 rounded-full bg-accent-soft text-accent-text flex items-center justify-center text-lg shrink-0">
               {isRepo ? "📦" : "👤"}
             </div>
           )}
           <div className="min-w-0">
             <div className="flex items-center gap-2">
-              <span className="font-bold text-gray-800 dark:text-gray-100 truncate">{watch.label}</span>
-              <span className="text-[10px] uppercase tracking-wide px-1.5 py-0.5 rounded bg-gray-100 dark:bg-gray-800 text-gray-500 dark:text-gray-400">
+              <span className="font-semibold text-fg truncate">{watch.label}</span>
+              <span className="text-[10px] uppercase tracking-wide px-1.5 py-0.5 rounded bg-panel text-muted">
                 {isRepo ? "repo" : "user"}
               </span>
             </div>
-            <div className="text-xs text-gray-400 mt-0.5">
+            <div className="text-xs text-faint mt-0.5">
               {t("dash.lastChecked")}:{" "}
               {last ? formatRelative(last.timestamp, locale) : t("dash.never")}
               {snapshots.length > 0 && (
@@ -334,21 +334,21 @@ function WatchCard({
           <button
             onClick={onCheck}
             disabled={checking}
-            className="text-xs px-3 py-1.5 rounded-lg bg-indigo-100 dark:bg-indigo-950/40 text-indigo-600 dark:text-indigo-400 hover:bg-indigo-200 dark:hover:bg-indigo-950/60 transition-colors cursor-pointer disabled:opacity-50 font-medium"
+            className="text-xs px-3 py-1.5 rounded-lg bg-accent-soft text-accent-text hover:bg-accent-soft/70 transition-colors cursor-pointer disabled:opacity-50 font-medium"
           >
             {checking ? t("dash.checking") : t("dash.checkNow")}
           </button>
           {isRepo ? (
             <Link
               href={`/repo/${watch.label}`}
-              className="text-xs px-3 py-1.5 rounded-lg bg-purple-100 dark:bg-purple-950/40 text-purple-600 dark:text-purple-400 hover:bg-purple-200 transition-colors cursor-pointer font-medium"
+              className="text-xs px-3 py-1.5 rounded-lg border border-hairline text-muted hover:text-fg hover:bg-panel transition-colors cursor-pointer font-medium"
             >
               {t("dash.openDeepDive")}
             </Link>
           ) : (
             <button
               onClick={() => onAnalyzeUser(watch.label)}
-              className="text-xs px-3 py-1.5 rounded-lg bg-purple-100 dark:bg-purple-950/40 text-purple-600 dark:text-purple-400 hover:bg-purple-200 transition-colors cursor-pointer font-medium"
+              className="text-xs px-3 py-1.5 rounded-lg border border-hairline text-muted hover:text-fg hover:bg-panel transition-colors cursor-pointer font-medium"
             >
               {t("dash.viewProfile")}
             </button>
@@ -356,7 +356,7 @@ function WatchCard({
           <button
             onClick={onRemove}
             title={t("dash.remove")}
-            className="text-xs p-1.5 rounded-lg text-gray-400 hover:bg-red-50 dark:hover:bg-red-950/30 hover:text-red-500 transition-colors cursor-pointer"
+            className="text-xs p-1.5 rounded-lg text-faint hover:bg-danger-soft hover:text-danger transition-colors cursor-pointer"
           >
             <svg className="w-4 h-4" fill="none" viewBox="0 0 24 24" strokeWidth={2} stroke="currentColor">
               <path strokeLinecap="round" strokeLinejoin="round" d="M6 18L18 6M6 6l12 12" />
@@ -370,11 +370,11 @@ function WatchCard({
         {error && <p className="text-sm text-red-500">❌ {error}</p>}
 
         {!error && baseline && (
-          <p className="text-sm text-amber-600 dark:text-amber-400">{t("dash.baseline")}</p>
+          <p className="text-sm text-warning">{t("dash.baseline")}</p>
         )}
 
         {!error && !baseline && diff && !diff.hasChanges && (
-          <p className="text-sm text-emerald-600 dark:text-emerald-400">{t("dash.noChanges")}</p>
+          <p className="text-sm text-success">{t("dash.noChanges")}</p>
         )}
 
         {!error && diff && diff.hasChanges && (
@@ -409,7 +409,7 @@ function WatchCard({
             {diff.languageShifts.slice(0, 3).map((s) => (
               <span
                 key={s.name}
-                className="text-xs font-medium px-2.5 py-1 rounded-full bg-gray-100 dark:bg-gray-800 text-gray-600 dark:text-gray-300 inline-flex items-center gap-1.5"
+                className="text-xs font-medium px-2.5 py-1 rounded-full bg-panel text-muted inline-flex items-center gap-1.5"
               >
                 <span className="w-2 h-2 rounded-full" style={{ backgroundColor: getLanguageColor(s.name, 0) }} />
                 {s.name} {s.before.toFixed(0)}%→{s.after.toFixed(0)}%

@@ -48,7 +48,6 @@ export default function RepoCard({ repo, index, isExcluded, onToggleExclude, own
   };
 
   const hasLanguages = repo.languagePercentages.length > 0;
-  const dominantLang = repo.languagePercentages[0];
 
   return (
     <div
@@ -132,10 +131,22 @@ export default function RepoCard({ repo, index, isExcluded, onToggleExclude, own
         )}
 
         {/* Meta + expand */}
-        <div className="flex items-center justify-between mt-3 pt-3 border-t border-hairline">
-          <div className="flex items-center gap-x-2 text-xs text-faint min-w-0">
+        <div className="flex items-start justify-between gap-2 mt-3 pt-3 border-t border-hairline">
+          <div className="flex flex-wrap items-center gap-x-2.5 gap-y-1 text-xs text-faint min-w-0">
             <span className="tnum">{formatBytes(repo.totalBytes)}</span>
-            {dominantLang && <><span className="text-hairline-strong">·</span><span className="truncate">{formatDate(repo.updated_at)}</span></>}
+            <span className="text-hairline-strong">·</span>
+            <span className="inline-flex items-center gap-1 tnum" title={`${t("repo.createdAt")}: ${formatDate(repo.created_at)}`}>
+              <svg className="w-3 h-3" fill="none" viewBox="0 0 24 24" strokeWidth={1.7} stroke="currentColor">
+                <path strokeLinecap="round" strokeLinejoin="round" d="M8 2v3M16 2v3M3.5 8.5h17M5 4.5h14a1.5 1.5 0 011.5 1.5v13A1.5 1.5 0 0119 20.5H5A1.5 1.5 0 013.5 19V6A1.5 1.5 0 015 4.5z" />
+              </svg>
+              {formatDate(repo.created_at)}
+            </span>
+            <span className="inline-flex items-center gap-1 tnum" title={`${t("repo.updatedAt")}: ${formatDate(repo.updated_at)}`}>
+              <svg className="w-3 h-3" fill="none" viewBox="0 0 24 24" strokeWidth={1.7} stroke="currentColor">
+                <circle cx="12" cy="12" r="9" /><path strokeLinecap="round" strokeLinejoin="round" d="M12 7.5V12l3 1.8" />
+              </svg>
+              {formatDate(repo.updated_at)}
+            </span>
           </div>
           {hasLanguages && (
             <button

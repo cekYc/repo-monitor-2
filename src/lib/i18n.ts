@@ -275,6 +275,8 @@ export const translations = {
   "overview.allQuiet": { tr: "Her şey sakin", en: "All quiet" },
   "overview.noWatches": { tr: "Henüz izlenen yok", en: "Nothing watched yet" },
   "analyze.modules": { tr: "Gelişmiş modüller", en: "Advanced modules" },
+  "repo.createdAt": { tr: "Oluşturuldu", en: "Created" },
+  "repo.updatedAt": { tr: "Güncellendi", en: "Updated" },
 
   // --- Watch Button ---
   "watch.add": { tr: "İzle", en: "Watch" },

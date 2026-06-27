@@ -90,7 +90,7 @@ export default function HealthScore({ username, token }: HealthScoreProps) {
         className="w-full px-5 py-4 flex items-center justify-between cursor-pointer hover:bg-gray-50 dark:hover:bg-gray-800/50 transition-colors"
       >
         <div className="flex items-center gap-3">
-          <span className="text-lg font-bold text-fg">
+          <span className="text-[15px] font-medium text-fg">
             {t("health.title")}
           </span>
           {data && (
@@ -133,7 +133,7 @@ export default function HealthScore({ username, token }: HealthScoreProps) {
                 />
               </svg>
               <div className="text-center z-10">
-                <span className={`text-3xl font-extrabold ${config.color}`}>{data.overallScore}</span>
+                <span className={`text-xl font-semibold ${config.color}`}>{data.overallScore}</span>
                 <span className="block text-xs text-gray-400">/100</span>
               </div>
             </div>
@@ -164,7 +164,7 @@ export default function HealthScore({ username, token }: HealthScoreProps) {
                   key={key}
                   className="bg-panel rounded-xl p-3 text-center"
                 >
-                  <div className="text-2xl font-bold text-fg">
+                  <div className="text-lg font-semibold text-fg">
                     {percentage}%
                   </div>
                   <div className="text-xs text-muted mt-1">

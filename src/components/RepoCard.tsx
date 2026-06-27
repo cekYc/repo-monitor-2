@@ -1,17 +1,11 @@
 "use client";
 
-import {
-  PieChart,
-  Pie,
-  Cell,
-  Tooltip,
-  ResponsiveContainer,
-} from "recharts";
 import { getLanguageColor, formatBytes, formatDate } from "@/lib/utils";
 import { RepoInfo, RepoCommitHistory } from "@/lib/github";
 import { useState } from "react";
 import Link from "next/link";
 import CommitHistory from "./CommitHistory";
+import SegmentBar from "@/components/SegmentBar";
 import { useLocale } from "@/components/LocaleProvider";
 
 interface RepoCardProps {
@@ -58,276 +52,144 @@ export default function RepoCard({ repo, index, isExcluded, onToggleExclude, own
 
   return (
     <div
-      className={`bg-surface rounded-2xl border overflow-hidden hover:border-hairline-strong transition-colors ${
-        isExcluded
-          ? "border-amber-300 dark:border-amber-700 opacity-60"
-          : "border-hairline"
+      className={`rounded-2xl border bg-surface transition-colors h-full flex flex-col ${
+        isExcluded ? "border-warning/40 opacity-60" : "border-hairline hover:border-hairline-strong"
       }`}
-      style={{ animationDelay: `${index * 50}ms` }}
+      style={{ animationDelay: `${index * 40}ms` }}
     >
-      {/* Header — div kullanıyoruz, button içinde button olmasın diye */}
-      <div
-        role={hasLanguages ? "button" : undefined}
-        tabIndex={hasLanguages ? 0 : undefined}
-        onClick={() => hasLanguages && setExpanded(!expanded)}
-        onKeyDown={(e) => e.key === "Enter" && hasLanguages && setExpanded(!expanded)}
-        className={`w-full text-left p-5 transition-colors ${
-          hasLanguages
-            ? "cursor-pointer hover:bg-panel"
-            : "cursor-default"
-        }`}
-      >
-        <div className="flex items-start justify-between gap-3">
-          <div className="min-w-0 flex-1">
-            <div className="flex items-center gap-2 flex-wrap">
-              <a
-                href={repo.html_url}
-                target="_blank"
-                rel="noopener noreferrer"
-                onClick={(e) => e.stopPropagation()}
-                className="text-lg font-bold text-indigo-600 dark:text-indigo-400 hover:underline truncate"
-              >
-                {repo.name}
-              </a>
-              {/* Private badge */}
-              {repo.private && (
-                <span className="text-[10px] font-semibold px-2 py-0.5 rounded-full bg-panel text-muted border border-hairline">
-                  🔒 private
-                </span>
-              )}
-              {dominantLang && (
-                <span
-                  className="text-[10px] font-semibold px-2 py-0.5 rounded-full text-white shrink-0"
-                  style={{ backgroundColor: getLanguageColor(dominantLang.name, 0) }}
-                >
-                  {dominantLang.name}
-                </span>
-              )}
-            </div>
-            {repo.description && (
-              <p className="text-sm text-muted mt-1 line-clamp-2">
-                {repo.description}
-              </p>
+      <div className="p-4 flex-1 flex flex-col">
+        {/* Header */}
+        <div className="flex items-start justify-between gap-2">
+          <div className="min-w-0 flex items-center gap-2">
+            <a
+              href={repo.html_url}
+              target="_blank"
+              rel="noopener noreferrer"
+              onClick={(e) => e.stopPropagation()}
+              className="text-[15px] font-medium text-fg hover:text-accent-text transition-colors truncate"
+            >
+              {repo.name}
+            </a>
+            {repo.private && (
+              <span className="text-[10px] px-1.5 py-0.5 rounded-md bg-panel text-faint shrink-0">private</span>
             )}
           </div>
-          <div className="flex items-center gap-2 shrink-0">
-            {/* Exclude Toggle */}
+          <div className="flex items-center gap-1.5 shrink-0">
+            <div className="flex items-center gap-2.5 text-xs text-muted tnum mr-1">
+              <span className="inline-flex items-center gap-1" title="★">
+                <svg className="w-3.5 h-3.5" fill="none" viewBox="0 0 24 24" strokeWidth={1.6} stroke="currentColor">
+                  <path strokeLinecap="round" strokeLinejoin="round" d="M11.48 3.5a.56.56 0 011.04 0l2.12 4.3 4.74.69a.56.56 0 01.31.96l-3.43 3.34.81 4.73a.56.56 0 01-.82.59L12 16.9l-4.24 2.23a.56.56 0 01-.82-.59l.81-4.73-3.43-3.34a.56.56 0 01.31-.96l4.74-.69z" />
+                </svg>
+                {repo.stargazers_count}
+              </span>
+              <span className="inline-flex items-center gap-1" title="fork">
+                <svg className="w-3.5 h-3.5" fill="none" viewBox="0 0 24 24" strokeWidth={1.6} stroke="currentColor">
+                  <circle cx="6" cy="5" r="2" /><circle cx="18" cy="5" r="2" /><circle cx="12" cy="19" r="2" />
+                  <path strokeLinecap="round" d="M6 7v2a3 3 0 003 3h6a3 3 0 003-3V7M12 14v3" />
+                </svg>
+                {repo.forks_count}
+              </span>
+            </div>
             <button
               type="button"
-              onClick={(e) => {
-                e.stopPropagation();
-                onToggleExclude(repo.name);
-              }}
-              className={`p-1.5 rounded-lg transition-all cursor-pointer ${
-                isExcluded
-                  ? "bg-amber-100 dark:bg-amber-900/50 text-amber-600 dark:text-amber-400 hover:bg-amber-200 dark:hover:bg-amber-800"
-                  : "bg-panel text-faint hover:bg-danger-soft hover:text-danger"
+              onClick={(e) => { e.stopPropagation(); onToggleExclude(repo.name); }}
+              className={`p-1 rounded-md transition-colors cursor-pointer ${
+                isExcluded ? "text-warning hover:bg-warning-soft" : "text-faint hover:bg-danger-soft hover:text-danger"
               }`}
               title={isExcluded ? t("repo.include") : t("repo.exclude")}
             >
-              {isExcluded ? (
-                <svg className="w-4 h-4" fill="none" viewBox="0 0 24 24" strokeWidth={2} stroke="currentColor">
-                  <path strokeLinecap="round" strokeLinejoin="round" d="M3.98 8.223A10.477 10.477 0 001.934 12C3.226 16.338 7.244 19.5 12 19.5c.993 0 1.953-.138 2.863-.395M6.228 6.228A10.45 10.45 0 0112 4.5c4.756 0 8.773 3.162 10.065 7.498a10.523 10.523 0 01-4.293 5.774M6.228 6.228L3 3m3.228 3.228l3.65 3.65m7.894 7.894L21 21m-3.228-3.228l-3.65-3.65m0 0a3 3 0 10-4.243-4.243m4.242 4.242L9.88 9.88" />
-                </svg>
-              ) : (
-                <svg className="w-4 h-4" fill="none" viewBox="0 0 24 24" strokeWidth={2} stroke="currentColor">
-                  <path strokeLinecap="round" strokeLinejoin="round" d="M2.036 12.322a1.012 1.012 0 010-.639C3.423 7.51 7.36 4.5 12 4.5c4.638 0 8.573 3.007 9.963 7.178.07.207.07.431 0 .639C20.577 16.49 16.64 19.5 12 19.5c-4.638 0-8.573-3.007-9.963-7.178z" />
-                  <path strokeLinecap="round" strokeLinejoin="round" d="M15 12a3 3 0 11-6 0 3 3 0 016 0z" />
-                </svg>
-              )}
+              <svg className="w-3.5 h-3.5" fill="none" viewBox="0 0 24 24" strokeWidth={1.8} stroke="currentColor">
+                {isExcluded
+                  ? <path strokeLinecap="round" strokeLinejoin="round" d="M3.98 8.223A10.477 10.477 0 001.934 12C3.226 16.338 7.244 19.5 12 19.5c.993 0 1.953-.138 2.863-.395M6.228 6.228A10.45 10.45 0 0112 4.5c4.756 0 8.773 3.162 10.065 7.498a10.523 10.523 0 01-4.293 5.774M6.228 6.228L3 3m3.228 3.228l3.65 3.65m7.894 7.894L21 21m-3.228-3.228l-3.65-3.65m0 0a3 3 0 10-4.243-4.243m4.242 4.242L9.88 9.88" />
+                  : <><path strokeLinecap="round" strokeLinejoin="round" d="M2.036 12.322a1.012 1.012 0 010-.639C3.423 7.51 7.36 4.5 12 4.5c4.638 0 8.573 3.007 9.963 7.178.07.207.07.431 0 .639C20.577 16.49 16.64 19.5 12 19.5c-4.638 0-8.573-3.007-9.963-7.178z" /><path strokeLinecap="round" strokeLinejoin="round" d="M15 12a3 3 0 11-6 0 3 3 0 016 0z" /></>}
+              </svg>
             </button>
-            <div className="flex items-center gap-3 text-xs text-muted">
-              <span title="Yıldız">⭐ {repo.stargazers_count}</span>
-              <span title="Fork">🍴 {repo.forks_count}</span>
+          </div>
+        </div>
+
+        {repo.description && (
+          <p className="text-sm text-muted mt-1.5 line-clamp-2">{repo.description}</p>
+        )}
+
+        {/* Signature segment bar */}
+        {hasLanguages ? (
+          <div className="mt-auto pt-4">
+            <SegmentBar segments={repo.languagePercentages} height={10} max={6} />
+            <div className="flex flex-wrap gap-x-3 gap-y-1 mt-2.5">
+              {repo.languagePercentages.slice(0, 3).map((lang, i) => (
+                <span key={lang.name} className="inline-flex items-center gap-1.5 text-xs text-muted">
+                  <span className="w-2 h-2 rounded-full" style={{ background: getLanguageColor(lang.name, i) }} />
+                  {lang.name} <span className="text-faint tnum">{lang.value}%</span>
+                </span>
+              ))}
+              {repo.languagePercentages.length > 3 && (
+                <span className="text-xs text-faint">+{repo.languagePercentages.length - 3}</span>
+              )}
             </div>
-            {hasLanguages && (
-              <svg
-                className={`w-4 h-4 text-faint transition-transform duration-300 ${
-                  expanded ? "rotate-180" : ""
-                }`}
-                fill="none"
-                viewBox="0 0 24 24"
-                stroke="currentColor"
-                strokeWidth={2}
-              >
+          </div>
+        ) : (
+          <div className="mt-auto pt-4 text-xs text-faint italic">{t("repo.noLangs")}</div>
+        )}
+
+        {/* Meta + expand */}
+        <div className="flex items-center justify-between mt-3 pt-3 border-t border-hairline">
+          <div className="flex items-center gap-x-2 text-xs text-faint min-w-0">
+            <span className="tnum">{formatBytes(repo.totalBytes)}</span>
+            {dominantLang && <><span className="text-hairline-strong">·</span><span className="truncate">{formatDate(repo.updated_at)}</span></>}
+          </div>
+          {hasLanguages && (
+            <button
+              type="button"
+              onClick={() => setExpanded(!expanded)}
+              className="inline-flex items-center gap-1 text-xs text-muted hover:text-fg transition-colors cursor-pointer shrink-0"
+            >
+              {expanded ? t("repo.commitHistory.hide") : t("repo.langs")}
+              <svg className={`w-3.5 h-3.5 transition-transform ${expanded ? "rotate-180" : ""}`} fill="none" viewBox="0 0 24 24" strokeWidth={2} stroke="currentColor">
                 <path strokeLinecap="round" strokeLinejoin="round" d="M19 9l-7 7-7-7" />
               </svg>
-            )}
-          </div>
+            </button>
+          )}
         </div>
-
-        <div className="flex flex-wrap gap-3 mt-3 text-xs text-muted">
-          <span>📦 {formatBytes(repo.totalBytes)} {t("repo.code")}</span>
-          <span>💾 {repo.size} KB {t("repo.repo")}</span>
-          <span>📅 {formatDate(repo.created_at)}</span>
-          <span>🔄 {formatDate(repo.updated_at)}</span>
-          <span>📝 {repo.languagePercentages.length} {t("repo.langs")}</span>
-        </div>
-
-        {/* Language Bar */}
-        {hasLanguages && (
-          <div className="mt-4">
-            <div className="flex rounded-full overflow-hidden h-3 bg-panel">
-              {repo.languagePercentages.map((lang, i) => (
-                <div
-                  key={lang.name}
-                  title={`${lang.name}: ${lang.value}%`}
-                  className="h-full transition-all duration-500 first:rounded-l-full last:rounded-r-full"
-                  style={{
-                    width: `${Math.max(lang.value, 0.3)}%`,
-                    backgroundColor: getLanguageColor(lang.name, i),
-                  }}
-                />
-              ))}
-            </div>
-            <div className="flex flex-wrap gap-x-4 gap-y-1 mt-2">
-              {repo.languagePercentages.slice(0, 5).map((lang, i) => (
-                <div key={lang.name} className="flex items-center gap-1.5 text-xs">
-                  <span
-                    className="w-2.5 h-2.5 rounded-full inline-block"
-                    style={{ backgroundColor: getLanguageColor(lang.name, i) }}
-                  />
-                  <span className="text-fg font-medium">
-                    {lang.name}
-                  </span>
-                  <span className="text-faint">%{lang.value}</span>
-                </div>
-              ))}
-              {repo.languagePercentages.length > 5 && (
-                <span className="text-xs text-indigo-500">
-                  +{repo.languagePercentages.length - 5} {t("repo.moreLangs")}
-                </span>
-              )}
-            </div>
-          </div>
-        )}
-
-        {!hasLanguages && (
-          <div className="mt-4 text-sm text-faint italic">
-            {t("repo.noLangs")}
-          </div>
-        )}
       </div>
 
-      {/* Expanded Detail */}
+      {/* Expanded detail */}
       {expanded && hasLanguages && (
-        <div className="border-t border-hairline p-5 bg-panel">
-          <div className="grid grid-cols-1 md:grid-cols-2 gap-6">
-            <div>
-              <ResponsiveContainer width="100%" height={220}>
-                <PieChart>
-                  <Pie
-                    data={repo.languagePercentages}
-                    cx="50%"
-                    cy="50%"
-                    innerRadius={45}
-                    outerRadius={85}
-                    paddingAngle={2}
-                    dataKey="value"
-                    nameKey="name"
-                  >
-                    {repo.languagePercentages.map((entry, i) => (
-                      <Cell
-                        key={entry.name}
-                        fill={getLanguageColor(entry.name, i)}
-                        stroke="transparent"
-                      />
-                    ))}
-                  </Pie>
-                  <Tooltip
-                    formatter={(value, name, props) => [
-                      `${value}% (${formatBytes((props?.payload as { bytes: number })?.bytes ?? 0)})`,
-                      String(name),
-                    ]}
-                    contentStyle={{
-                      borderRadius: "12px",
-                      border: "none",
-                      boxShadow: "0 4px 20px rgba(0,0,0,0.15)",
-                      fontSize: "12px",
-                    }}
-                  />
-                </PieChart>
-              </ResponsiveContainer>
-            </div>
-
-            <div className="space-y-1.5">
-              {repo.languagePercentages.map((lang, i) => (
-                <div key={lang.name} className="flex items-center gap-2 text-sm">
-                  <span
-                    className="w-2.5 h-2.5 rounded-full inline-block shrink-0"
-                    style={{ backgroundColor: getLanguageColor(lang.name, i) }}
-                  />
-                  <span className="font-medium text-fg w-24 truncate">
-                    {lang.name}
-                  </span>
-                  <div className="flex-1 bg-panel rounded-full h-2">
-                    <div
-                      className="h-2 rounded-full"
-                      style={{
-                        width: `${Math.max(lang.value, 0.5)}%`,
-                        backgroundColor: getLanguageColor(lang.name, i),
-                      }}
-                    />
-                  </div>
-                  <span className="font-mono text-xs text-gray-500 w-14 text-right">
-                    %{lang.value}
-                  </span>
-                  <span className="font-mono text-xs text-faint w-16 text-right">
-                    {formatBytes(lang.bytes)}
-                  </span>
+        <div className="border-t border-hairline p-4 bg-panel rounded-b-2xl">
+          <div className="grid grid-cols-1 sm:grid-cols-2 gap-x-6 gap-y-1.5">
+            {repo.languagePercentages.map((lang, i) => (
+              <div key={lang.name} className="flex items-center gap-2 text-sm">
+                <span className="w-2.5 h-2.5 rounded-full shrink-0" style={{ background: getLanguageColor(lang.name, i) }} />
+                <span className="text-fg w-24 truncate">{lang.name}</span>
+                <div className="flex-1 h-1.5 bg-surface rounded-full overflow-hidden">
+                  <div className="h-full rounded-full" style={{ width: `${Math.max(lang.value, 0.5)}%`, background: getLanguageColor(lang.name, i) }} />
                 </div>
-              ))}
-            </div>
-          </div>
-
-          {/* Commit History */}
-          <div className="mt-5 pt-4 border-t border-hairline">
-            <div className="flex flex-wrap items-center gap-3">
-              <Link
-                href={`/repo/${owner}/${repo.name}`}
-                className="inline-flex items-center gap-2 px-4 py-2 rounded-xl bg-purple-50 dark:bg-purple-950/30 text-purple-600 dark:text-purple-400 text-sm font-medium hover:bg-purple-100 dark:hover:bg-purple-950/50 transition-colors cursor-pointer"
-              >
-                <svg className="w-4 h-4" fill="none" viewBox="0 0 24 24" strokeWidth={2} stroke="currentColor">
-                  <path strokeLinecap="round" strokeLinejoin="round" d="M10.5 6a7.5 7.5 0 107.5 7.5h-7.5V6z" />
-                  <path strokeLinecap="round" strokeLinejoin="round" d="M13.5 10.5H21A7.5 7.5 0 0013.5 3v7.5z" />
-                </svg>
-                {t("dash.openDeepDive")}
-              </Link>
-              <button
-                type="button"
-                onClick={loadCommitHistory}
-                disabled={historyLoading}
-                className="inline-flex items-center gap-2 px-4 py-2 rounded-xl bg-indigo-50 dark:bg-indigo-950/30 text-indigo-600 dark:text-indigo-400 text-sm font-medium hover:bg-indigo-100 dark:hover:bg-indigo-950/50 transition-colors cursor-pointer disabled:opacity-50"
-              >
-                {historyLoading ? (
-                  <>
-                    <svg className="animate-spin h-4 w-4" viewBox="0 0 24 24" fill="none">
-                      <circle className="opacity-25" cx="12" cy="12" r="10" stroke="currentColor" strokeWidth="4" />
-                      <path className="opacity-75" fill="currentColor" d="M4 12a8 8 0 018-8V0C5.373 0 0 5.373 0 12h4z" />
-                    </svg>
-                    Commit geçmişi yükleniyor...
-                  </>
-                ) : (
-                  <>
-                    <svg className="w-4 h-4" fill="none" viewBox="0 0 24 24" strokeWidth={2} stroke="currentColor">
-                      <path strokeLinecap="round" strokeLinejoin="round" d="M12 6v6h4.5m4.5 0a9 9 0 11-18 0 9 9 0 0118 0z" />
-                    </svg>
-                    {showHistory && commitHistory ? t("repo.commitHistory.hide") : t("repo.commitHistory.load")}
-                  </>
-                )}
-              </button>
-            </div>
-
-            {historyError && (
-              <p className="text-red-500 text-xs mt-2">❌ {historyError}</p>
-            )}
-
-            {showHistory && commitHistory && (
-              <div className="mt-4">
-                <CommitHistory history={commitHistory} />
+                <span className="tnum text-xs text-muted w-12 text-right">{lang.value}%</span>
               </div>
-            )}
+            ))}
           </div>
+
+          <div className="mt-4 pt-4 border-t border-hairline flex flex-wrap items-center gap-2">
+            <Link
+              href={`/repo/${owner}/${repo.name}`}
+              className="inline-flex items-center gap-1.5 px-3 py-1.5 rounded-lg bg-accent-soft text-accent-text text-xs font-medium hover:bg-accent-soft/70 transition-colors cursor-pointer"
+            >
+              <svg className="w-3.5 h-3.5" fill="none" viewBox="0 0 24 24" strokeWidth={2} stroke="currentColor">
+                <path strokeLinecap="round" strokeLinejoin="round" d="M10.5 6a7.5 7.5 0 107.5 7.5h-7.5V6z" /><path strokeLinecap="round" strokeLinejoin="round" d="M13.5 10.5H21A7.5 7.5 0 0013.5 3v7.5z" />
+              </svg>
+              {t("dash.openDeepDive")}
+            </Link>
+            <button
+              type="button"
+              onClick={loadCommitHistory}
+              disabled={historyLoading}
+              className="inline-flex items-center gap-1.5 px-3 py-1.5 rounded-lg border border-hairline text-muted text-xs font-medium hover:text-fg hover:bg-surface transition-colors cursor-pointer disabled:opacity-50"
+            >
+              {historyLoading ? t("progress.loading") : showHistory && commitHistory ? t("repo.commitHistory.hide") : t("repo.commitHistory.load")}
+            </button>
+          </div>
+
+          {historyError && <p className="text-danger text-xs mt-2">{historyError}</p>}
+          {showHistory && commitHistory && <div className="mt-4"><CommitHistory history={commitHistory} /></div>}
         </div>
       )}
     </div>

@@ -117,7 +117,7 @@ export default function DeveloperPersona({ username, token }: DeveloperPersonaPr
         className="w-full px-5 py-4 flex items-center justify-between cursor-pointer hover:bg-gray-50 dark:hover:bg-gray-800/50 transition-colors"
       >
         <div className="flex items-center gap-3">
-          <span className="text-lg font-bold text-fg">
+          <span className="text-[15px] font-medium text-fg">
             {t("persona.title")}
           </span>
           {data && earnedBadges.length > 0 && (
@@ -201,7 +201,7 @@ export default function DeveloperPersona({ username, token }: DeveloperPersonaPr
               {/* Stats Row */}
               <div className="grid grid-cols-3 gap-3">
                 <div className="bg-panel rounded-xl p-3 text-center">
-                  <div className="text-xl font-bold text-fg">
+                  <div className="text-base font-semibold text-fg">
                     {`${data.peakHour.toString().padStart(2, "0")}:00`}
                   </div>
                   <div className="text-xs text-muted">
@@ -209,7 +209,7 @@ export default function DeveloperPersona({ username, token }: DeveloperPersonaPr
                   </div>
                 </div>
                 <div className="bg-panel rounded-xl p-3 text-center">
-                  <div className="text-xl font-bold text-fg">
+                  <div className="text-base font-semibold text-fg">
                     {dayNames[data.peakDay]}
                   </div>
                   <div className="text-xs text-muted">
@@ -217,7 +217,7 @@ export default function DeveloperPersona({ username, token }: DeveloperPersonaPr
                   </div>
                 </div>
                 <div className="bg-panel rounded-xl p-3 text-center">
-                  <div className="text-xl font-bold text-fg">
+                  <div className="text-base font-semibold text-fg">
                     {data.longestStreak}
                   </div>
                   <div className="text-xs text-muted">

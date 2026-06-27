@@ -9,7 +9,7 @@ export const translations = {
   },
 
   // SearchForm
-  "search.title": { tr: "🔍 GitHub Kullanıcı Analizi", en: "🔍 GitHub User Analysis" },
+  "search.title": { tr: "GitHub kullanıcı analizi", en: "GitHub user analysis" },
   "search.token.label": { tr: "GitHub API Token", en: "GitHub API Token" },
   "search.token.optional": { tr: "Opsiyonel", en: "Optional" },
   "search.token.saved": { tr: "✓ Token tarayıcıda kayıtlı — saatte 5.000 istek", en: "✓ Token saved in browser — 5,000 requests/hour" },
@@ -33,8 +33,8 @@ export const translations = {
   "progress.loading": { tr: "Repolar yükleniyor...", en: "Loading repos..." },
 
   // Cache
-  "cache.loaded": { tr: "⚡ Cache'den yüklendi (30 dk geçerli)", en: "⚡ Loaded from cache (valid 30 min)" },
-  "cache.refresh": { tr: "🔄 Yenile", en: "🔄 Refresh" },
+  "cache.loaded": { tr: "Cache'den yüklendi · 30 dk geçerli", en: "Loaded from cache · valid 30 min" },
+  "cache.refresh": { tr: "Yenile", en: "Refresh" },
 
   // OverallStats
   "stats.repo": { tr: "Repo", en: "Repos" },
@@ -42,7 +42,7 @@ export const translations = {
   "stats.following": { tr: "Takip", en: "Following" },
   "stats.totalCode": { tr: "Toplam Kod", en: "Total Code" },
   "stats.language": { tr: "Dil", en: "Lang" },
-  "stats.distribution.title": { tr: "📊 Genel Dil Dağılımı (Tüm Repolar)", en: "📊 Overall Language Distribution (All Repos)" },
+  "stats.distribution.title": { tr: "Genel dil dağılımı", en: "Overall language distribution" },
   "stats.pie.title": { tr: "Yüzdelik Dağılım", en: "Percentage Distribution" },
   "stats.bar.title": { tr: "Boyut Karşılaştırması", en: "Size Comparison" },
   "stats.table.title": { tr: "Detaylı Tablo", en: "Detailed Table" },
@@ -50,7 +50,7 @@ export const translations = {
   "stats.table.percent": { tr: "Yüzde", en: "Percent" },
   "stats.table.size": { tr: "Boyut", en: "Size" },
   "stats.table.ratio": { tr: "Oran", en: "Ratio" },
-  "stats.export": { tr: "📸 PNG İndir", en: "📸 Download PNG" },
+  "stats.export": { tr: "PNG indir", en: "Download PNG" },
   "stats.exporting": { tr: "Hazırlanıyor...", en: "Preparing..." },
 
   // Exclusion
@@ -59,7 +59,7 @@ export const translations = {
   "exclusion.includeAll": { tr: "Tümünü Dahil Et", en: "Include All" },
 
   // Insights
-  "insights.title": { tr: "💡 Öne Çıkan Metrikler", en: "💡 Key Insights" },
+  "insights.title": { tr: "Öne çıkan metrikler", en: "Key insights" },
   "insights.favLang": { tr: "Favori Dil", en: "Favorite Language" },
   "insights.favLangDetail": { tr: "repoda birincil dil", en: "repos as primary language" },
   "insights.avgLang": { tr: "Ortalama Dil / Repo", en: "Avg Language / Repo" },
@@ -142,8 +142,8 @@ export const translations = {
   "footer.copyright": { tr: "Repo Monitor © 2026", en: "Repo Monitor © 2026" },
 
   // Organization Analysis
-  "org.toggle": { tr: "🏢 Organizasyon Analizi", en: "🏢 Organization Analysis" },
-  "org.title": { tr: "🏢 Organizasyon Analizi", en: "🏢 Organization Analysis" },
+  "org.toggle": { tr: "Organizasyon analizi", en: "Organization analysis" },
+  "org.title": { tr: "Organizasyon analizi", en: "Organization analysis" },
   "org.placeholder": { tr: "örn: facebook", en: "e.g. facebook" },
   "org.label": { tr: "Organizasyon Adı", en: "Organization Name" },
   "org.submit": { tr: "Analiz Et", en: "Analyze" },
@@ -152,7 +152,7 @@ export const translations = {
   "org.publicRepos": { tr: "Repo", en: "Repos" },
 
   // Badge Generator
-  "badge.title": { tr: "🏷️ Embeddable Badge", en: "🏷️ Embeddable Badge" },
+  "badge.title": { tr: "Gömülebilir rozet", en: "Embeddable badge" },
   "badge.description": { tr: "GitHub README'nize ekleyebileceğiniz dil dağılımı badge'i", en: "Language distribution badge for your GitHub README" },
   "badge.markdown": { tr: "Markdown", en: "Markdown" },
   "badge.html": { tr: "HTML", en: "HTML" },
@@ -161,14 +161,14 @@ export const translations = {
   "badge.preview": { tr: "Önizleme", en: "Preview" },
 
   // Suggestions
-  "suggestions.title": { tr: "💡 Önerilen Repolar", en: "💡 Suggested Repos" },
+  "suggestions.title": { tr: "Önerilen repolar", en: "Suggested repos" },
   "suggestions.description": { tr: "En çok kullandığınız dillere göre popüler repolar", en: "Popular repos based on your most-used languages" },
   "suggestions.loading": { tr: "Öneriler yükleniyor...", en: "Loading suggestions..." },
   "suggestions.star": { tr: "yıldız", en: "stars" },
   "suggestions.empty": { tr: "Öneri bulunamadı", en: "No suggestions found" },
 
   // Contribution Heatmap
-  "heatmap.title": { tr: "📅 Katkı Haritası", en: "📅 Contribution Heatmap" },
+  "heatmap.title": { tr: "Katkı haritası", en: "Contribution heatmap" },
   "heatmap.loading": { tr: "Katkı verileri yükleniyor...", en: "Loading contribution data..." },
   "heatmap.events": { tr: "katkı", en: "contributions" },
   "heatmap.noData": { tr: "Katkı verisi bulunamadı", en: "No contribution data found" },
@@ -200,7 +200,7 @@ export const translations = {
   "pwa.installed": { tr: "Uygulama yüklendi!", en: "App installed!" },
 
   // Health Score
-  "health.title": { tr: "🛡️ Repo Sağlık & Güvenlik Skoru", en: "🛡️ Repo Health & Security Score" },
+  "health.title": { tr: "Repo sağlık & güvenlik skoru", en: "Repo health & security score" },
   "health.loading": { tr: "Sağlık verileri analiz ediliyor...", en: "Analyzing health data..." },
   "health.overall": { tr: "Genel Skor", en: "Overall Score" },
   "health.hasReadme": { tr: "README mevcut", en: "Has README" },
@@ -218,7 +218,7 @@ export const translations = {
   "health.tip": { tr: "İpucu: README, LICENSE ve CI ekleyin", en: "Tip: Add README, LICENSE and CI" },
 
   // Developer Persona
-  "persona.title": { tr: "🎮 Geliştirici Personası", en: "🎮 Developer Persona" },
+  "persona.title": { tr: "Geliştirici personası", en: "Developer persona" },
   "persona.loading": { tr: "Persona analiz ediliyor...", en: "Analyzing persona..." },
   "persona.noData": { tr: "Yeterli veri bulunamadı", en: "Not enough data found" },
   "persona.commitHours": { tr: "Commit Saat Dağılımı", en: "Commit Hour Distribution" },
@@ -239,7 +239,7 @@ export const translations = {
   "persona.activeDays": { tr: "En Aktif Gün", en: "Most Active Day" },
 
   // Custom Extensions
-  "extensions.title": { tr: "⚙️ Özel Uzantı Tarayıcı", en: "⚙️ Custom Extension Scanner" },
+  "extensions.title": { tr: "Özel uzantı tarayıcı", en: "Custom extension scanner" },
   "extensions.description": { tr: "GitHub Linguist'in tanımadığı özel dosya uzantılarını analiz edin", en: "Analyze custom file extensions not recognized by GitHub Linguist" },
   "extensions.addExt": { tr: "Uzantı Ekle", en: "Add Extension" },
   "extensions.extPlaceholder": { tr: "örn: .cky", en: "e.g. .cky" },

@@ -132,7 +132,7 @@ export default function ContributionHeatmap({ username, token }: ContributionHea
   if (loading) {
     return (
       <div className="bg-surface rounded-2xl p-6 border border-hairline">
-        <h2 className="text-xl font-bold text-fg mb-4">{t("heatmap.title")}</h2>
+        <h2 className="text-base font-semibold text-fg mb-4">{t("heatmap.title")}</h2>
         <div className="text-center py-6 text-gray-400 text-sm">
           <svg className="animate-spin h-4 w-4 inline mr-2" viewBox="0 0 24 24" fill="none">
             <circle className="opacity-25" cx="12" cy="12" r="10" stroke="currentColor" strokeWidth="4" />
@@ -147,7 +147,7 @@ export default function ContributionHeatmap({ username, token }: ContributionHea
   if (loaded && days.length === 0) {
     return (
       <div className="bg-surface rounded-2xl p-6 border border-hairline">
-        <h2 className="text-xl font-bold text-fg mb-4">{t("heatmap.title")}</h2>
+        <h2 className="text-base font-semibold text-fg mb-4">{t("heatmap.title")}</h2>
         <p className="text-gray-400 text-sm text-center py-4">{t("heatmap.noData")}</p>
       </div>
     );
@@ -158,7 +158,7 @@ export default function ContributionHeatmap({ username, token }: ContributionHea
   return (
     <div className="bg-surface rounded-2xl p-6 border border-hairline">
       <div className="flex items-center justify-between mb-4">
-        <h2 className="text-xl font-bold text-fg">{t("heatmap.title")}</h2>
+        <h2 className="text-base font-semibold text-fg">{t("heatmap.title")}</h2>
         <div className="flex items-center gap-3">
           {source === "events" && (
             <span className="text-[10px] text-amber-500 dark:text-amber-400" title={t("heatmap.eventsNote")}>

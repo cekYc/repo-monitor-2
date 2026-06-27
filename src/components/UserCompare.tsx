@@ -101,7 +101,7 @@ export default function UserCompare({ userA, userB }: UserCompareProps) {
   return (
     <div className="space-y-6" ref={compareRef}>
       <div className="flex items-center justify-between">
-        <h2 className="text-xl font-bold text-fg">
+        <h2 className="text-base font-semibold text-fg">
           {t("compare.title")}
         </h2>
         <button
@@ -162,15 +162,15 @@ export default function UserCompare({ userA, userB }: UserCompareProps) {
               </div>
               <div className="grid grid-cols-3 gap-3 text-center text-sm">
                 <div>
-                  <p className="text-lg font-bold text-fg">{analysis.totalRepos}</p>
+                  <p className="text-[15px] font-medium text-fg">{analysis.totalRepos}</p>
                   <p className="text-xs text-gray-500">{t("compare.totalRepos")}</p>
                 </div>
                 <div>
-                  <p className="text-lg font-bold text-fg">{stars}</p>
+                  <p className="text-[15px] font-medium text-fg">{stars}</p>
                   <p className="text-xs text-gray-500">{t("compare.totalStars")}</p>
                 </div>
                 <div>
-                  <p className="text-lg font-bold text-fg">{forks}</p>
+                  <p className="text-[15px] font-medium text-fg">{forks}</p>
                   <p className="text-xs text-gray-500">{t("compare.forks")}</p>
                 </div>
               </div>

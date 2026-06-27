@@ -14,6 +14,7 @@ import { getLanguageColor, formatBytes, formatDate } from "@/lib/utils";
 import type { RepoDeepAnalysis } from "@/lib/github";
 import type { TranslationKey } from "@/lib/i18n";
 import WatchButton from "@/components/WatchButton";
+import SegmentBar from "@/components/SegmentBar";
 
 interface RepoDeepDiveProps {
   data: RepoDeepAnalysis;
@@ -29,7 +30,7 @@ function StatCard({
   accent?: string;
 }) {
   return (
-    <div className="bg-panel rounded-xl p-4 text-center">
+    <div className="rounded-2xl border border-hairline bg-surface p-4 text-center">
       <div className={`text-2xl font-semibold tnum ${accent ?? "text-fg"}`}>
         {value}
       </div>
@@ -79,7 +80,7 @@ export default function RepoDeepDive({ data }: RepoDeepDiveProps) {
                 href={data.html_url}
                 target="_blank"
                 rel="noopener noreferrer"
-                className="text-2xl font-extrabold text-indigo-600 dark:text-indigo-400 hover:underline break-all"
+                className="text-xl font-semibold text-indigo-600 dark:text-indigo-400 hover:underline break-all"
               >
                 {data.fullName}
               </a>
@@ -136,7 +137,7 @@ export default function RepoDeepDive({ data }: RepoDeepDiveProps) {
             {data.busFactor}
           </div>
           <div className="min-w-0">
-            <div className="font-bold text-fg flex items-center gap-2">
+            <div className="font-semibold text-fg flex items-center gap-2">
               🚌 {t("deep.busFactor")}
               <span className="text-xs font-normal text-muted">
                 ({data.busFactorPct}% {t("deep.ofCommits")})
@@ -155,22 +156,11 @@ export default function RepoDeepDive({ data }: RepoDeepDiveProps) {
       <div className="grid grid-cols-1 lg:grid-cols-2 gap-6">
         {/* Languages */}
         <div className="bg-surface rounded-2xl border border-hairline p-6">
-          <h3 className="font-bold text-fg mb-4">{t("deep.languages")}</h3>
+          <h3 className="font-semibold text-fg mb-4">{t("deep.languages")}</h3>
           {data.languages.length > 0 ? (
             <>
-              <div className="flex rounded-full overflow-hidden h-3 bg-panel">
-                {data.languages.map((lang, i) => (
-                  <div
-                    key={lang.name}
-                    title={`${lang.name}: ${lang.value}%`}
-                    className="h-full"
-                    style={{
-                      width: `${Math.max(lang.value, 0.3)}%`,
-                      backgroundColor: getLanguageColor(lang.name, i),
-                    }}
-                  />
-                ))}
-              </div>
+              <SegmentBar segments={data.languages} height={12} />
+
               <div className="space-y-1.5 mt-4">
                 {data.languages.slice(0, 8).map((lang, i) => (
                   <div key={lang.name} className="flex items-center gap-2 text-sm">
@@ -202,7 +192,7 @@ export default function RepoDeepDive({ data }: RepoDeepDiveProps) {
 
         {/* Contributors */}
         <div className="bg-surface rounded-2xl border border-hairline p-6">
-          <h3 className="font-bold text-fg mb-4">
+          <h3 className="font-semibold text-fg mb-4">
             {t("deep.contributors")}
             <span className="text-xs font-normal text-faint ml-2">{data.contributorCount}</span>
           </h3>
@@ -217,7 +207,7 @@ export default function RepoDeepDive({ data }: RepoDeepDiveProps) {
               >
                 {/* eslint-disable-next-line @next/next/no-img-element */}
                 <img src={c.avatar_url} alt={c.login} className="w-7 h-7 rounded-full shrink-0" />
-                <span className="text-sm font-medium text-fg w-32 truncate group-hover:text-indigo-500">
+                <span className="text-sm font-medium text-fg w-32 truncate group-hover:text-accent-text">
                   {c.login}
                 </span>
                 <div className="flex-1 bg-panel rounded-full h-2.5">
@@ -238,7 +228,7 @@ export default function RepoDeepDive({ data }: RepoDeepDiveProps) {
       {/* Commit cadence */}
       <div className="bg-surface rounded-2xl border border-hairline p-6">
         <div className="flex items-baseline justify-between flex-wrap gap-2 mb-4">
-          <h3 className="font-bold text-fg">{t("deep.commitCadence")}</h3>
+          <h3 className="font-semibold text-fg">{t("deep.commitCadence")}</h3>
           <span className="text-xs text-faint">
             {data.recentCommits} {t("deep.commitsAnalyzed")}
             {data.windowDays > 0 && ` · ${data.windowDays} ${t("deep.days")}`}
@@ -294,7 +284,7 @@ export default function RepoDeepDive({ data }: RepoDeepDiveProps) {
       <div className="grid grid-cols-1 lg:grid-cols-2 gap-6">
         <div className="bg-surface rounded-2xl border border-hairline p-6">
           <div className="flex items-baseline justify-between mb-4">
-            <h3 className="font-bold text-fg">{t("deep.releases")}</h3>
+            <h3 className="font-semibold text-fg">{t("deep.releases")}</h3>
             <span className="text-xs text-faint">{data.releaseCount} {t("deep.totalReleases")}</span>
           </div>
           {data.releases.length > 0 ? (
@@ -325,7 +315,7 @@ export default function RepoDeepDive({ data }: RepoDeepDiveProps) {
         </div>
 
         <div className="bg-surface rounded-2xl border border-hairline p-6">
-          <h3 className="font-bold text-fg mb-4">{t("deep.hygiene")}</h3>
+          <h3 className="font-semibold text-fg mb-4">{t("deep.hygiene")}</h3>
           <div className="space-y-3">
             <HygieneRow label={t("deep.readme")} ok={data.hasReadme} />
             <HygieneRow label={t("deep.ci")} ok={data.hasCI} />

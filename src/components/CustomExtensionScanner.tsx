@@ -121,7 +121,7 @@ export default function CustomExtensionScanner({ username, token }: CustomExtens
         className="w-full px-5 py-4 flex items-center justify-between cursor-pointer hover:bg-gray-50 dark:hover:bg-gray-800/50 transition-colors"
       >
         <div className="flex items-center gap-3">
-          <span className="text-lg font-bold text-fg">
+          <span className="text-[15px] font-medium text-fg">
             {t("extensions.title")}
           </span>
           {extensions.length > 0 && (

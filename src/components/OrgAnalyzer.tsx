@@ -64,7 +64,7 @@ export default function OrgAnalyzer({ token }: OrgAnalyzerProps) {
         onClick={() => setExpanded(!expanded)}
         className="w-full flex items-center justify-between p-5 text-left hover:bg-gray-50 dark:hover:bg-gray-800/50 transition-colors cursor-pointer"
       >
-        <h2 className="text-lg font-bold text-fg">
+        <h2 className="text-[15px] font-medium text-fg">
           {t("org.title")}
         </h2>
         <svg
@@ -127,7 +127,7 @@ export default function OrgAnalyzer({ token }: OrgAnalyzerProps) {
                     className="w-16 h-16 rounded-xl border-2 border-white/30"
                   />
                   <div>
-                    <h3 className="text-xl font-bold">{analysis.org.name || analysis.org.login}</h3>
+                    <h3 className="text-base font-semibold">{analysis.org.name || analysis.org.login}</h3>
                     <a
                       href={analysis.org.html_url}
                       target="_blank"
@@ -143,15 +143,15 @@ export default function OrgAnalyzer({ token }: OrgAnalyzerProps) {
                 </div>
                 <div className="flex gap-6 mt-4">
                   <div>
-                    <span className="text-2xl font-bold">{analysis.totalRepos}</span>
+                    <span className="text-lg font-semibold">{analysis.totalRepos}</span>
                     <span className="text-white/70 ml-1 text-sm">{t("org.publicRepos")}</span>
                   </div>
                   <div>
-                    <span className="text-2xl font-bold">{formatBytes(analysis.totalBytes)}</span>
+                    <span className="text-lg font-semibold">{formatBytes(analysis.totalBytes)}</span>
                     <span className="text-white/70 ml-1 text-sm">{t("stats.totalCode")}</span>
                   </div>
                   <div>
-                    <span className="text-2xl font-bold">{analysis.overallLanguages.length}</span>
+                    <span className="text-lg font-semibold">{analysis.overallLanguages.length}</span>
                     <span className="text-white/70 ml-1 text-sm">{t("stats.language")}</span>
                   </div>
                 </div>

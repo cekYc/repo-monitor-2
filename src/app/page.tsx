@@ -442,15 +442,15 @@ function HomeContent() {
                 </div>
               </div>
 
-              <div className="grid gap-3" ref={repoExportRef}>
+              <div className="grid sm:grid-cols-2 gap-3" ref={repoExportRef}>
                 {sortedRepos.map((repo, i) => (
                   <div key={repo.name} data-repo-name={repo.name}>
-                    <div className="flex gap-3 items-start">
+                    <div className="flex gap-2.5 items-start">
                       <button
                         type="button"
                         data-repo-checkbox
                         onClick={() => toggleSelectRepo(repo.name)}
-                        className={`mt-5 shrink-0 w-5 h-5 rounded border-2 flex items-center justify-center cursor-pointer transition-all ${
+                        className={`mt-4 shrink-0 w-5 h-5 rounded-md border-2 flex items-center justify-center cursor-pointer transition-all ${
                           selectedRepos.has(repo.name) ? "bg-accent border-accent text-accent-fg" : "border-hairline-strong hover:border-accent"
                         }`}
                       >

@@ -371,6 +371,10 @@ export const translations = {
   "deep.dow.4": { tr: "Per", en: "Thu" },
   "deep.dow.5": { tr: "Cum", en: "Fri" },
   "deep.dow.6": { tr: "Cmt", en: "Sat" },
+
+  // Timeline
+  "timeline.title": { tr: "Proje Zaman Çizelgesi", en: "Project Timeline" },
+  "timeline.noChange": { tr: "Güncelleme yok (sadece nokta)", en: "No update (dot only)" },
 } as const;
 
 export type TranslationKey = keyof typeof translations;

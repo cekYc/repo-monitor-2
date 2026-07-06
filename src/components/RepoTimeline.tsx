@@ -18,7 +18,7 @@ interface Row {
 
 const ROW_H = 28;
 const LABEL_W = 128;
-const TICK_COUNT = 5;
+const TICK_COUNT = 8;
 
 function tickAlignClass(index: number, count: number): string {
   if (index === 0) return "translate-x-0";
@@ -129,8 +129,23 @@ export default function RepoTimeline({ repos }: RepoTimelineProps) {
         </div>
       </div>
 
-      {/* Rows */}
-      <div className="max-h-96 overflow-y-auto pr-1" data-scroll-container>
+      {/* Rows with Grid Lines */}
+      <div className="relative mt-2">
+        {/* Background Grid */}
+        <div className="absolute inset-0 pointer-events-none flex gap-3">
+          <span className="shrink-0" style={{ width: LABEL_W }} />
+          <div className="relative flex-1 opacity-40">
+            {ticks.map((tk, i) => (
+              <div
+                key={i}
+                className="absolute inset-y-0 border-l border-hairline border-dashed"
+                style={{ left: `${pct(tk)}%` }}
+              />
+            ))}
+          </div>
+        </div>
+
+        <div className="max-h-96 overflow-y-auto pr-1 relative z-10" data-scroll-container>
         {rows.map((r) => {
           const left = pct(r.created);
           const right = pct(r.updated);
@@ -177,6 +192,7 @@ export default function RepoTimeline({ repos }: RepoTimelineProps) {
             </div>
           );
         })}
+      </div>
       </div>
 
       {/* Legend */}

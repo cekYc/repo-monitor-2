@@ -1,6 +1,6 @@
 "use client";
 
-import { useMemo, useState } from "react";
+import { useMemo, useState, useRef, useCallback } from "react";
 import { useLocale } from "@/components/LocaleProvider";
 import { formatDate } from "@/lib/utils";
 import type { RepoInfo } from "@/lib/github";
@@ -29,6 +29,40 @@ function tickAlignClass(index: number, count: number): string {
 export default function RepoTimeline({ repos }: RepoTimelineProps) {
   const { t } = useLocale();
   const [hovered, setHovered] = useState<string | null>(null);
+  const [exporting, setExporting] = useState(false);
+  const containerRef = useRef<HTMLDivElement>(null);
+
+  const handleExport = useCallback(async () => {
+    if (!containerRef.current) return;
+    setExporting(true);
+    try {
+      const { toPng } = await import("html-to-image");
+      
+      const scrollDiv = containerRef.current.querySelector('[data-scroll-container]') as HTMLElement;
+      const originalMaxHeight = scrollDiv.style.maxHeight;
+      const originalOverflow = scrollDiv.style.overflowY;
+      
+      scrollDiv.style.maxHeight = 'none';
+      scrollDiv.style.overflowY = 'visible';
+
+      const dataUrl = await toPng(containerRef.current, {
+        backgroundColor: document.documentElement.classList.contains("dark") ? "#09090b" : "#ffffff",
+        pixelRatio: 2,
+      });
+
+      scrollDiv.style.maxHeight = originalMaxHeight;
+      scrollDiv.style.overflowY = originalOverflow;
+
+      const link = document.createElement("a");
+      link.download = `timeline-${Date.now()}.png`;
+      link.href = dataUrl;
+      link.click();
+    } catch (err) {
+      console.error("Timeline export failed:", err);
+    } finally {
+      setExporting(false);
+    }
+  }, []);
 
   const rows: Row[] = useMemo(() => {
     return repos
@@ -64,10 +98,19 @@ export default function RepoTimeline({ repos }: RepoTimelineProps) {
   if (rows.length === 0) return null;
 
   return (
-    <div className="rounded-2xl border border-hairline bg-surface p-5">
+    <div className="rounded-2xl border border-hairline bg-surface p-5" ref={containerRef}>
       <div className="flex items-center justify-between mb-4">
-        <h2 className="text-base font-semibold text-fg">{t("timeline.title")}</h2>
-        <span className="text-xs text-faint tnum">{rows.length}</span>
+        <h2 className="text-base font-semibold text-fg">
+          {t("timeline.title")}
+          <span className="text-xs text-faint tnum ml-2">{rows.length}</span>
+        </h2>
+        <button
+          onClick={handleExport}
+          disabled={exporting}
+          className="text-xs px-3 py-1.5 rounded-lg bg-accent-soft text-accent-text hover:bg-accent-soft/70 transition-colors cursor-pointer disabled:opacity-50 font-medium"
+        >
+          {exporting ? t("timeline.exporting") : t("timeline.export")}
+        </button>
       </div>
 
       {/* Axis */}
@@ -87,7 +130,7 @@ export default function RepoTimeline({ repos }: RepoTimelineProps) {
       </div>
 
       {/* Rows */}
-      <div className="max-h-96 overflow-y-auto pr-1">
+      <div className="max-h-96 overflow-y-auto pr-1" data-scroll-container>
         {rows.map((r) => {
           const left = pct(r.created);
           const right = pct(r.updated);

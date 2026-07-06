@@ -375,6 +375,8 @@ export const translations = {
   // Timeline
   "timeline.title": { tr: "Proje Zaman Çizelgesi", en: "Project Timeline" },
   "timeline.noChange": { tr: "Güncelleme yok (sadece nokta)", en: "No update (dot only)" },
+  "timeline.export": { tr: "📸 PNG Olarak İndir", en: "📸 Download as PNG" },
+  "timeline.exporting": { tr: "Hazırlanıyor...", en: "Preparing..." },
 } as const;
 
 export type TranslationKey = keyof typeof translations;

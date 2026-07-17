@@ -5,6 +5,16 @@ export interface RepoLanguages {
   [language: string]: number; // bytes
 }
 
+export interface RepoAdvancedMetrics {
+  activeDays: number;
+  totalDurationDays: number;
+  developmentDensity: number; // activeDays / totalDurationDays
+  commitDates: string[]; // array of ISO dates or YYYY-MM-DD
+  projectScore: number;
+  totalCommits: number;
+  lastMaintenance: string | null;
+}
+
 export interface RepoInfo {
   name: string;
   description: string | null;
@@ -18,6 +28,7 @@ export interface RepoInfo {
   languagePercentages: { name: string; value: number; bytes: number }[];
   totalBytes: number;
   private: boolean;
+  advancedMetrics?: RepoAdvancedMetrics;
 }
 
 export interface UserProfile {
@@ -148,6 +159,48 @@ const { data: repos } = await octokit.repos.listForAuthenticatedUser({
 
         languagePercentages.sort((a, b) => b.value - a.value);
 
+        // Fetch commits for advanced metrics
+        let commitDates: string[] = [];
+        let totalCommits = 0;
+        let lastMaintenance: string | null = null;
+        try {
+          const { data: commits } = await octokit.repos.listCommits({
+            owner: username,
+            repo: repo.name,
+            per_page: 100,
+          });
+          totalCommits = commits.length;
+          
+          const datesSet = new Set<string>();
+          for (const c of commits) {
+            const dateStr = c.commit.author?.date || c.commit.committer?.date;
+            if (dateStr) {
+              if (!lastMaintenance) lastMaintenance = dateStr;
+              datesSet.add(dateStr.slice(0, 10)); // YYYY-MM-DD
+              commitDates.push(dateStr);
+            }
+          }
+          commitDates = Array.from(datesSet).sort();
+        } catch (e) {
+          // ignore error if repo is empty or commits cannot be fetched
+        }
+
+        const createdAt = repo.created_at ? new Date(repo.created_at).getTime() : Date.now();
+        const updatedAt = repo.updated_at ? new Date(repo.updated_at).getTime() : Date.now();
+        const totalDurationDays = Math.max(1, Math.round((updatedAt - createdAt) / (1000 * 60 * 60 * 24)));
+        const activeDays = commitDates.length;
+        const developmentDensity = totalDurationDays > 0 ? activeDays / totalDurationDays : 0;
+
+        const advancedMetrics: RepoAdvancedMetrics = {
+          activeDays,
+          totalDurationDays,
+          developmentDensity,
+          commitDates,
+          projectScore: 0, // Will be calculated after all repos are fetched
+          totalCommits,
+          lastMaintenance,
+        };
+
         return {
           name: repo.name,
           description: repo.description,
@@ -161,6 +214,7 @@ const { data: repos } = await octokit.repos.listForAuthenticatedUser({
           languagePercentages,
           totalBytes,
           private: repo.private ?? false,
+          advancedMetrics,
         } satisfies RepoInfo;
       })
     );
@@ -184,6 +238,40 @@ const { data: repos } = await octokit.repos.listForAuthenticatedUser({
       bytes,
     }))
     .sort((a, b) => b.value - a.value);
+
+  // Calculate normalization for Project Score
+  const maxActiveDays = Math.max(...repoInfos.map((r) => r.advancedMetrics?.activeDays || 0), 1);
+  const maxSize = Math.max(...repoInfos.map((r) => r.size), 1);
+  const maxCommits = Math.max(...repoInfos.map((r) => r.advancedMetrics?.totalCommits || 0), 1);
+  const now = Date.now();
+  const maxRecency = Math.max(...repoInfos.map((r) => r.updated_at ? Math.max(0, 3650 - Math.floor((now - new Date(r.updated_at).getTime()) / (1000 * 60 * 60 * 24))) : 0), 1);
+
+  for (const repo of repoInfos) {
+    if (repo.advancedMetrics) {
+      const densityScore = Math.min(1, repo.advancedMetrics.developmentDensity) * 100;
+      const activeDaysScore = (repo.advancedMetrics.activeDays / maxActiveDays) * 100;
+      const sizeScore = (repo.size / maxSize) * 100;
+      
+      const daysSinceUpdate = repo.updated_at ? Math.max(0, Math.floor((now - new Date(repo.updated_at).getTime()) / (1000 * 60 * 60 * 24))) : 3650;
+      const recencyValue = Math.max(0, 3650 - daysSinceUpdate);
+      const recencyScore = (recencyValue / maxRecency) * 100;
+      
+      const commitsScore = (repo.advancedMetrics.totalCommits / maxCommits) * 100;
+
+      // Project Score
+      // 40% Development Density
+      // 25% Total active days
+      // 15% Code size
+      // 10% Last update
+      // 10% Commit count
+      repo.advancedMetrics.projectScore = 
+        (densityScore * 0.40) +
+        (activeDaysScore * 0.25) +
+        (sizeScore * 0.15) +
+        (recencyScore * 0.10) +
+        (commitsScore * 0.10);
+    }
+  }
 
   return {
     user,
@@ -614,6 +702,48 @@ export async function fetchOrgAnalysis(
           }))
           .sort((a, b) => b.value - a.value);
 
+        // Fetch commits for advanced metrics
+        let commitDates: string[] = [];
+        let totalCommits = 0;
+        let lastMaintenance: string | null = null;
+        try {
+          const { data: commits } = await octokit.repos.listCommits({
+            owner: orgName,
+            repo: repo.name,
+            per_page: 100,
+          });
+          totalCommits = commits.length;
+          
+          const datesSet = new Set<string>();
+          for (const c of commits) {
+            const dateStr = c.commit.author?.date || c.commit.committer?.date;
+            if (dateStr) {
+              if (!lastMaintenance) lastMaintenance = dateStr;
+              datesSet.add(dateStr.slice(0, 10)); // YYYY-MM-DD
+              commitDates.push(dateStr);
+            }
+          }
+          commitDates = Array.from(datesSet).sort();
+        } catch (e) {
+          // ignore error if repo is empty or commits cannot be fetched
+        }
+
+        const createdAt = repo.created_at ? new Date(repo.created_at).getTime() : Date.now();
+        const updatedAt = repo.updated_at ? new Date(repo.updated_at).getTime() : Date.now();
+        const totalDurationDays = Math.max(1, Math.round((updatedAt - createdAt) / (1000 * 60 * 60 * 24)));
+        const activeDays = commitDates.length;
+        const developmentDensity = totalDurationDays > 0 ? activeDays / totalDurationDays : 0;
+
+        const advancedMetrics: RepoAdvancedMetrics = {
+          activeDays,
+          totalDurationDays,
+          developmentDensity,
+          commitDates,
+          projectScore: 0, // Will be calculated after all repos are fetched
+          totalCommits,
+          lastMaintenance,
+        };
+
         return {
           name: repo.name,
           description: repo.description,
@@ -627,6 +757,7 @@ export async function fetchOrgAnalysis(
           languagePercentages,
           totalBytes,
           private: false,
+          advancedMetrics,
         } satisfies RepoInfo;
       })
     );
@@ -648,6 +779,34 @@ export async function fetchOrgAnalysis(
       bytes,
     }))
     .sort((a, b) => b.value - a.value);
+
+  // Calculate normalization for Project Score
+  const maxActiveDays = Math.max(...repoInfos.map((r) => r.advancedMetrics?.activeDays || 0), 1);
+  const maxSize = Math.max(...repoInfos.map((r) => r.size), 1);
+  const maxCommits = Math.max(...repoInfos.map((r) => r.advancedMetrics?.totalCommits || 0), 1);
+  const now = Date.now();
+  const maxRecency = Math.max(...repoInfos.map((r) => r.updated_at ? Math.max(0, 3650 - Math.floor((now - new Date(r.updated_at).getTime()) / (1000 * 60 * 60 * 24))) : 0), 1);
+
+  for (const repo of repoInfos) {
+    if (repo.advancedMetrics) {
+      const densityScore = Math.min(1, repo.advancedMetrics.developmentDensity) * 100;
+      const activeDaysScore = (repo.advancedMetrics.activeDays / maxActiveDays) * 100;
+      const sizeScore = (repo.size / maxSize) * 100;
+      
+      const daysSinceUpdate = repo.updated_at ? Math.max(0, Math.floor((now - new Date(repo.updated_at).getTime()) / (1000 * 60 * 60 * 24))) : 3650;
+      const recencyValue = Math.max(0, 3650 - daysSinceUpdate);
+      const recencyScore = (recencyValue / maxRecency) * 100;
+      
+      const commitsScore = (repo.advancedMetrics.totalCommits / maxCommits) * 100;
+
+      repo.advancedMetrics.projectScore = 
+        (densityScore * 0.40) +
+        (activeDaysScore * 0.25) +
+        (sizeScore * 0.15) +
+        (recencyScore * 0.10) +
+        (commitsScore * 0.10);
+    }
+  }
 
   return {
     org,

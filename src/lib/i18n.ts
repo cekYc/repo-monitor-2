@@ -323,6 +323,10 @@ export const translations = {
   "metric.stars": { tr: "Yıldız", en: "Stars" },
   "metric.forks": { tr: "Fork", en: "Forks" },
   "metric.watchers": { tr: "İzleyici", en: "Watchers" },
+  "sort.stars": { tr: "En Çok Yıldız", en: "Most Stars" },
+  "sort.forks": { tr: "En Çok Fork", en: "Most Forks" },
+  "sort.size": { tr: "En Büyük Boyut", en: "Largest Size" },
+  "sort.score": { tr: "Proje Skoru (En Değerli)", en: "Project Score (Most Valuable)" },
   "metric.openIssues": { tr: "Açık issue", en: "Open issues" },
   "metric.openPRs": { tr: "Açık PR", en: "Open PRs" },
   "metric.releaseCount": { tr: "Sürüm", en: "Releases" },
@@ -377,6 +381,12 @@ export const translations = {
   "timeline.noChange": { tr: "Güncelleme yok (sadece nokta)", en: "No update (dot only)" },
   "timeline.export": { tr: "📸 PNG Olarak İndir", en: "📸 Download as PNG" },
   "timeline.exporting": { tr: "Hazırlanıyor...", en: "Preparing..." },
+  "timeline.totalDuration": { tr: "Toplam Süre", en: "Total Duration" },
+  "timeline.activeDays": { tr: "Aktif Geliştirme", en: "Active Dev. Days" },
+  "timeline.lastMaintenance": { tr: "Son Bakım", en: "Last Maintenance" },
+  "timeline.density": { tr: "Yoğunluk", en: "Density" },
+  "timeline.projectScore": { tr: "Proje Skoru", en: "Project Score" },
+  "timeline.days": { tr: "gün", en: "days" },
 } as const;
 
 export type TranslationKey = keyof typeof translations;

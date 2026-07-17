@@ -14,6 +14,8 @@ interface Row {
   created: number;
   updated: number;
   sameDay: boolean;
+  commitDates: number[];
+  metrics: RepoInfo["advancedMetrics"];
 }
 
 const ROW_H = 28;
@@ -72,6 +74,8 @@ export default function RepoTimeline({ repos }: RepoTimelineProps) {
         created: new Date(r.created_at).getTime(),
         updated: new Date(r.updated_at).getTime(),
         sameDay: r.created_at.slice(0, 10) === r.updated_at.slice(0, 10),
+        commitDates: r.advancedMetrics?.commitDates.map(d => new Date(d).getTime()) || [],
+        metrics: r.advancedMetrics,
       }))
       .sort((a, b) => a.created - b.created);
   }, [repos]);
@@ -164,7 +168,7 @@ export default function RepoTimeline({ repos }: RepoTimelineProps) {
               </span>
               <div className="relative flex-1 h-full">
                 <div className="absolute inset-x-0 top-1/2 -translate-y-1/2 h-px bg-hairline" />
-                {r.sameDay ? (
+                {r.sameDay && r.commitDates.length === 0 ? (
                   <div
                     className="absolute top-1/2 -translate-y-1/2 -translate-x-1/2 w-2.5 h-2.5 rounded-full bg-accent"
                     style={{ left: `${left}%` }}
@@ -173,18 +177,24 @@ export default function RepoTimeline({ repos }: RepoTimelineProps) {
                 ) : (
                   <>
                     <div
-                      className="absolute top-1/2 -translate-y-1/2 h-1.5 rounded-full bg-accent-soft"
+                      className="absolute top-1/2 -translate-y-1/2 h-1.5 rounded-full bg-accent-soft/30"
                       style={{ left: `${left}%`, width: `${Math.max(right - left, 0.5)}%` }}
                     />
+                    {r.commitDates.map((ts, idx) => (
+                      <div
+                        key={idx}
+                        className="absolute top-1/2 -translate-y-1/2 -translate-x-1/2 w-1 h-2.5 rounded-[1px] bg-accent"
+                        style={{ left: `${pct(ts)}%` }}
+                      />
+                    ))}
                     <div
-                      className="absolute top-1/2 -translate-y-1/2 -translate-x-1/2 w-2 h-2 rounded-full bg-faint"
-                      style={{ left: `${left}%` }}
-                      title={`${r.name} · ${t("repo.createdAt")} · ${formatDate(new Date(r.created).toISOString())}`}
-                    />
-                    <div
-                      className="absolute top-1/2 -translate-y-1/2 -translate-x-1/2 w-2.5 h-2.5 rounded-full bg-accent"
-                      style={{ left: `${right}%` }}
-                      title={`${r.name} · ${t("repo.updatedAt")} · ${formatDate(new Date(r.updated).toISOString())}`}
+                      className="absolute top-0 bottom-0 z-10 cursor-help"
+                      style={{ left: `${left}%`, width: `${Math.max(right - left, 0.5)}%` }}
+                      title={
+                        r.metrics
+                          ? `${r.name}\n${t("timeline.totalDuration")}: ${r.metrics.totalDurationDays} ${t("timeline.days")}\n${t("timeline.activeDays")}: ${r.metrics.activeDays} ${t("timeline.days")}\n${t("timeline.lastMaintenance")}: ${r.metrics.lastMaintenance ? formatDate(r.metrics.lastMaintenance) : "-"}\n${t("timeline.density")}: %${Math.round(r.metrics.developmentDensity * 100)}\n${t("timeline.projectScore")}: ${Math.round(r.metrics.projectScore)} / 100`
+                          : `${r.name}\n${t("repo.createdAt")}: ${formatDate(new Date(r.created).toISOString())}\n${t("repo.updatedAt")}: ${formatDate(new Date(r.updated).toISOString())}`
+                      }
                     />
                   </>
                 )}
@@ -198,12 +208,12 @@ export default function RepoTimeline({ repos }: RepoTimelineProps) {
       {/* Legend */}
       <div className="flex items-center gap-4 mt-3 pt-3 border-t border-hairline text-xs text-faint">
         <span className="inline-flex items-center gap-1.5">
-          <span className="w-2 h-2 rounded-full bg-faint inline-block" />
-          {t("repo.createdAt")}
+          <span className="w-1 h-2.5 rounded-[1px] bg-accent inline-block" />
+          {t("timeline.activeDays")}
         </span>
         <span className="inline-flex items-center gap-1.5">
-          <span className="w-2.5 h-2.5 rounded-full bg-accent inline-block" />
-          {t("repo.updatedAt")}
+          <span className="w-3 h-1.5 rounded-full bg-accent-soft/30 inline-block" />
+          {t("timeline.totalDuration")}
         </span>
         <span className="text-faint">{t("timeline.noChange")}</span>
       </div>

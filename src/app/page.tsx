@@ -85,7 +85,7 @@ function addRecentSearch(username: string, avatarUrl?: string) {
   }
 }
 
-type SortKey = "updated" | "stars" | "size" | "languages" | "name" | "nameDesc" | "created" | "forks";
+type SortKey = "updated" | "stars" | "size" | "languages" | "name" | "nameDesc" | "created" | "forks" | "score";
 
 interface ProgressInfo {
   current: number;
@@ -309,6 +309,7 @@ function HomeContent() {
       case "nameDesc": repos.sort((a, b) => b.name.localeCompare(a.name)); break;
       case "created": repos.sort((a, b) => new Date(b.created_at).getTime() - new Date(a.created_at).getTime()); break;
       case "forks": repos.sort((a, b) => b.forks_count - a.forks_count); break;
+      case "score": repos.sort((a, b) => (b.advancedMetrics?.projectScore || 0) - (a.advancedMetrics?.projectScore || 0)); break;
     }
     return repos;
   };
@@ -414,6 +415,7 @@ function HomeContent() {
                       <option value="languages">{t("repos.sort.languages")}</option>
                       <option value="name">{t("repos.sort.name")}</option>
                       <option value="nameDesc">{t("repos.sort.nameDesc")}</option>
+                      <option value="score">{t("sort.score")}</option>
                     </select>
                   </div>
                 </div>

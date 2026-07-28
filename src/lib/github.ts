@@ -248,28 +248,31 @@ const { data: repos } = await octokit.repos.listForAuthenticatedUser({
 
   for (const repo of repoInfos) {
     if (repo.advancedMetrics) {
-      const densityScore = Math.min(1, repo.advancedMetrics.developmentDensity) * 100;
+      // 14 günlük minimum olgunluk eşiği (Kısa sürede bırakılan 3 günlük projeler %100 yoğunluktan sahte puan alamasın)
+      const effectiveDensity = Math.min(1, repo.advancedMetrics.activeDays / Math.max(14, repo.advancedMetrics.totalDurationDays));
+      const densityScore = effectiveDensity * 100;
+      
       const activeDaysScore = (repo.advancedMetrics.activeDays / maxActiveDays) * 100;
       const sizeScore = (repo.size / maxSize) * 100;
       
-      const daysSinceUpdate = repo.updated_at ? Math.max(0, Math.floor((now - new Date(repo.updated_at).getTime()) / (1000 * 60 * 60 * 24))) : 3650;
-      const recencyValue = Math.max(0, 3650 - daysSinceUpdate);
-      const recencyScore = (recencyValue / maxRecency) * 100;
+      // Üstel bozunum (Exponential decay): Aylar önce terk edilen projelerin güncellik puanı hızla sıfıra yaklaşır
+      const daysSinceUpdate = repo.updated_at ? Math.max(0, Math.floor((now - new Date(repo.updated_at).getTime()) / (1000 * 60 * 60 * 24))) : 365;
+      const recencyScore = Math.max(0, 100 * Math.exp(-daysSinceUpdate / 120));
       
       const commitsScore = (repo.advancedMetrics.totalCommits / maxCommits) * 100;
 
-      // Project Score
-      // 40% Development Density
-      // 25% Total active days
-      // 15% Code size
-      // 10% Last update
-      // 10% Commit count
+      // Yeniden dengelenmiş katsayılar:
+      // %35 Toplam Aktif Gün Sayısı (Gerçek emek)
+      // %20 Toplam Commit Sayısı
+      // %20 Olgunluk Başlangıçlı Yoğunluk
+      // %15 Güncellik / Son Bakım (Üstel bozunum)
+      // %10 Kod Boyutu
       repo.advancedMetrics.projectScore = 
-        (densityScore * 0.40) +
-        (activeDaysScore * 0.25) +
-        (sizeScore * 0.15) +
-        (recencyScore * 0.10) +
-        (commitsScore * 0.10);
+        (activeDaysScore * 0.35) +
+        (commitsScore * 0.20) +
+        (densityScore * 0.20) +
+        (recencyScore * 0.15) +
+        (sizeScore * 0.10);
     }
   }
 
@@ -789,22 +792,23 @@ export async function fetchOrgAnalysis(
 
   for (const repo of repoInfos) {
     if (repo.advancedMetrics) {
-      const densityScore = Math.min(1, repo.advancedMetrics.developmentDensity) * 100;
+      const effectiveDensity = Math.min(1, repo.advancedMetrics.activeDays / Math.max(14, repo.advancedMetrics.totalDurationDays));
+      const densityScore = effectiveDensity * 100;
+      
       const activeDaysScore = (repo.advancedMetrics.activeDays / maxActiveDays) * 100;
       const sizeScore = (repo.size / maxSize) * 100;
       
-      const daysSinceUpdate = repo.updated_at ? Math.max(0, Math.floor((now - new Date(repo.updated_at).getTime()) / (1000 * 60 * 60 * 24))) : 3650;
-      const recencyValue = Math.max(0, 3650 - daysSinceUpdate);
-      const recencyScore = (recencyValue / maxRecency) * 100;
+      const daysSinceUpdate = repo.updated_at ? Math.max(0, Math.floor((now - new Date(repo.updated_at).getTime()) / (1000 * 60 * 60 * 24))) : 365;
+      const recencyScore = Math.max(0, 100 * Math.exp(-daysSinceUpdate / 120));
       
       const commitsScore = (repo.advancedMetrics.totalCommits / maxCommits) * 100;
 
       repo.advancedMetrics.projectScore = 
-        (densityScore * 0.40) +
-        (activeDaysScore * 0.25) +
-        (sizeScore * 0.15) +
-        (recencyScore * 0.10) +
-        (commitsScore * 0.10);
+        (activeDaysScore * 0.35) +
+        (commitsScore * 0.20) +
+        (densityScore * 0.20) +
+        (recencyScore * 0.15) +
+        (sizeScore * 0.10);
     }
   }
 

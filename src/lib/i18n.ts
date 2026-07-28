@@ -387,6 +387,16 @@ export const translations = {
   "timeline.density": { tr: "Yoğunluk", en: "Density" },
   "timeline.projectScore": { tr: "Proje Skoru", en: "Project Score" },
   "timeline.days": { tr: "gün", en: "days" },
+
+  // Leaderboard
+  "leaderboard.title": { tr: "🏆 Proje Değer Skoru Tablosu", en: "🏆 Project Value Scoreboard" },
+  "leaderboard.desc": { tr: "Geliştirme yoğunluğu, aktif günler, boyut ve son bakıma göre puanlama", en: "Scored by development density, active days, size, and maintenance" },
+  "leaderboard.rank": { tr: "#", en: "#" },
+  "leaderboard.repo": { tr: "Proje", en: "Project" },
+  "leaderboard.score": { tr: "Skor", en: "Score" },
+  "leaderboard.density": { tr: "Yoğunluk", en: "Density" },
+  "leaderboard.activeDays": { tr: "Aktif / Toplam", en: "Active / Total" },
+  "leaderboard.lastUpdate": { tr: "Son Bakım", en: "Last Update" },
 } as const;
 
 export type TranslationKey = keyof typeof translations;

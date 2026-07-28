@@ -19,6 +19,7 @@ import Overview from "@/components/Overview";
 import CompareView from "@/components/CompareView";
 import WatchButton from "@/components/WatchButton";
 import RepoTimeline from "@/components/RepoTimeline";
+import ProjectLeaderboard from "@/components/ProjectLeaderboard";
 import AppShell, { type ViewId } from "@/components/AppShell";
 import { useLocale } from "@/components/LocaleProvider";
 import { listWatches } from "@/lib/watchlist";
@@ -482,6 +483,7 @@ function HomeContent() {
                 <h2 className="text-sm font-semibold text-fg mb-3">{t("analyze.modules")}</h2>
                 <div className="space-y-4">
                   <RepoTimeline repos={analysis.repos} />
+                  <ProjectLeaderboard repos={analysis.repos} />
                   <BadgeGenerator username={analysis.user.login} token={lastToken} />
                   <HealthScore username={analysis.user.login} token={lastToken} />
                   <ContributionHeatmap username={analysis.user.login} token={lastToken} />

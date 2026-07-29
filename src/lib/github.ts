@@ -11,6 +11,7 @@ export interface RepoAdvancedMetrics {
   developmentDensity: number; // activeDays / totalDurationDays
   commitDates: string[]; // array of ISO dates or YYYY-MM-DD
   projectScore: number;
+  totalCommits: number;
   lastMaintenance: string | null;
   scoreBreakdown?: {
     effort: number;   // Max 45 (Aktif mesai günleri ve commit sayısı)

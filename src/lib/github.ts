@@ -11,8 +11,13 @@ export interface RepoAdvancedMetrics {
   developmentDensity: number; // activeDays / totalDurationDays
   commitDates: string[]; // array of ISO dates or YYYY-MM-DD
   projectScore: number;
-  totalCommits: number;
   lastMaintenance: string | null;
+  scoreBreakdown?: {
+    effort: number;   // Max 45 (Aktif mesai günleri ve commit sayısı)
+    polish: number;   // Max 25 (Açıklama, yıldızlar, forklar, çoklu dil)
+    focus: number;    // Max 20 (Odak ve olgunluk eşikli yoğunluk)
+    recency: number;  // Max 10 (Güncel momentum bonusu)
+  };
 }
 
 export interface RepoInfo {
@@ -239,40 +244,50 @@ const { data: repos } = await octokit.repos.listForAuthenticatedUser({
     }))
     .sort((a, b) => b.value - a.value);
 
-  // Calculate normalization for Project Score
+  // 4-Pillar Multi-Dimensional Prestige Scoring
   const maxActiveDays = Math.max(...repoInfos.map((r) => r.advancedMetrics?.activeDays || 0), 1);
-  const maxSize = Math.max(...repoInfos.map((r) => r.size), 1);
   const maxCommits = Math.max(...repoInfos.map((r) => r.advancedMetrics?.totalCommits || 0), 1);
   const now = Date.now();
-  const maxRecency = Math.max(...repoInfos.map((r) => r.updated_at ? Math.max(0, 3650 - Math.floor((now - new Date(r.updated_at).getTime()) / (1000 * 60 * 60 * 24))) : 0), 1);
 
   for (const repo of repoInfos) {
     if (repo.advancedMetrics) {
-      // 14 günlük minimum olgunluk eşiği (Kısa sürede bırakılan 3 günlük projeler %100 yoğunluktan sahte puan alamasın)
-      const effectiveDensity = Math.min(1, repo.advancedMetrics.activeDays / Math.max(14, repo.advancedMetrics.totalDurationDays));
-      const densityScore = effectiveDensity * 100;
-      
-      const activeDaysScore = (repo.advancedMetrics.activeDays / maxActiveDays) * 100;
-      const sizeScore = (repo.size / maxSize) * 100;
-      
-      // Üstel bozunum (Exponential decay): Aylar önce terk edilen projelerin güncellik puanı hızla sıfıra yaklaşır
-      const daysSinceUpdate = repo.updated_at ? Math.max(0, Math.floor((now - new Date(repo.updated_at).getTime()) / (1000 * 60 * 60 * 24))) : 365;
-      const recencyScore = Math.max(0, 100 * Math.exp(-daysSinceUpdate / 120));
-      
-      const commitsScore = (repo.advancedMetrics.totalCommits / maxCommits) * 100;
+      // 1. Efor & Derinlik (Effort & Depth) - Max 45 Puan
+      const activeDaysRatio = Math.min(1, repo.advancedMetrics.activeDays / Math.max(15, maxActiveDays));
+      const commitsRatio = Math.min(1, repo.advancedMetrics.totalCommits / Math.max(20, maxCommits));
+      const effortPts = Math.min(45, Math.round((activeDaysRatio * 30) + (commitsRatio * 15)));
 
-      // Yeniden dengelenmiş katsayılar:
-      // %35 Toplam Aktif Gün Sayısı (Gerçek emek)
-      // %20 Toplam Commit Sayısı
-      // %20 Olgunluk Başlangıçlı Yoğunluk
-      // %15 Güncellik / Son Bakım (Üstel bozunum)
-      // %10 Kod Boyutu
-      repo.advancedMetrics.projectScore = 
-        (activeDaysScore * 0.35) +
-        (commitsScore * 0.20) +
-        (densityScore * 0.20) +
-        (recencyScore * 0.15) +
-        (sizeScore * 0.10);
+      // 2. Vitrin & Kalite (Presentation & Polish) - Max 25 Puan
+      let polishPts = 0;
+      if (repo.description && repo.description.trim().length > 3) polishPts += 8;
+      if (repo.stargazers_count > 0) polishPts += Math.min(10, 5 + repo.stargazers_count * 2);
+      if (repo.forks_count > 0) polishPts += Math.min(5, 3 + repo.forks_count);
+      if (Object.keys(repo.languages).length > 1) polishPts += 4;
+      if (repo.size > 500) polishPts += 3;
+      polishPts = Math.min(25, polishPts);
+
+      // 3. Odak & Yoğunluk (Focus & Density) - Max 20 Puan
+      // 15+ aktif gün veya 50+ commit alan projeler kendini kanıtladığı için tam odak puanı alır
+      let focusPts = 20;
+      if (repo.advancedMetrics.activeDays < 15 && repo.advancedMetrics.totalCommits < 50) {
+        focusPts = Math.min(20, Math.round((repo.advancedMetrics.activeDays / Math.max(25, repo.advancedMetrics.totalDurationDays)) * 20));
+      }
+
+      // 4. Güncel Momentum Bonusu (Recency Booster) - Max 10 Puan
+      const daysSinceUpdate = repo.updated_at ? Math.max(0, Math.floor((now - new Date(repo.updated_at).getTime()) / (1000 * 60 * 60 * 24))) : 365;
+      let recencyPts = 0;
+      if (daysSinceUpdate <= 7) recencyPts = 10;
+      else if (daysSinceUpdate <= 30) recencyPts = 8;
+      else if (daysSinceUpdate <= 90) recencyPts = 5;
+      else if (daysSinceUpdate <= 180) recencyPts = 2;
+
+      repo.advancedMetrics.scoreBreakdown = {
+        effort: effortPts,
+        polish: polishPts,
+        focus: focusPts,
+        recency: recencyPts,
+      };
+
+      repo.advancedMetrics.projectScore = effortPts + polishPts + focusPts + recencyPts;
     }
   }
 
@@ -783,32 +798,45 @@ export async function fetchOrgAnalysis(
     }))
     .sort((a, b) => b.value - a.value);
 
-  // Calculate normalization for Project Score
+  // 4-Pillar Multi-Dimensional Prestige Scoring
   const maxActiveDays = Math.max(...repoInfos.map((r) => r.advancedMetrics?.activeDays || 0), 1);
-  const maxSize = Math.max(...repoInfos.map((r) => r.size), 1);
   const maxCommits = Math.max(...repoInfos.map((r) => r.advancedMetrics?.totalCommits || 0), 1);
   const now = Date.now();
-  const maxRecency = Math.max(...repoInfos.map((r) => r.updated_at ? Math.max(0, 3650 - Math.floor((now - new Date(r.updated_at).getTime()) / (1000 * 60 * 60 * 24))) : 0), 1);
 
   for (const repo of repoInfos) {
     if (repo.advancedMetrics) {
-      const effectiveDensity = Math.min(1, repo.advancedMetrics.activeDays / Math.max(14, repo.advancedMetrics.totalDurationDays));
-      const densityScore = effectiveDensity * 100;
-      
-      const activeDaysScore = (repo.advancedMetrics.activeDays / maxActiveDays) * 100;
-      const sizeScore = (repo.size / maxSize) * 100;
-      
-      const daysSinceUpdate = repo.updated_at ? Math.max(0, Math.floor((now - new Date(repo.updated_at).getTime()) / (1000 * 60 * 60 * 24))) : 365;
-      const recencyScore = Math.max(0, 100 * Math.exp(-daysSinceUpdate / 120));
-      
-      const commitsScore = (repo.advancedMetrics.totalCommits / maxCommits) * 100;
+      const activeDaysRatio = Math.min(1, repo.advancedMetrics.activeDays / Math.max(15, maxActiveDays));
+      const commitsRatio = Math.min(1, repo.advancedMetrics.totalCommits / Math.max(20, maxCommits));
+      const effortPts = Math.min(45, Math.round((activeDaysRatio * 30) + (commitsRatio * 15)));
 
-      repo.advancedMetrics.projectScore = 
-        (activeDaysScore * 0.35) +
-        (commitsScore * 0.20) +
-        (densityScore * 0.20) +
-        (recencyScore * 0.15) +
-        (sizeScore * 0.10);
+      let polishPts = 0;
+      if (repo.description && repo.description.trim().length > 3) polishPts += 8;
+      if (repo.stargazers_count > 0) polishPts += Math.min(10, 5 + repo.stargazers_count * 2);
+      if (repo.forks_count > 0) polishPts += Math.min(5, 3 + repo.forks_count);
+      if (Object.keys(repo.languages).length > 1) polishPts += 4;
+      if (repo.size > 500) polishPts += 3;
+      polishPts = Math.min(25, polishPts);
+
+      let focusPts = 20;
+      if (repo.advancedMetrics.activeDays < 15 && repo.advancedMetrics.totalCommits < 50) {
+        focusPts = Math.min(20, Math.round((repo.advancedMetrics.activeDays / Math.max(25, repo.advancedMetrics.totalDurationDays)) * 20));
+      }
+
+      const daysSinceUpdate = repo.updated_at ? Math.max(0, Math.floor((now - new Date(repo.updated_at).getTime()) / (1000 * 60 * 60 * 24))) : 365;
+      let recencyPts = 0;
+      if (daysSinceUpdate <= 7) recencyPts = 10;
+      else if (daysSinceUpdate <= 30) recencyPts = 8;
+      else if (daysSinceUpdate <= 90) recencyPts = 5;
+      else if (daysSinceUpdate <= 180) recencyPts = 2;
+
+      repo.advancedMetrics.scoreBreakdown = {
+        effort: effortPts,
+        polish: polishPts,
+        focus: focusPts,
+        recency: recencyPts,
+      };
+
+      repo.advancedMetrics.projectScore = effortPts + polishPts + focusPts + recencyPts;
     }
   }
 

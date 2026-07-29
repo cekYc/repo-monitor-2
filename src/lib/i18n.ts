@@ -389,14 +389,22 @@ export const translations = {
   "timeline.days": { tr: "gün", en: "days" },
 
   // Leaderboard
-  "leaderboard.title": { tr: "🏆 Proje Değer Skoru Tablosu", en: "🏆 Project Value Scoreboard" },
-  "leaderboard.desc": { tr: "Geliştirme yoğunluğu, aktif günler, boyut ve son bakıma göre puanlama", en: "Scored by development density, active days, size, and maintenance" },
+  "leaderboard.title": { tr: "🏆 Proje Prestij & Değer Tablosu", en: "🏆 Project Prestige & Value Scoreboard" },
+  "leaderboard.desc": { tr: "Efor derinliği, vitrin özeni, odak yoğunluğu ve momentum bazlı akıllı analiz. (Sırala: Başlığa tıkla | Detaylı Skor Röntgeni: Satıra tıkla)", en: "Smart analysis based on effort depth, presentation polish, focus, and momentum. (Sort: Click header | X-Ray Breakdown: Click row)" },
   "leaderboard.rank": { tr: "#", en: "#" },
   "leaderboard.repo": { tr: "Proje", en: "Project" },
-  "leaderboard.score": { tr: "Skor", en: "Score" },
+  "leaderboard.score": { tr: "Prestij Skoru", en: "Prestige Score" },
   "leaderboard.density": { tr: "Yoğunluk", en: "Density" },
   "leaderboard.activeDays": { tr: "Aktif / Toplam", en: "Active / Total" },
   "leaderboard.lastUpdate": { tr: "Son Bakım", en: "Last Update" },
+  "leaderboard.tierS": { tr: "🌟 Tier S: Başyapıt", en: "🌟 Tier S: Masterpiece" },
+  "leaderboard.tierA": { tr: "🚀 Tier A: Asli Proje", en: "🚀 Tier A: Flagship" },
+  "leaderboard.tierB": { tr: "🛠️ Tier B: Standart", en: "🛠️ Tier B: Standard" },
+  "leaderboard.tierC": { tr: "🧪 Tier C: Deneme / Karalama", en: "🧪 Tier C: Sketch / Experiment" },
+  "leaderboard.effort": { tr: "💪 Efor & Mesai Derinliği", en: "💪 Effort & Work Depth" },
+  "leaderboard.polish": { tr: "🛡️ Vitrin & Özen", en: "🛡️ Presentation Polish" },
+  "leaderboard.focus": { tr: "⚡ Odak & Yoğunluk", en: "⚡ Focus Density" },
+  "leaderboard.recency": { tr: "🔥 Güncel Momentum", en: "🔥 Momentum Booster" },
 } as const;
 
 export type TranslationKey = keyof typeof translations;

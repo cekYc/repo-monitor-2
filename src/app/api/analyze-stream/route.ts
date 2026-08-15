@@ -7,6 +7,7 @@ export const runtime = "nodejs";
 export async function GET(request: NextRequest) {
   const searchParams = request.nextUrl.searchParams;
   const username = searchParams.get("username");
+  const extensionsParam = searchParams.get("extensions");
   const session = await getSession();
   const token = session?.githubToken;
 
@@ -15,6 +16,15 @@ export async function GET(request: NextRequest) {
       JSON.stringify({ error: "username parametresi gerekli" }),
       { status: 400, headers: { "Content-Type": "application/json" } }
     );
+  }
+
+  let customExtensions: { ext: string; lang: string; color: string }[] | undefined;
+  if (extensionsParam) {
+    try {
+      customExtensions = JSON.parse(extensionsParam);
+    } catch {
+      // ignore parse error
+    }
   }
 
   const encoder = new TextEncoder();
@@ -33,7 +43,8 @@ export async function GET(request: NextRequest) {
           token || undefined,
           (current, total, repoName) => {
             send("progress", { current, total, repoName });
-          }
+          },
+          customExtensions
         );
 
         send("complete", analysis);

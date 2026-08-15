@@ -59,7 +59,8 @@ export interface UserAnalysis {
 export async function fetchUserAnalysis(
   username: string,
   token?: string,
-  onProgress?: (current: number, total: number, repoName: string) => void
+  onProgress?: (current: number, total: number, repoName: string) => void,
+  customExtensions?: { ext: string; lang: string; color: string }[]
 ): Promise<UserAnalysis> {
   const octokit = token ? new Octokit({ auth: token }) : new Octokit();
 
@@ -149,6 +150,29 @@ const { data: repos } = await octokit.repos.listForAuthenticatedUser({
           owner: username,
           repo: repo.name,
         });
+
+        if (customExtensions && customExtensions.length > 0 && repo.default_branch) {
+          try {
+            const { data: tree } = await octokit.git.getTree({
+              owner: username,
+              repo: repo.name,
+              tree_sha: repo.default_branch,
+              recursive: "true",
+            });
+            for (const ce of customExtensions) {
+              const matchExt = ce.ext.toLowerCase();
+              const matchingFiles = tree.tree.filter(
+                (f) => f.type === "blob" && f.path && f.path.toLowerCase().endsWith(matchExt)
+              );
+              if (matchingFiles.length > 0) {
+                const bytes = matchingFiles.reduce((acc, f) => acc + (f.size || 2000), 0);
+                languages[ce.lang] = (languages[ce.lang] || 0) + bytes;
+              }
+            }
+          } catch (e) {
+            // ignore error
+          }
+        }
 
         const totalBytes = Object.values(languages).reduce(
           (sum, b) => sum + b,
@@ -663,7 +687,8 @@ export interface OrgAnalysis {
 export async function fetchOrgAnalysis(
   orgName: string,
   token?: string,
-  onProgress?: (current: number, total: number, repoName: string) => void
+  onProgress?: (current: number, total: number, repoName: string) => void,
+  customExtensions?: { ext: string; lang: string; color: string }[]
 ): Promise<OrgAnalysis> {
   const octokit = token ? new Octokit({ auth: token }) : new Octokit();
 
@@ -711,6 +736,29 @@ export async function fetchOrgAnalysis(
           owner: orgName,
           repo: repo.name,
         });
+
+        if (customExtensions && customExtensions.length > 0 && repo.default_branch) {
+          try {
+            const { data: tree } = await octokit.git.getTree({
+              owner: orgName,
+              repo: repo.name,
+              tree_sha: repo.default_branch,
+              recursive: "true",
+            });
+            for (const ce of customExtensions) {
+              const matchExt = ce.ext.toLowerCase();
+              const matchingFiles = tree.tree.filter(
+                (f) => f.type === "blob" && f.path && f.path.toLowerCase().endsWith(matchExt)
+              );
+              if (matchingFiles.length > 0) {
+                const bytes = matchingFiles.reduce((acc, f) => acc + (f.size || 2000), 0);
+                languages[ce.lang] = (languages[ce.lang] || 0) + bytes;
+              }
+            }
+          } catch (e) {
+            // ignore error
+          }
+        }
 
         const totalBytes = Object.values(languages).reduce((sum, b) => sum + b, 0);
         const languagePercentages = Object.entries(languages)

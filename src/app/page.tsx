@@ -221,6 +221,16 @@ function HomeContent() {
     try {
       const params = new URLSearchParams({ username });
       if (token) params.set("token", token);
+      
+      try {
+        const rawExt = localStorage.getItem("repo-monitor-custom-extensions");
+        if (rawExt) {
+          params.set("extensions", rawExt);
+        }
+      } catch (e) {
+        // localStorage is not available or empty
+      }
+
       const response = await fetch(`/api/analyze-stream?${params}`);
       if (!response.ok) {
         const data = await response.json();

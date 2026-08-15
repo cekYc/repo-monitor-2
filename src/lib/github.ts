@@ -102,6 +102,7 @@ export async function fetchUserAnalysis(
     created_at?: string | null;
     updated_at?: string | null;
     private: boolean;
+    default_branch?: string;
   }[] = [];
 
   if (isOwnProfile && token) {

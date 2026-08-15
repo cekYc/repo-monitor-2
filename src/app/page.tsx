@@ -35,13 +35,25 @@ interface CachedData {
   data: UserAnalysis;
 }
 
+function getCacheKey(username: string): string {
+  try {
+    const rawExt = localStorage.getItem("repo-monitor-custom-extensions");
+    if (rawExt) {
+      // Create a simple string representation to append to cache key
+      return CACHE_PREFIX + username.toLowerCase() + "-" + btoa(rawExt).substring(0, 20);
+    }
+  } catch {}
+  return CACHE_PREFIX + username.toLowerCase();
+}
+
 function getCachedAnalysis(username: string): UserAnalysis | null {
   try {
-    const raw = localStorage.getItem(CACHE_PREFIX + username.toLowerCase());
+    const key = getCacheKey(username);
+    const raw = localStorage.getItem(key);
     if (!raw) return null;
     const cached: CachedData = JSON.parse(raw);
     if (Date.now() - cached.timestamp > CACHE_TTL) {
-      localStorage.removeItem(CACHE_PREFIX + username.toLowerCase());
+      localStorage.removeItem(key);
       return null;
     }
     return cached.data;
@@ -52,8 +64,9 @@ function getCachedAnalysis(username: string): UserAnalysis | null {
 
 function setCachedAnalysis(username: string, data: UserAnalysis) {
   try {
+    const key = getCacheKey(username);
     const entry: CachedData = { timestamp: Date.now(), data };
-    localStorage.setItem(CACHE_PREFIX + username.toLowerCase(), JSON.stringify(entry));
+    localStorage.setItem(key, JSON.stringify(entry));
   } catch {
     // localStorage dolu olabilir, sessizce geç
   }

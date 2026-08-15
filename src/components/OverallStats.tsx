@@ -197,7 +197,7 @@ export default function OverallStats({ analysis, excludedRepos, onClearExclusion
               <span className="text-xs text-faint tnum">{overallLanguages.length} {t("stats.language")}</span>
             </div>
             <div className="grid grid-cols-1 md:grid-cols-2 gap-x-8 gap-y-2.5">
-              {overallLanguages.slice(0, 10).map((l, i) => (
+              {overallLanguages.map((l, i) => (
                 <div key={l.name} className="flex items-center gap-3 text-sm">
                   <span className="w-2.5 h-2.5 rounded-full shrink-0" style={{ background: getLanguageColor(l.name, i) }} />
                   <span className="text-fg w-24 truncate">{l.name}</span>

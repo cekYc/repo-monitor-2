@@ -7,6 +7,7 @@ import Link from "next/link";
 import CommitHistory from "./CommitHistory";
 import SegmentBar from "@/components/SegmentBar";
 import { useLocale } from "@/components/LocaleProvider";
+import { getRepoActivityDate } from "@/lib/repo-activity";
 
 interface RepoCardProps {
   repo: RepoInfo;
@@ -48,6 +49,7 @@ export default function RepoCard({ repo, index, isExcluded, onToggleExclude, own
   };
 
   const hasLanguages = repo.languagePercentages.length > 0;
+  const activityDate = getRepoActivityDate(repo);
 
   return (
     <div
@@ -141,11 +143,11 @@ export default function RepoCard({ repo, index, isExcluded, onToggleExclude, own
               </svg>
               {formatDate(repo.created_at)}
             </span>
-            <span className="inline-flex items-center gap-1 tnum" title={`${t("repo.updatedAt")}: ${formatDate(repo.updated_at)}`}>
+            <span className="inline-flex items-center gap-1 tnum" title={`${t("repo.updatedAt")}: ${formatDate(activityDate)}`}>
               <svg className="w-3 h-3" fill="none" viewBox="0 0 24 24" strokeWidth={1.7} stroke="currentColor">
                 <circle cx="12" cy="12" r="9" /><path strokeLinecap="round" strokeLinejoin="round" d="M12 7.5V12l3 1.8" />
               </svg>
-              {formatDate(repo.updated_at)}
+              {formatDate(activityDate)}
             </span>
           </div>
           {hasLanguages && (

@@ -1,4 +1,5 @@
 import type { UserAnalysis } from "@/lib/github";
+import { getDevelopmentSpanDays } from "@/lib/repo-activity";
 
 export type TechnicalDomain = "systems" | "web" | "data" | "other";
 
@@ -175,7 +176,7 @@ export function calculateDeveloperCharacteristics(
 
   const codePerRepo = analysis.totalBytes / repoCount;
   const activeDevelopmentDays = average(
-    analysis.repos.map((repo) => repo.advancedMetrics?.totalDurationDays ?? 0)
+    analysis.repos.map(getDevelopmentSpanDays)
   );
   const historyRepos = analysis.repos
     .map((repo) => repo.advancedMetrics?.commitDates ?? [])

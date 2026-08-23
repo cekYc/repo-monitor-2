@@ -24,8 +24,9 @@ import AppShell, { type ViewId } from "@/components/AppShell";
 import { useLocale } from "@/components/LocaleProvider";
 import { listWatches } from "@/lib/watchlist";
 import { UserAnalysis } from "@/lib/github";
+import { getRepoActivityTimestamp } from "@/lib/repo-activity";
 
-const CACHE_PREFIX = "repo-monitor-cache-";
+const CACHE_PREFIX = "repo-monitor-cache-v2-";
 const CACHE_TTL = 30 * 60 * 1000; // 30 dakika
 const RECENT_SEARCHES_KEY = "repo-monitor-recent-searches";
 const MAX_RECENT = 8;
@@ -305,7 +306,7 @@ function HomeContent() {
   }, [searchParams, handleSearch]);
 
   const handleForceRefresh = useCallback(async (username: string, token: string) => {
-    localStorage.removeItem(CACHE_PREFIX + username.toLowerCase());
+    localStorage.removeItem(getCacheKey(username));
     setCacheHit(false);
     handleSearch(username, token);
   }, [handleSearch]);
@@ -325,7 +326,7 @@ function HomeContent() {
     let repos = [...analysis.repos];
     if (filterLang) repos = repos.filter((r) => r.languagePercentages.some((l) => l.name === filterLang));
     switch (sortBy) {
-      case "updated": repos.sort((a, b) => new Date(b.updated_at).getTime() - new Date(a.updated_at).getTime()); break;
+      case "updated": repos.sort((a, b) => getRepoActivityTimestamp(b) - getRepoActivityTimestamp(a)); break;
       case "stars": repos.sort((a, b) => b.stargazers_count - a.stargazers_count); break;
       case "size": repos.sort((a, b) => b.totalBytes - a.totalBytes); break;
       case "languages": repos.sort((a, b) => b.languagePercentages.length - a.languagePercentages.length); break;

@@ -1,5 +1,6 @@
 import { Octokit } from "@octokit/rest";
 import { getLanguageFromPath } from "./utils";
+import { getRepoActivityTimestamp } from "./repo-activity";
 
 export interface RepoLanguages {
   [language: string]: number; // bytes
@@ -30,6 +31,7 @@ export interface RepoInfo {
   size: number; // KB
   created_at: string;
   updated_at: string;
+  pushed_at?: string;
   languages: RepoLanguages;
   languagePercentages: { name: string; value: number; bytes: number }[];
   totalBytes: number;
@@ -101,6 +103,7 @@ export async function fetchUserAnalysis(
     size?: number;
     created_at?: string | null;
     updated_at?: string | null;
+    pushed_at?: string | null;
     private: boolean;
     default_branch?: string;
   }[] = [];
@@ -111,7 +114,7 @@ export async function fetchUserAnalysis(
 const { data: repos } = await octokit.repos.listForAuthenticatedUser({
   per_page: perPage,
   page,
-  sort: "updated",
+  sort: "pushed",
   affiliation: "owner",  // sadece bu kalıyor
 });
       allRepos = allRepos.concat(repos);
@@ -126,7 +129,7 @@ const { data: repos } = await octokit.repos.listForAuthenticatedUser({
         type: "owner",
         per_page: perPage,
         page,
-        sort: "updated",
+        sort: "pushed",
       });
       allRepos = allRepos.concat(repos.map(r => ({ ...r, private: false })));
       if (repos.length < perPage) break;
@@ -217,8 +220,9 @@ const { data: repos } = await octokit.repos.listForAuthenticatedUser({
         }
 
         const createdAt = repo.created_at ? new Date(repo.created_at).getTime() : Date.now();
-        const updatedAt = repo.updated_at ? new Date(repo.updated_at).getTime() : Date.now();
-        const totalDurationDays = Math.max(1, Math.round((updatedAt - createdAt) / (1000 * 60 * 60 * 24)));
+        const activityAt = lastMaintenance || repo.pushed_at || repo.created_at;
+        const activityAtMs = activityAt ? new Date(activityAt).getTime() : createdAt;
+        const totalDurationDays = Math.max(1, Math.round((activityAtMs - createdAt) / (1000 * 60 * 60 * 24)));
         const activeDays = commitDates.length;
         const developmentDensity = totalDurationDays > 0 ? activeDays / totalDurationDays : 0;
 
@@ -241,6 +245,7 @@ const { data: repos } = await octokit.repos.listForAuthenticatedUser({
           size: repo.size ?? 0,
           created_at: repo.created_at ?? "",
           updated_at: repo.updated_at ?? "",
+          pushed_at: repo.pushed_at ?? "",
           languages,
           languagePercentages,
           totalBytes,
@@ -299,7 +304,10 @@ const { data: repos } = await octokit.repos.listForAuthenticatedUser({
       }
 
       // 4. Güncel Momentum Bonusu (Recency Booster) - Max 10 Puan
-      const daysSinceUpdate = repo.updated_at ? Math.max(0, Math.floor((now - new Date(repo.updated_at).getTime()) / (1000 * 60 * 60 * 24))) : 365;
+      const activityTimestamp = getRepoActivityTimestamp(repo);
+      const daysSinceUpdate = activityTimestamp
+        ? Math.max(0, Math.floor((now - activityTimestamp) / (1000 * 60 * 60 * 24)))
+        : 365;
       let recencyPts = 0;
       if (daysSinceUpdate <= 7) recencyPts = 10;
       else if (daysSinceUpdate <= 30) recencyPts = 8;
@@ -714,7 +722,7 @@ export async function fetchOrgAnalysis(
       type: "public",
       per_page: perPage,
       page,
-      sort: "updated",
+      sort: "pushed",
     });
     allRepos = allRepos.concat(repos);
     if (repos.length < perPage) break;
@@ -797,8 +805,9 @@ export async function fetchOrgAnalysis(
         }
 
         const createdAt = repo.created_at ? new Date(repo.created_at).getTime() : Date.now();
-        const updatedAt = repo.updated_at ? new Date(repo.updated_at).getTime() : Date.now();
-        const totalDurationDays = Math.max(1, Math.round((updatedAt - createdAt) / (1000 * 60 * 60 * 24)));
+        const activityAt = lastMaintenance || repo.pushed_at || repo.created_at;
+        const activityAtMs = activityAt ? new Date(activityAt).getTime() : createdAt;
+        const totalDurationDays = Math.max(1, Math.round((activityAtMs - createdAt) / (1000 * 60 * 60 * 24)));
         const activeDays = commitDates.length;
         const developmentDensity = totalDurationDays > 0 ? activeDays / totalDurationDays : 0;
 
@@ -821,6 +830,7 @@ export async function fetchOrgAnalysis(
           size: repo.size ?? 0,
           created_at: repo.created_at ?? "",
           updated_at: repo.updated_at ?? "",
+          pushed_at: repo.pushed_at ?? "",
           languages,
           languagePercentages,
           totalBytes,
@@ -872,7 +882,10 @@ export async function fetchOrgAnalysis(
         focusPts = Math.min(20, Math.round((repo.advancedMetrics.activeDays / Math.max(25, repo.advancedMetrics.totalDurationDays)) * 20));
       }
 
-      const daysSinceUpdate = repo.updated_at ? Math.max(0, Math.floor((now - new Date(repo.updated_at).getTime()) / (1000 * 60 * 60 * 24))) : 365;
+      const activityTimestamp = getRepoActivityTimestamp(repo);
+      const daysSinceUpdate = activityTimestamp
+        ? Math.max(0, Math.floor((now - activityTimestamp) / (1000 * 60 * 60 * 24)))
+        : 365;
       let recencyPts = 0;
       if (daysSinceUpdate <= 7) recencyPts = 10;
       else if (daysSinceUpdate <= 30) recencyPts = 8;

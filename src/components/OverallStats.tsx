@@ -7,6 +7,7 @@ import GitHubAvatar from "@/components/GitHubAvatar";
 import { useLocale } from "@/components/LocaleProvider";
 import type { TranslationKey } from "@/lib/i18n";
 import SegmentBar from "@/components/SegmentBar";
+import { getRepoActivityDate, getRepoActivityTimestamp } from "@/lib/repo-activity";
 
 interface OverallStatsProps {
   analysis: UserAnalysis;
@@ -103,7 +104,7 @@ export default function OverallStats({ analysis, excludedRepos, onClearExclusion
     const sortedByDate = [...repos].sort((a, b) => new Date(b.created_at).getTime() - new Date(a.created_at).getTime());
     const newestRepo = sortedByDate[0];
     const oldestRepo = sortedByDate[sortedByDate.length - 1];
-    const mostRecent = [...repos].sort((a, b) => new Date(b.updated_at).getTime() - new Date(a.updated_at).getTime())[0];
+    const mostRecent = [...repos].sort((a, b) => getRepoActivityTimestamp(b) - getRepoActivityTimestamp(a))[0];
     const mostForked = [...repos].sort((a, b) => b.forks_count - a.forks_count)[0];
     const totalStars = repos.reduce((s, r) => s + r.stargazers_count, 0);
     const totalForks = repos.reduce((s, r) => s + r.forks_count, 0);
@@ -224,7 +225,7 @@ export default function OverallStats({ analysis, excludedRepos, onClearExclusion
             <InsightTile label={tl("insights.mostLangs")} value={insights.mostLangs.name} detail={`${insights.mostLangs.languagePercentages.length} ${tl("insights.differentLangs")}`} />
             <InsightTile label={tl("insights.newestRepo")} value={insights.newestRepo.name} detail={fmtDate(insights.newestRepo.created_at)} />
             <InsightTile label={tl("insights.oldestRepo")} value={insights.oldestRepo.name} detail={fmtDate(insights.oldestRepo.created_at)} />
-            <InsightTile label={tl("insights.lastUpdated")} value={insights.mostRecent.name} detail={fmtDate(insights.mostRecent.updated_at)} />
+            <InsightTile label={tl("insights.lastUpdated")} value={insights.mostRecent.name} detail={fmtDate(getRepoActivityDate(insights.mostRecent))} />
             <InsightTile label={tl("insights.smallestRepo")} value={insights.smallestRepo.name} detail={formatBytes(insights.smallestRepo.totalBytes)} />
           </div>
         )}

@@ -56,7 +56,7 @@ export async function GET(request: NextRequest) {
         type: "owner",
         per_page: 100,
         page,
-        sort: "updated",
+        sort: "pushed",
       });
       allRepos.push(...repos);
       if (repos.length < 100) break;
@@ -79,7 +79,7 @@ export async function GET(request: NextRequest) {
             hasLicense: !!repo.license,
             hasDescription: !!repo.description && repo.description.length > 0,
             hasCI: false,
-            recentUpdate: new Date(repo.updated_at || "").getTime() > ninetyDaysAgo,
+            recentUpdate: new Date(repo.pushed_at || repo.created_at || "").getTime() > ninetyDaysAgo,
             lowIssueRatio: true,
           };
 

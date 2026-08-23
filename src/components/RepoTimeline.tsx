@@ -4,6 +4,7 @@ import { useMemo, useState, useRef, useCallback } from "react";
 import { useLocale } from "@/components/LocaleProvider";
 import { formatDate } from "@/lib/utils";
 import type { RepoInfo } from "@/lib/github";
+import { getRepoActivityDate, getRepoActivityTimestamp } from "@/lib/repo-activity";
 
 interface RepoTimelineProps {
   repos: RepoInfo[];
@@ -68,15 +69,18 @@ export default function RepoTimeline({ repos }: RepoTimelineProps) {
 
   const rows: Row[] = useMemo(() => {
     return repos
-      .filter((r) => r.created_at && r.updated_at)
-      .map((r) => ({
-        name: r.name,
-        created: new Date(r.created_at).getTime(),
-        updated: new Date(r.updated_at).getTime(),
-        sameDay: r.created_at.slice(0, 10) === r.updated_at.slice(0, 10),
-        commitDates: r.advancedMetrics?.commitDates.map(d => new Date(d).getTime()) || [],
-        metrics: r.advancedMetrics,
-      }))
+      .filter((r) => r.created_at && getRepoActivityDate(r))
+      .map((r) => {
+        const activityDate = getRepoActivityDate(r);
+        return {
+          name: r.name,
+          created: new Date(r.created_at).getTime(),
+          updated: getRepoActivityTimestamp(r),
+          sameDay: r.created_at.slice(0, 10) === activityDate.slice(0, 10),
+          commitDates: r.advancedMetrics?.commitDates.map(d => new Date(d).getTime()) || [],
+          metrics: r.advancedMetrics,
+        };
+      })
       .sort((a, b) => a.created - b.created);
   }, [repos]);
 

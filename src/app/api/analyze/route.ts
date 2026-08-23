@@ -20,8 +20,13 @@ export async function GET(request: NextRequest) {
   const session = await getSession();
   const token = session?.githubToken;
 
-  // Token varsa cache key'in sonuna "-auth" ekleyerek public ve private cache'leri ayır
-const cacheKey = userCacheKey(username) + (token ? "-auth" : "");
+  // Owner analizleri private repo verisi içerebilir. Bu sonucu genel bir
+  // "authenticated" anahtarı altında paylaşmak başka bir oturuma sızdırabilir.
+  const isOwnProfile = session?.login.toLowerCase() === username.toLowerCase();
+  const ownerCacheIdentity = session?.login.toLowerCase() ?? username.toLowerCase();
+  const cacheKey = isOwnProfile
+    ? `${userCacheKey(username)}-owner-${ownerCacheIdentity}`
+    : `${userCacheKey(username)}-public`;
 
   // Sunucu önbelleği kontrolü
   if (!forceRefresh) {

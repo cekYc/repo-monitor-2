@@ -4,6 +4,7 @@ import { useState, useCallback, useEffect, useRef, Suspense } from "react";
 import { useSearchParams, useRouter } from "next/navigation";
 import SearchForm from "@/components/SearchForm";
 import OverallStats from "@/components/OverallStats";
+import ProfileVisibility from "@/components/ProfileVisibility";
 import RepoCard from "@/components/RepoCard";
 import OrgAnalyzer from "@/components/OrgAnalyzer";
 import BadgeGenerator from "@/components/BadgeGenerator";
@@ -26,7 +27,7 @@ import { listWatches } from "@/lib/watchlist";
 import { UserAnalysis } from "@/lib/github";
 import { getRepoActivityTimestamp } from "@/lib/repo-activity";
 
-const CACHE_PREFIX = "repo-monitor-cache-v2-";
+const CACHE_PREFIX = "repo-monitor-cache-v3-";
 const CACHE_TTL = 30 * 60 * 1000; // 30 dakika
 const RECENT_SEARCHES_KEY = "repo-monitor-recent-searches";
 const MAX_RECENT = 8;
@@ -53,6 +54,10 @@ function getCachedAnalysis(username: string): UserAnalysis | null {
     const raw = localStorage.getItem(key);
     if (!raw) return null;
     const cached: CachedData = JSON.parse(raw);
+    if (cached.data.analysisScope !== "public") {
+      localStorage.removeItem(key);
+      return null;
+    }
     if (Date.now() - cached.timestamp > CACHE_TTL) {
       localStorage.removeItem(key);
       return null;
@@ -64,6 +69,8 @@ function getCachedAnalysis(username: string): UserAnalysis | null {
 }
 
 function setCachedAnalysis(username: string, data: UserAnalysis) {
+  // Owner analizleri private repo bilgisi taşıyabilir; localStorage'a yazma.
+  if (data.analysisScope !== "public") return;
   try {
     const key = getCacheKey(username);
     const entry: CachedData = { timestamp: Date.now(), data };
@@ -222,7 +229,17 @@ function HomeContent() {
     url.searchParams.set("user", username);
     router.replace(url.pathname + url.search, { scroll: false });
 
-    const cached = getCachedAnalysis(username);
+    let isOwnProfileRequest = false;
+    try {
+      const sessionResponse = await fetch("/api/auth/session", { cache: "no-store" });
+      const sessionData = await sessionResponse.json();
+      isOwnProfileRequest = sessionData.user?.login?.toLowerCase() === username.toLowerCase();
+    } catch {
+      // Session okunamazsa güvenli tarafta kalıp sunucudan yeniden analiz et.
+      isOwnProfileRequest = true;
+    }
+
+    const cached = isOwnProfileRequest ? null : getCachedAnalysis(username);
     if (cached) {
       setAnalysis(cached);
       setCacheHit(true);
@@ -417,6 +434,7 @@ function HomeContent() {
               </div>
 
               <OverallStats analysis={analysis} excludedRepos={excludedRepos} onClearExclusions={clearExclusions} />
+              <ProfileVisibility analysis={analysis} />
 
               {/* Repo list */}
               <div className="rounded-2xl border border-hairline bg-surface p-5">

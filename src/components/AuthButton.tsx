@@ -1,7 +1,6 @@
 "use client";
 
 import { useState, useEffect } from "react";
-import { useRouter } from "next/navigation";
 import GitHubAvatar from "@/components/GitHubAvatar";
 
 interface User {
@@ -12,7 +11,6 @@ interface User {
 export default function AuthButton() {
   const [user, setUser] = useState<User | null>(null);
   const [loading, setLoading] = useState(true);
-  const router = useRouter();
 
   useEffect(() => {
     fetch("/api/auth/session")
@@ -34,8 +32,9 @@ export default function AuthButton() {
     // Yüklenme durumunu sıfırla (istek tamamlandığında)
     setLoading(false);
 
-    // Next.js sunucu bileşenlerine sayfayı tazelemesini söyle (cache'i ezer)
-    router.refresh();
+    // Owner analizi private veri içerebilir. Tam navigasyon client state'ini de
+    // temizler; böylece çıkıştan sonra analiz ekranda kalmaz.
+    window.location.assign("/");
   };
 
   if (loading) {

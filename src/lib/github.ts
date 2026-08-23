@@ -56,6 +56,7 @@ export interface UserAnalysis {
   overallLanguages: { name: string; value: number; bytes: number }[];
   totalBytes: number;
   totalRepos: number;
+  analysisScope: "owner" | "public";
 }
 
 export async function fetchUserAnalysis(
@@ -331,6 +332,7 @@ const { data: repos } = await octokit.repos.listForAuthenticatedUser({
     overallLanguages,
     totalBytes,
     totalRepos: repoInfos.length,
+    analysisScope: isOwnProfile ? "owner" : "public",
   };
 }
 

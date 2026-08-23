@@ -3,7 +3,7 @@
 import { UserAnalysis } from "@/lib/github";
 import { getLanguageColor, formatBytes } from "@/lib/utils";
 import { useLocale } from "@/components/LocaleProvider";
-import Image from "next/image";
+import GitHubAvatar from "@/components/GitHubAvatar";
 import { useRef, useState, useCallback } from "react";
 import {
   BarChart,
@@ -130,9 +130,10 @@ export default function UserCompare({ userA, userB }: UserCompareProps) {
               }`}
             >
               <div className="flex items-center gap-3 mb-3">
-                <Image
+                <GitHubAvatar
                   src={analysis.user.avatar_url}
                   alt={analysis.user.login}
+                  identity={analysis.user.login}
                   width={48}
                   height={48}
                   className="w-12 h-12 rounded-full"

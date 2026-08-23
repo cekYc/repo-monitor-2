@@ -1,8 +1,8 @@
 "use client";
 
 import { useState, useEffect } from "react";
-import Image from "next/image";
 import { useRouter } from "next/navigation";
+import GitHubAvatar from "@/components/GitHubAvatar";
 
 interface User {
   login: string;
@@ -47,9 +47,10 @@ export default function AuthButton() {
   if (user) {
     return (
       <div className="flex items-center gap-2">
-        <Image
+        <GitHubAvatar
           src={user.avatarUrl}
           alt={user.login}
+          identity={user.login}
           width={26}
           height={26}
           className="rounded-full"

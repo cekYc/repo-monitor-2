@@ -1,7 +1,7 @@
 "use client";
 
 import { useState } from "react";
-import Image from "next/image";
+import GitHubAvatar from "@/components/GitHubAvatar";
 import { useLocale } from "@/components/LocaleProvider";
 import { OrgAnalysis } from "@/lib/github";
 import { formatBytes, getLanguageColor } from "@/lib/utils";
@@ -119,9 +119,10 @@ export default function OrgAnalyzer({ token }: OrgAnalyzerProps) {
               {/* Org Profile Card */}
               <div className="bg-linear-to-r from-teal-600 via-cyan-600 to-blue-500 rounded-2xl p-6 text-white">
                 <div className="flex items-center gap-4">
-                  <Image
+                  <GitHubAvatar
                     src={analysis.org.avatar_url}
                     alt={analysis.org.login}
+                    identity={analysis.org.login}
                     width={64}
                     height={64}
                     className="w-16 h-16 rounded-xl border-2 border-white/30"

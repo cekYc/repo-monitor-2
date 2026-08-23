@@ -3,7 +3,7 @@
 import { getLanguageColor, formatBytes } from "@/lib/utils";
 import { UserAnalysis } from "@/lib/github";
 import { useMemo, useRef, useState, useCallback, type ReactNode } from "react";
-import Image from "next/image";
+import GitHubAvatar from "@/components/GitHubAvatar";
 import { useLocale } from "@/components/LocaleProvider";
 import type { TranslationKey } from "@/lib/i18n";
 import SegmentBar from "@/components/SegmentBar";
@@ -152,7 +152,7 @@ export default function OverallStats({ analysis, excludedRepos, onClearExclusion
         <Tile className="p-5">
           <div className="flex flex-col sm:flex-row gap-5">
             <div className="flex items-start gap-4 sm:w-1/2 min-w-0">
-              <Image src={user.avatar_url} alt={user.login} width={64} height={64} className="w-16 h-16 rounded-2xl shrink-0" />
+              <GitHubAvatar src={user.avatar_url} alt={user.login} identity={user.login} width={64} height={64} className="w-16 h-16 rounded-2xl shrink-0" />
               <div className="min-w-0">
                 <h1 className="text-xl font-semibold text-fg truncate">{user.name || user.login}</h1>
                 <a href={user.html_url} target="_blank" rel="noopener noreferrer" className="text-sm text-muted hover:text-accent-text transition-colors">@{user.login}</a>

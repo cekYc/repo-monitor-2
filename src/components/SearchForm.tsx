@@ -1,7 +1,7 @@
 "use client";
 
 import { useState } from "react";
-import Image from "next/image";
+import GitHubAvatar from "@/components/GitHubAvatar";
 import { useLocale } from "@/components/LocaleProvider";
 
 const TOKEN_STORAGE_KEY = "repo-monitor-gh-token";
@@ -152,7 +152,7 @@ export default function SearchForm({
                 disabled={loading}
                 className="inline-flex items-center gap-1.5 pl-1.5 pr-3 py-1.5 rounded-full border border-hairline bg-surface text-sm text-muted hover:text-fg hover:border-hairline-strong transition-colors cursor-pointer disabled:opacity-50"
               >
-                {s.avatarUrl && <Image src={s.avatarUrl} alt="" width={18} height={18} className="w-[18px] h-[18px] rounded-full" />}
+                {s.avatarUrl && <GitHubAvatar src={s.avatarUrl} alt="" identity={s.username} width={18} height={18} className="w-[18px] h-[18px] rounded-full" />}
                 <span className="font-medium">{s.username}</span>
               </button>
             ))}

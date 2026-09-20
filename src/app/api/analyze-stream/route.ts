@@ -1,6 +1,7 @@
 import { NextRequest } from "next/server";
 import { fetchUserAnalysis } from "@/lib/github";
-import { getSession } from "@/lib/auth";
+import { classifyGithubError } from "@/lib/api-error";
+import { resolveToken } from "@/lib/request-token";
 
 export const runtime = "nodejs";
 
@@ -8,22 +9,22 @@ export async function GET(request: NextRequest) {
   const searchParams = request.nextUrl.searchParams;
   const username = searchParams.get("username");
   const extensionsParam = searchParams.get("extensions");
-  const session = await getSession();
-  const token = session?.githubToken;
 
   if (!username) {
     return new Response(
-      JSON.stringify({ error: "username parametresi gerekli" }),
+      JSON.stringify({ code: "bad_request", error: "username parameter is required" }),
       { status: 400, headers: { "Content-Type": "application/json" } }
     );
   }
+
+  const { token } = await resolveToken(request);
 
   let customExtensions: { ext: string; lang: string; color: string }[] | undefined;
   if (extensionsParam) {
     try {
       customExtensions = JSON.parse(extensionsParam);
     } catch {
-      // ignore parse error
+      // malformed mapping: fall back to the default language detection
     }
   }
 
@@ -40,29 +41,17 @@ export async function GET(request: NextRequest) {
       try {
         const analysis = await fetchUserAnalysis(
           username,
-          token || undefined,
-          (current, total, repoName) => {
-            send("progress", { current, total, repoName });
-          },
+          token,
+          (current, total, repoName) => send("progress", { current, total, repoName }),
           customExtensions
         );
-
         send("complete", analysis);
       } catch (error: unknown) {
-        const message =
-          error instanceof Error ? error.message : "Bilinmeyen bir hata oluştu";
-
-        if (message.includes("Not Found")) {
-          send("error", { error: `"${username}" kullanıcısı bulunamadı` });
-        } else if (message.includes("Bad credentials")) {
-          send("error", { error: "Geçersiz GitHub API token" });
-        } else if (message.includes("rate limit")) {
-          send("error", {
-            error: "API istek limiti aşıldı. Token kullanarak limiti artırabilirsiniz.",
-          });
-        } else {
-          send("error", { error: message });
-        }
+        const { code } = classifyGithubError(error);
+        send("error", {
+          code,
+          error: error instanceof Error ? error.message : "unknown",
+        });
       } finally {
         controller.close();
       }

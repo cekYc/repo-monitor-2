@@ -1,40 +1,36 @@
 import { NextRequest, NextResponse } from "next/server";
 import { fetchUserAnalysis } from "@/lib/github";
 import { serverCache, userCacheKey } from "@/lib/cache";
-import { getSession } from "@/lib/auth";
+import { classifyGithubError } from "@/lib/api-error";
+import { resolveToken } from "@/lib/request-token";
 
 export async function GET(request: NextRequest) {
-  const searchParams = request.nextUrl.searchParams;
-  const username = searchParams.get("username");
-  const forceRefresh = searchParams.get("refresh") === "1";
+  const username = request.nextUrl.searchParams.get("username");
+  const forceRefresh = request.nextUrl.searchParams.get("refresh") === "1";
 
   if (!username) {
     return NextResponse.json(
-      { error: "username parametresi gerekli" },
+      { code: "bad_request", error: "username parameter is required" },
       { status: 400 }
     );
   }
 
-  // Token artık cookie'deki JWT'den okunuyor — query param'dan değil!
-  // Bu sayede token asla URL geçmişine, log'lara veya proxy'lere düşmez.
-  const session = await getSession();
-  const token = session?.githubToken;
+  const { token, session, source } = await resolveToken(request);
 
-  // Owner analizleri private repo verisi içerebilir. Bu sonucu genel bir
-  // "authenticated" anahtarı altında paylaşmak başka bir oturuma sızdırabilir.
+  // Owner analyses can contain private repository data. Sharing that under a
+  // generic "authenticated" key could leak it into another visitor's request,
+  // so only a session token — whose identity we know — is allowed to key the
+  // shared cache at all.
   const isOwnProfile = session?.login.toLowerCase() === username.toLowerCase();
-  const ownerCacheIdentity = session?.login.toLowerCase() ?? username.toLowerCase();
+  const cacheable = source === "session" || source === "none";
   const cacheKey = isOwnProfile
-    ? `${userCacheKey(username)}-owner-${ownerCacheIdentity}`
+    ? `${userCacheKey(username)}-owner-${session?.login.toLowerCase() ?? username.toLowerCase()}`
     : `${userCacheKey(username)}-public`;
 
-  // Sunucu önbelleği kontrolü
-  if (!forceRefresh) {
+  if (cacheable && !forceRefresh) {
     const cached = serverCache.get(cacheKey);
     if (cached.status === "fresh") {
-      return NextResponse.json(cached.data, {
-        headers: { "X-Cache": "HIT" },
-      });
+      return NextResponse.json(cached.data, { headers: { "X-Cache": "HIT" } });
     }
     if (cached.status === "stale") {
       if (!serverCache.isRevalidating(cacheKey)) {
@@ -44,45 +40,19 @@ export async function GET(request: NextRequest) {
           .catch(() => {})
           .finally(() => serverCache.unmarkRevalidating(cacheKey));
       }
-      return NextResponse.json(cached.data, {
-        headers: { "X-Cache": "STALE" },
-      });
+      return NextResponse.json(cached.data, { headers: { "X-Cache": "STALE" } });
     }
   }
 
   try {
     const analysis = await fetchUserAnalysis(username, token);
-    serverCache.set(cacheKey, analysis);
-    return NextResponse.json(analysis, {
-      headers: { "X-Cache": "MISS" },
-    });
+    if (cacheable) serverCache.set(cacheKey, analysis);
+    return NextResponse.json(analysis, { headers: { "X-Cache": "MISS" } });
   } catch (error: unknown) {
-    const message =
-      error instanceof Error ? error.message : "Bilinmeyen bir hata oluştu";
-
-    if (message.includes("Not Found")) {
-      return NextResponse.json(
-        { error: `"${username}" kullanıcısı bulunamadı` },
-        { status: 404 }
-      );
-    }
-    if (message.includes("Bad credentials")) {
-      return NextResponse.json(
-        { error: "Geçersiz GitHub token. Lütfen tekrar giriş yapın." },
-        { status: 401 }
-      );
-    }
-    if (message.includes("rate limit") || message.includes("API rate limit")) {
-      return NextResponse.json(
-        {
-          error: session
-            ? "API istek limiti aşıldı."
-            : "API istek limiti aşıldı. GitHub ile giriş yaparak limiti artırabilirsiniz.",
-        },
-        { status: 429 }
-      );
-    }
-
-    return NextResponse.json({ error: message }, { status: 500 });
+    const { code, status } = classifyGithubError(error);
+    return NextResponse.json(
+      { code, error: error instanceof Error ? error.message : "unknown" },
+      { status }
+    );
   }
 }

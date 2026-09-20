@@ -1,7 +1,8 @@
 import { NextRequest, NextResponse } from "next/server";
 import { fetchRepoDeepAnalysis } from "@/lib/github";
 import { serverCache, repoDeepCacheKey } from "@/lib/cache";
-import { getSession } from "@/lib/auth";
+import { classifyGithubError } from "@/lib/api-error";
+import { resolveToken } from "@/lib/request-token";
 
 export const runtime = "nodejs";
 
@@ -13,19 +14,20 @@ export async function GET(request: NextRequest) {
 
   if (!owner || !repo) {
     return NextResponse.json(
-      { error: "owner and repo parameters are required" },
+      { code: "bad_request", error: "owner and repo parameters are required" },
       { status: 400 }
     );
   }
 
-  // Prefer an explicit ?token= (manual PAT flow), else fall back to the
-  // OAuth session cookie.
-  const session = await getSession();
-  const token = searchParams.get("token") || session?.githubToken;
+  const { token, source } = await resolveToken(request);
 
-  const cacheKey = repoDeepCacheKey(owner, repo) + (token ? "-auth" : "");
+  // A browser-supplied token can reach private repositories, and the server
+  // cache is shared across visitors — so only anonymous and session-scoped
+  // reads are cached.
+  const cacheable = source === "none" || source === "session";
+  const cacheKey = repoDeepCacheKey(owner, repo) + (source === "session" ? "-auth" : "");
 
-  if (!forceRefresh) {
+  if (cacheable && !forceRefresh) {
     const cached = serverCache.get(cacheKey);
     if (cached.status === "fresh") {
       return NextResponse.json(cached.data, { headers: { "X-Cache": "HIT" } });
@@ -44,35 +46,13 @@ export async function GET(request: NextRequest) {
 
   try {
     const analysis = await fetchRepoDeepAnalysis(owner, repo, token);
-    serverCache.set(cacheKey, analysis);
+    if (cacheable) serverCache.set(cacheKey, analysis);
     return NextResponse.json(analysis, { headers: { "X-Cache": "MISS" } });
   } catch (error: unknown) {
-    const message =
-      error instanceof Error ? error.message : "Unknown error occurred";
-
-    if (message.includes("Not Found")) {
-      return NextResponse.json(
-        { error: `"${owner}/${repo}" not found` },
-        { status: 404 }
-      );
-    }
-    if (message.includes("Bad credentials")) {
-      return NextResponse.json(
-        { error: "Invalid GitHub token. Please sign in again." },
-        { status: 401 }
-      );
-    }
-    if (message.includes("rate limit") || message.includes("API rate limit")) {
-      return NextResponse.json(
-        {
-          error: session
-            ? "API rate limit exceeded."
-            : "API rate limit exceeded. Sign in with GitHub to raise the limit.",
-        },
-        { status: 429 }
-      );
-    }
-
-    return NextResponse.json({ error: message }, { status: 500 });
+    const { code, status } = classifyGithubError(error);
+    return NextResponse.json(
+      { code, error: error instanceof Error ? error.message : "unknown" },
+      { status }
+    );
   }
 }

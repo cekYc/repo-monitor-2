@@ -1,45 +1,30 @@
 import { NextRequest, NextResponse } from "next/server";
 import { fetchOrgAnalysis } from "@/lib/github";
+import { classifyGithubError } from "@/lib/api-error";
+import { resolveToken } from "@/lib/request-token";
 
 export const runtime = "nodejs";
 
 export async function GET(request: NextRequest) {
-  const searchParams = request.nextUrl.searchParams;
-  const org = searchParams.get("org");
-  const token = searchParams.get("token");
+  const org = request.nextUrl.searchParams.get("org");
 
   if (!org) {
     return NextResponse.json(
-      { error: "org parametresi gerekli" },
+      { code: "bad_request", error: "org parameter is required" },
       { status: 400 }
     );
   }
 
+  const { token } = await resolveToken(request);
+
   try {
-    const analysis = await fetchOrgAnalysis(org, token || undefined);
+    const analysis = await fetchOrgAnalysis(org, token);
     return NextResponse.json(analysis);
   } catch (error: unknown) {
-    const message =
-      error instanceof Error ? error.message : "Bilinmeyen bir hata oluştu";
-
-    if (message.includes("Not Found")) {
-      return NextResponse.json(
-        { error: `"${org}" organizasyonu bulunamadı` },
-        { status: 404 }
-      );
-    }
-    if (message.includes("Bad credentials")) {
-      return NextResponse.json(
-        { error: "Geçersiz GitHub API token" },
-        { status: 401 }
-      );
-    }
-    if (message.includes("rate limit")) {
-      return NextResponse.json(
-        { error: "API istek limiti aşıldı" },
-        { status: 429 }
-      );
-    }
-    return NextResponse.json({ error: message }, { status: 500 });
+    const { code, status } = classifyGithubError(error);
+    return NextResponse.json(
+      { code, error: error instanceof Error ? error.message : "unknown" },
+      { status }
+    );
   }
 }

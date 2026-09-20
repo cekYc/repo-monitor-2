@@ -119,11 +119,21 @@ export function makeWatchId(type: WatchType, label: string): string {
   return `${type}:${label.toLowerCase()}`;
 }
 
+/** Lets the nav badge and any open list react to a watch toggled elsewhere. */
+export const WATCHLIST_CHANGED_EVENT = "rm:watchlist-changed";
+
+function announceChange() {
+  if (typeof window !== "undefined") {
+    window.dispatchEvent(new Event(WATCHLIST_CHANGED_EVENT));
+  }
+}
+
 export async function addWatch(
   item: Omit<WatchItem, "addedAt"> & { addedAt?: number }
 ): Promise<WatchItem> {
   const record: WatchItem = { ...item, addedAt: item.addedAt ?? Date.now() };
   await tx(STORE_WATCHES, "readwrite", (s) => s.put(record));
+  announceChange();
   return record;
 }
 
@@ -145,6 +155,7 @@ export async function removeWatch(id: string): Promise<void> {
     transaction.oncomplete = () => resolve();
     transaction.onerror = () => reject(transaction.error);
   });
+  announceChange();
 }
 
 export async function listWatches(): Promise<WatchItem[]> {

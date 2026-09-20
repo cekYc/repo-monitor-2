@@ -1,8 +1,12 @@
 import type { Metadata, Viewport } from "next";
 import { Geist, Geist_Mono } from "next/font/google";
+import { cookies } from "next/headers";
 import "./globals.css";
-import { ThemeProvider } from "@/components/ThemeProvider";
+import { ThemeProvider, type Theme } from "@/components/ThemeProvider";
 import { LocaleProvider } from "@/components/LocaleProvider";
+import { SessionProvider } from "@/components/SessionProvider";
+import AppFrame from "@/components/shell/AppFrame";
+import type { Locale } from "@/lib/i18n";
 
 const geistSans = Geist({
   variable: "--font-geist-sans",
@@ -15,23 +19,30 @@ const geistMono = Geist_Mono({
 });
 
 export const metadata: Metadata = {
-  title: "Repo Monitor — Visualize GitHub Language DNA",
+  title: "Repo Monitor — GitHub analysis & tracking",
   description:
-    "Analyze any GitHub user's public repositories and get a complete breakdown of programming language usage with interactive charts.",
-  keywords: ["GitHub", "repository", "language analysis", "code statistics", "developer tools", "programming languages"],
+    "Analyze any GitHub user, org or repository: language DNA, repo metrics, health and persona — then watch it for changes over time.",
+  keywords: [
+    "GitHub",
+    "repository analysis",
+    "language statistics",
+    "developer tools",
+    "repo monitoring",
+  ],
   authors: [{ name: "cekYc", url: "https://github.com/cekYc" }],
   openGraph: {
-    title: "Repo Monitor — Visualize GitHub Language DNA",
-    description: "Analyze any GitHub user's repos and see their programming language distribution with interactive charts.",
+    title: "Repo Monitor — GitHub analysis & tracking",
+    description:
+      "Language DNA, repo metrics and change tracking for any GitHub user, org or repository.",
     url: "https://ceky-repo-monitor.vercel.app",
     siteName: "Repo Monitor",
     type: "website",
-    locale: "en_US",
   },
   twitter: {
     card: "summary_large_image",
-    title: "Repo Monitor — Visualize GitHub Language DNA",
-    description: "Analyze any GitHub user's repos and see their programming language distribution with interactive charts.",
+    title: "Repo Monitor — GitHub analysis & tracking",
+    description:
+      "Language DNA, repo metrics and change tracking for any GitHub user, org or repository.",
   },
   metadataBase: new URL("https://ceky-repo-monitor.vercel.app"),
   manifest: "/manifest.json",
@@ -46,24 +57,36 @@ export const metadata: Metadata = {
 };
 
 export const viewport: Viewport = {
-  themeColor: "#6366f1",
+  themeColor: [
+    { media: "(prefers-color-scheme: dark)", color: "#09090b" },
+    { media: "(prefers-color-scheme: light)", color: "#fafafa" },
+  ],
 };
 
-export default function RootLayout({
+// Sets the theme class before first paint for visitors whose preference lives
+// in localStorage but not yet in the cookie.
+const THEME_BOOTSTRAP = `(function(){try{var t=localStorage.getItem('repo-monitor-theme');if(t==='light')document.documentElement.classList.remove('dark');else if(t==='dark')document.documentElement.classList.add('dark');}catch(e){}})();`;
+
+export default async function RootLayout({
   children,
-}: Readonly<{
-  children: React.ReactNode;
-}>) {
+}: Readonly<{ children: React.ReactNode }>) {
+  const store = await cookies();
+  const theme: Theme = store.get("repo-monitor-theme")?.value === "light" ? "light" : "dark";
+  const locale: Locale = store.get("repo-monitor-locale")?.value === "en" ? "en" : "tr";
+
   return (
-    <html lang="tr" suppressHydrationWarning>
+    <html lang={locale} className={theme === "dark" ? "dark" : undefined} suppressHydrationWarning>
       <head>
         <link rel="apple-touch-icon" href="/icon-192.svg" />
+        <script dangerouslySetInnerHTML={{ __html: THEME_BOOTSTRAP }} />
       </head>
-      <body
-        className={`${geistSans.variable} ${geistMono.variable} antialiased`}
-      >
-        <ThemeProvider>
-          <LocaleProvider>{children}</LocaleProvider>
+      <body className={`${geistSans.variable} ${geistMono.variable} antialiased`}>
+        <ThemeProvider initialTheme={theme}>
+          <LocaleProvider initialLocale={locale}>
+            <SessionProvider>
+              <AppFrame>{children}</AppFrame>
+            </SessionProvider>
+          </LocaleProvider>
         </ThemeProvider>
       </body>
     </html>

@@ -1,14 +1,19 @@
 "use client";
 
-import { useEffect, useState, use } from "react";
+import { use, useCallback, useEffect, useState } from "react";
 import Link from "next/link";
-import { useLocale } from "@/components/LocaleProvider";
-import ThemeToggle from "@/components/ThemeToggle";
-import LocaleToggle from "@/components/LocaleToggle";
+import ErrorNotice from "@/components/ui/ErrorNotice";
 import RepoDeepDive from "@/components/RepoDeepDive";
+import WatchButton from "@/components/WatchButton";
+import { Skeleton } from "@/components/ui/Skeleton";
+import { useLocale } from "@/components/LocaleProvider";
+import { codeFromResponse, toErrorCode, type ErrorCode } from "@/lib/errors";
+import { tokenHeaders } from "@/lib/token";
 import type { RepoDeepAnalysis } from "@/lib/github";
 
-export default function RepoDeepDivePage({
+/** Repo detail. The frame (header, search, nav) comes from the app layout, so
+ *  this page only owns its own breadcrumb, actions and content. */
+export default function RepoDetailPage({
   params,
 }: {
   params: Promise<{ owner: string; repo: string }>;
@@ -17,79 +22,72 @@ export default function RepoDeepDivePage({
   const { t } = useLocale();
   const [data, setData] = useState<RepoDeepAnalysis | null>(null);
   const [loading, setLoading] = useState(true);
-  const [error, setError] = useState<string | null>(null);
+  const [errorCode, setErrorCode] = useState<ErrorCode | null>(null);
+
+  const load = useCallback(async () => {
+    setLoading(true);
+    setErrorCode(null);
+    try {
+      const qs = new URLSearchParams({ owner, repo });
+      const res = await fetch(`/api/repo-analysis?${qs}`, { headers: tokenHeaders() });
+      const payload = await res.json();
+      if (!res.ok) {
+        setErrorCode(codeFromResponse(payload, res.status));
+        return;
+      }
+      setData(payload as RepoDeepAnalysis);
+    } catch (err) {
+      setErrorCode(toErrorCode(err));
+    } finally {
+      setLoading(false);
+    }
+  }, [owner, repo]);
 
   useEffect(() => {
-    let active = true;
-
-    const run = async () => {
-      setLoading(true);
-      setError(null);
-
-      const token =
-        typeof window !== "undefined"
-          ? localStorage.getItem("repo-monitor-gh-token") || ""
-          : "";
-      const qs = new URLSearchParams({ owner, repo });
-      if (token) qs.set("token", token);
-
-      try {
-        const res = await fetch(`/api/repo-analysis?${qs}`);
-        const json = await res.json();
-        if (!res.ok) throw new Error(json.error || t("deep.notFound"));
-        if (active) setData(json as RepoDeepAnalysis);
-      } catch (err: unknown) {
-        if (active) setError(err instanceof Error ? err.message : t("deep.notFound"));
-      } finally {
-        if (active) setLoading(false);
-      }
-    };
-
-    run();
-
-    return () => {
-      active = false;
-    };
-  }, [owner, repo, t]);
+    load();
+  }, [load]);
 
   return (
-    <div className="min-h-screen bg-canvas text-fg">
-      <header className="sticky top-0 z-30 bg-canvas/85 backdrop-blur border-b border-hairline">
-        <div className="max-w-6xl mx-auto px-4 md:px-6 h-14 flex items-center justify-between gap-4">
+    <div className="space-y-4">
+      <nav className="flex flex-wrap items-center justify-between gap-2">
+        <div className="flex items-center gap-1.5 t-caption text-faint min-w-0">
           <Link
-            href="/"
-            className="inline-flex items-center gap-1.5 text-sm font-medium text-muted hover:text-fg transition-colors"
+            href={`/?user=${encodeURIComponent(owner)}`}
+            className="hover:text-fg transition-colors font-mono truncate"
           >
-            {t("deep.back")}
+            {owner}
           </Link>
-          <div className="flex items-center gap-2">
-            <LocaleToggle />
-            <ThemeToggle />
-          </div>
+          <span aria-hidden>/</span>
+          <span className="text-fg font-mono truncate">{repo}</span>
         </div>
-      </header>
+        <div className="flex items-center gap-2">
+          <WatchButton type="repo" label={`${owner}/${repo}`} size="sm" />
+          <a
+            href={`https://github.com/${owner}/${repo}`}
+            target="_blank"
+            rel="noopener noreferrer"
+            className="btn btn-ghost btn-sm"
+          >
+            {t("action.openOnGithub")}
+          </a>
+        </div>
+      </nav>
 
-      <main className="max-w-6xl mx-auto px-4 md:px-6 py-6 pb-16">
-        {loading && (
-          <div className="text-center py-20">
-            <div className="inline-flex items-center gap-3 bg-surface rounded-2xl px-6 py-4 border border-hairline">
-              <svg className="animate-spin h-5 w-5 text-accent" viewBox="0 0 24 24" fill="none">
-                <circle className="opacity-25" cx="12" cy="12" r="10" stroke="currentColor" strokeWidth="4" />
-                <path className="opacity-75" fill="currentColor" d="M4 12a8 8 0 018-8V0C5.373 0 0 5.373 0 12h4z" />
-              </svg>
-              <span className="text-muted text-sm">{t("deep.loading")}</span>
-            </div>
+      {loading && (
+        <div className="space-y-3" aria-hidden>
+          <Skeleton className="h-24 rounded-card" />
+          <div className="grid grid-cols-2 sm:grid-cols-4 gap-3">
+            {Array.from({ length: 4 }).map((_, i) => (
+              <Skeleton key={i} className="h-20 rounded-card" />
+            ))}
           </div>
-        )}
+          <Skeleton className="h-56 rounded-card" />
+        </div>
+      )}
 
-        {error && (
-          <div className="max-w-2xl mx-auto bg-danger-soft border border-hairline rounded-2xl p-4 text-center">
-            <p className="text-danger font-medium">{error}</p>
-          </div>
-        )}
+      {errorCode && !loading && <ErrorNotice code={errorCode} onRetry={load} />}
 
-        {data && !loading && <RepoDeepDive data={data} />}
-      </main>
+      {data && !loading && !errorCode && <RepoDeepDive data={data} />}
     </div>
   );
 }

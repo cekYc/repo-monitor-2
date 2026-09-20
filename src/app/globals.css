@@ -2,65 +2,95 @@
 
 @custom-variant dark (&:where(.dark, .dark *));
 
-/* ── Design tokens ─────────────────────────────────────────────
-   Minimal-flat design language: a neutral canvas, hairline borders,
-   one refined indigo accent. Every token has a light + dark value. */
+/* ── Design tokens ──────────────────────────────────────────────
+   Dark-first. One purple accent, hairline borders, no decorative
+   shadows (a single popover shadow). Every token has a light and a
+   dark value so the whole UI works in both themes.               */
+
 :root {
-  --canvas: #fbfbfc;
+  /* Surfaces — light theme */
+  --canvas: #fafafa;
   --surface: #ffffff;
-  --panel: #f5f5f7;
-  --hairline: #ececef;
-  --hairline-strong: #e0e0e4;
+  --panel: #f4f4f5;
+  --panel-strong: #ebebee;
+  --hairline: #e8e8ec;
+  --hairline-strong: #d8d8de;
+
+  /* Text */
   --fg: #18181b;
-  --muted: #5e5e68;
-  --faint: #9a9aa5;
+  --muted: #52525b;
+  --faint: #8b8b95;
 
-  --accent: #5b5bd6;
-  --accent-hover: #4f4fc4;
+  /* Accent — single purple */
+  --accent: #7c3aed;
+  --accent-hover: #6d28d9;
   --accent-fg: #ffffff;
-  --accent-text: #4f4fc4;
-  --accent-soft: #eeeefb;
+  --accent-text: #6d28d9;
+  --accent-soft: #f3efff;
+  --accent-line: #ddd0fd;
 
+  /* Status */
   --success: #059669;
-  --success-soft: #e7f6ef;
+  --success-soft: #e8f6f0;
+  --warning: #b45309;
+  --warning-soft: #fdf1e3;
   --danger: #dc2626;
-  --danger-soft: #fdeaea;
-  --warning: #d97706;
-  --warning-soft: #fcf1e1;
+  --danger-soft: #fdecec;
+  --neutral-soft: #f1f1f3;
 
-  --radius: 8px;
+  /* Radius scale */
+  --radius-sm: 8px;
+  --radius-md: 10px;
+  --radius-lg: 12px;
+  --radius-xl: 16px;
+  --radius-pill: 999px;
+
+  /* The single allowed shadow: floating layers only */
+  --shadow-pop: 0 1px 2px rgba(9, 9, 11, 0.06), 0 12px 32px -8px rgba(9, 9, 11, 0.18);
+
+  /* Layout rhythm */
+  --header-h: 56px;
+  --tabbar-h: 56px;
 }
 
 .dark {
   --canvas: #09090b;
-  --surface: #0f0f12;
-  --panel: #17171b;
-  --hairline: #232328;
-  --hairline-strong: #2f2f37;
-  --fg: #f4f4f5;
-  --muted: #9b9ba6;
-  --faint: #65656f;
+  --surface: #101014;
+  --panel: #17171c;
+  --panel-strong: #1f1f26;
+  --hairline: #232329;
+  --hairline-strong: #31313a;
 
-  --accent: #6d6af2;
-  --accent-hover: #7e7bf5;
+  --fg: #f4f4f5;
+  --muted: #a1a1ac;
+  --faint: #6c6c78;
+
+  --accent: #8b5cf6;
+  --accent-hover: #9b73f8;
   --accent-fg: #ffffff;
-  --accent-text: #a5a3f5;
-  --accent-soft: #1c1a33;
+  --accent-text: #c3aefc;
+  --accent-soft: #1d1630;
+  --accent-line: #3a2c60;
 
   --success: #34d399;
-  --success-soft: #0c2a22;
-  --danger: #f87171;
-  --danger-soft: #2c1414;
+  --success-soft: #0d2a21;
   --warning: #fbbf24;
-  --warning-soft: #2a1f0d;
+  --warning-soft: #2a2010;
+  --danger: #f87171;
+  --danger-soft: #2d1616;
+  --neutral-soft: #1b1b21;
+
+  --shadow-pop: 0 1px 2px rgba(0, 0, 0, 0.5), 0 14px 40px -10px rgba(0, 0, 0, 0.7);
 }
 
 @theme inline {
   --color-canvas: var(--canvas);
   --color-surface: var(--surface);
   --color-panel: var(--panel);
+  --color-panel-strong: var(--panel-strong);
   --color-hairline: var(--hairline);
   --color-hairline-strong: var(--hairline-strong);
+
   --color-fg: var(--fg);
   --color-muted: var(--muted);
   --color-faint: var(--faint);
@@ -70,18 +100,26 @@
   --color-accent-fg: var(--accent-fg);
   --color-accent-text: var(--accent-text);
   --color-accent-soft: var(--accent-soft);
+  --color-accent-line: var(--accent-line);
 
   --color-success: var(--success);
   --color-success-soft: var(--success-soft);
-  --color-danger: var(--danger);
-  --color-danger-soft: var(--danger-soft);
   --color-warning: var(--warning);
   --color-warning-soft: var(--warning-soft);
+  --color-danger: var(--danger);
+  --color-danger-soft: var(--danger-soft);
+  --color-neutral-soft: var(--neutral-soft);
 
   --font-sans: var(--font-geist-sans);
   --font-mono: var(--font-geist-mono);
 
-  --radius-card: 12px;
+  --radius-sm: var(--radius-sm);
+  --radius-md: var(--radius-md);
+  --radius-lg: var(--radius-lg);
+  --radius-card: var(--radius-xl);
+  --radius-pill: var(--radius-pill);
+
+  --shadow-pop: var(--shadow-pop);
 }
 
 body {
@@ -90,15 +128,197 @@ body {
   font-family: var(--font-geist-sans), ui-sans-serif, system-ui, -apple-system,
     "Segoe UI", Roboto, Helvetica, Arial, sans-serif;
   -webkit-font-smoothing: antialiased;
+  text-rendering: optimizeLegibility;
 }
 
-/* Tabular figures for stat readouts */
+/* ── Component layer ───────────────────────────────────────────
+   A small vocabulary of repeated shapes. Declared in @layer
+   components so any Tailwind utility can still override them.   */
+
+@layer components {
+  .card {
+    background: var(--surface);
+    border: 1px solid var(--hairline);
+    border-radius: var(--radius-xl);
+  }
+
+  .card-quiet {
+    background: transparent;
+    border: 1px dashed var(--hairline-strong);
+    border-radius: var(--radius-xl);
+  }
+
+  .pop {
+    background: var(--surface);
+    border: 1px solid var(--hairline-strong);
+    border-radius: var(--radius-lg);
+    box-shadow: var(--shadow-pop);
+  }
+
+  /* Text roles */
+  .t-display {
+    font-size: 1.375rem;
+    line-height: 1.75rem;
+    font-weight: 600;
+    letter-spacing: -0.01em;
+  }
+  .t-title {
+    font-size: 1rem;
+    line-height: 1.5rem;
+    font-weight: 600;
+    letter-spacing: -0.005em;
+  }
+  .t-body {
+    font-size: 0.875rem;
+    line-height: 1.35rem;
+  }
+  .t-small {
+    font-size: 0.8125rem;
+    line-height: 1.25rem;
+  }
+  .t-caption {
+    font-size: 0.75rem;
+    line-height: 1.1rem;
+  }
+  .t-micro {
+    font-size: 0.6875rem;
+    line-height: 1rem;
+    letter-spacing: 0.04em;
+    text-transform: uppercase;
+    font-weight: 500;
+  }
+  .t-stat {
+    font-size: 1.5rem;
+    line-height: 1.75rem;
+    font-weight: 600;
+    letter-spacing: -0.02em;
+    font-variant-numeric: tabular-nums;
+  }
+
+  /* Controls */
+  .btn {
+    display: inline-flex;
+    align-items: center;
+    justify-content: center;
+    gap: 0.5rem;
+    height: 2.25rem;
+    padding: 0 0.875rem;
+    border-radius: var(--radius-md);
+    font-size: 0.8125rem;
+    font-weight: 500;
+    white-space: nowrap;
+    cursor: pointer;
+    transition: background-color 0.15s, border-color 0.15s, color 0.15s, opacity 0.15s;
+  }
+  .btn:disabled {
+    opacity: 0.45;
+    cursor: not-allowed;
+  }
+  .btn-primary {
+    background: var(--accent);
+    color: var(--accent-fg);
+    border: 1px solid var(--accent);
+  }
+  .btn-primary:not(:disabled):hover {
+    background: var(--accent-hover);
+    border-color: var(--accent-hover);
+  }
+  .btn-ghost {
+    background: transparent;
+    color: var(--muted);
+    border: 1px solid var(--hairline);
+  }
+  .btn-ghost:not(:disabled):hover {
+    background: var(--panel);
+    color: var(--fg);
+  }
+  .btn-soft {
+    background: var(--accent-soft);
+    color: var(--accent-text);
+    border: 1px solid transparent;
+  }
+  .btn-soft:not(:disabled):hover {
+    border-color: var(--accent-line);
+  }
+  .btn-sm {
+    height: 1.875rem;
+    padding: 0 0.625rem;
+    font-size: 0.75rem;
+    border-radius: var(--radius-sm);
+  }
+
+  .field {
+    width: 100%;
+    height: 2.25rem;
+    padding: 0 0.75rem;
+    border-radius: var(--radius-md);
+    border: 1px solid var(--hairline);
+    background: var(--canvas);
+    color: var(--fg);
+    font-size: 0.8125rem;
+    outline: none;
+    transition: border-color 0.15s;
+  }
+  .field::placeholder {
+    color: var(--faint);
+  }
+  .field:focus {
+    border-color: var(--accent);
+  }
+
+  .chip {
+    display: inline-flex;
+    align-items: center;
+    gap: 0.375rem;
+    height: 1.75rem;
+    padding: 0 0.625rem;
+    border-radius: var(--radius-pill);
+    border: 1px solid var(--hairline);
+    background: var(--surface);
+    color: var(--muted);
+    font-size: 0.75rem;
+    font-weight: 500;
+    white-space: nowrap;
+    cursor: pointer;
+    transition: border-color 0.15s, color 0.15s;
+  }
+  .chip:hover {
+    border-color: var(--hairline-strong);
+    color: var(--fg);
+  }
+  .chip-on {
+    background: var(--accent-soft);
+    border-color: var(--accent-line);
+    color: var(--accent-text);
+  }
+}
+
+/* Tabular figures for every stat readout */
 .tnum {
   font-variant-numeric: tabular-nums;
   font-feature-settings: "tnum";
 }
 
-* {
+/* Skeleton shimmer — the loading language of the whole app */
+@keyframes rm-pulse {
+  0%, 100% { opacity: 1; }
+  50% { opacity: 0.45; }
+}
+.skeleton {
+  background: var(--panel);
+  border-radius: var(--radius-sm);
+  animation: rm-pulse 1.6s ease-in-out infinite;
+}
+
+/* Sample content stays legible but reads as visibly not-real data */
+.sample-dim {
+  opacity: 0.62;
+  filter: saturate(0.7);
+  pointer-events: none;
+  user-select: none;
+}
+
+html {
   scroll-behavior: smooth;
 }
 
@@ -118,7 +338,6 @@ body {
   background: var(--faint);
 }
 
-/* Keyboard focus ring, accent-tinted */
 :focus-visible {
   outline: 2px solid var(--accent);
   outline-offset: 2px;
@@ -126,4 +345,13 @@ body {
 
 .recharts-tooltip-wrapper {
   outline: none !important;
+}
+
+@media (prefers-reduced-motion: reduce) {
+  *, *::before, *::after {
+    animation-duration: 0.01ms !important;
+    animation-iteration-count: 1 !important;
+    transition-duration: 0.01ms !important;
+    scroll-behavior: auto !important;
+  }
 }

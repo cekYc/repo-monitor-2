@@ -1,32 +1,8 @@
 export type Locale = "tr" | "en";
 
 export const translations = {
-  // Header
-  "header.title": { tr: "Ceky's Repo Monitor", en: "Ceky's Repo Monitor" },
-  "header.subtitle": {
-    tr: "GitHub kullanıcılarının repolarını ve dil dağılımlarını analiz edin",
-    en: "Analyze GitHub users' repositories and language distributions",
-  },
-
-  // SearchForm
-  "search.title": { tr: "GitHub kullanıcı analizi", en: "GitHub user analysis" },
-  "search.token.label": { tr: "GitHub API Token", en: "GitHub API Token" },
-  "search.token.optional": { tr: "Opsiyonel", en: "Optional" },
-  "search.token.saved": { tr: "✓ Token tarayıcıda kayıtlı — saatte 5.000 istek", en: "✓ Token saved in browser — 5,000 requests/hour" },
-  "search.token.warning": { tr: "⚠ Tokensiz saatte sadece 60 istek hakkınız var. Token ile 5.000'e çıkar.", en: "⚠ Without token: only 60 requests/hour. With token: 5,000." },
-  "search.token.delete": { tr: "Token'ı sil", en: "Delete token" },
-  "search.username.label": { tr: "GitHub Kullanıcı Adı", en: "GitHub Username" },
-  "search.username.placeholder": { tr: "örn: cekYc", en: "e.g. cekYc" },
-  "search.submit": { tr: "Analiz Et", en: "Analyze" },
-  "search.loading": { tr: "Analiz ediliyor...", en: "Analyzing..." },
+  // Search history
   "search.recent": { tr: "Son Aramalar", en: "Recent Searches" },
-
-  // Compare
-  "search.compare.label": { tr: "Karşılaştırılacak Kullanıcı", en: "User to Compare" },
-  "search.compare.placeholder": { tr: "örn: torvalds", en: "e.g. torvalds" },
-  "search.compare.button": { tr: "Karşılaştır", en: "Compare" },
-  "search.compare.cancel": { tr: "Karşılaştırmayı Kapat", en: "Close Comparison" },
-  "search.compare.toggle": { tr: "👥 Karşılaştır", en: "👥 Compare" },
 
   // Progress
   "progress.analyzing": { tr: "Analiz ediliyor...", en: "Analyzing..." },
@@ -37,81 +13,53 @@ export const translations = {
   "cache.refresh": { tr: "Yenile", en: "Refresh" },
 
   // OverallStats
-  "stats.repo": { tr: "Repo", en: "Repos" },
   "stats.followers": { tr: "Takipçi", en: "Followers" },
   "stats.following": { tr: "Takip", en: "Following" },
-  "stats.totalCode": { tr: "Toplam Kod", en: "Total Code" },
   "stats.language": { tr: "Dil", en: "Lang" },
   "stats.distribution.title": { tr: "Genel dil dağılımı", en: "Overall language distribution" },
-  "stats.pie.title": { tr: "Yüzdelik Dağılım", en: "Percentage Distribution" },
-  "stats.bar.title": { tr: "Boyut Karşılaştırması", en: "Size Comparison" },
-  "stats.table.title": { tr: "Detaylı Tablo", en: "Detailed Table" },
   "stats.table.lang": { tr: "Dil", en: "Language" },
   "stats.table.percent": { tr: "Yüzde", en: "Percent" },
   "stats.table.size": { tr: "Boyut", en: "Size" },
-  "stats.table.ratio": { tr: "Oran", en: "Ratio" },
   "stats.export": { tr: "PNG indir", en: "Download PNG" },
   "stats.exporting": { tr: "Hazırlanıyor...", en: "Preparing..." },
 
   // Exclusion
   "exclusion.banner": { tr: "repo genel dağılımdan hariç tutuluyor", en: "repos excluded from overall distribution" },
-  "exclusion.active": { tr: "aktif", en: "active" },
   "exclusion.includeAll": { tr: "Tümünü Dahil Et", en: "Include All" },
 
   // Insights
-  "insights.title": { tr: "Öne çıkan metrikler", en: "Key insights" },
   "insights.favLang": { tr: "Favori Dil", en: "Favorite Language" },
   "insights.favLangDetail": { tr: "repoda birincil dil", en: "repos as primary language" },
-  "insights.avgLang": { tr: "Ortalama Dil / Repo", en: "Avg Language / Repo" },
-  "insights.avgLangDetail": { tr: "dil ortalaması", en: "language average" },
-  "insights.avgSize": { tr: "Ortalama Repo Boyutu", en: "Average Repo Size" },
-  "insights.codeSize": { tr: "kod boyutu", en: "code size" },
-  "insights.totalStars": { tr: "Toplam Yıldız", en: "Total Stars" },
   "insights.mostStarred": { tr: "En çok", en: "Most" },
-  "insights.totalForks": { tr: "Toplam Fork", en: "Total Forks" },
-  "insights.noFork": { tr: "Henüz fork yok", en: "No forks yet" },
   "insights.biggestRepo": { tr: "En Büyük Repo", en: "Biggest Repo" },
   "insights.mostLangs": { tr: "En Çok Dil", en: "Most Languages" },
   "insights.differentLangs": { tr: "farklı dil", en: "different languages" },
   "insights.newestRepo": { tr: "En Yeni Repo", en: "Newest Repo" },
   "insights.oldestRepo": { tr: "En Eski Repo", en: "Oldest Repo" },
   "insights.lastUpdated": { tr: "Son Kod Etkinliği", en: "Last Code Activity" },
-  "insights.totalLangs": { tr: "Toplam Dil Sayısı", en: "Total Languages" },
-  "insights.differentProgLangs": { tr: "farklı programlama dili", en: "different programming languages" },
   "insights.smallestRepo": { tr: "En Küçük Repo", en: "Smallest Repo" },
 
   // Repo List
-  "repos.title": { tr: "📁 Repolar", en: "📁 Repositories" },
+  "repos.title": { tr: "Repolar", en: "Repositories" },
   "repos.allLangs": { tr: "Tüm Diller", en: "All Languages" },
   "repos.sort.updated": { tr: "Son Kod Etkinliği", en: "Last Code Activity" },
   "repos.sort.stars": { tr: "Yıldız Sayısı", en: "Star Count" },
   "repos.sort.size": { tr: "Kod Boyutu", en: "Code Size" },
   "repos.sort.languages": { tr: "Dil Sayısı", en: "Language Count" },
   "repos.sort.name": { tr: "İsim (A-Z)", en: "Name (A-Z)" },
-  "repos.sort.nameDesc": { tr: "İsim (Z-A)", en: "Name (Z-A)" },
   "repos.sort.created": { tr: "Oluşturulma Tarihi", en: "Created Date" },
   "repos.sort.forks": { tr: "Fork Sayısı", en: "Fork Count" },
   "repos.sort.score": { tr: "Proje Skoru (En Değerli)", en: "Project Score (Most Valuable)" },
   "repos.sort.commits": { tr: "Toplam Commit", en: "Total Commits" },
   "repos.sort.commitsLastMonth": { tr: "Son 1 Ayda Yapılan Commit", en: "Commits in Last 30 Days" },
-  "repos.search.placeholder": { tr: "Depolarda ara...", en: "Search repositories..." },
-  "repos.search.noMatch": { tr: "arama kriterine uygun repo bulunamadı", en: "no repositories matching search" },
   "repos.notFound": { tr: "Repo bulunamadı", en: "No repos found" },
-  "repos.langNotFound": { tr: "dili kullanılan repo bulunamadı", en: "language — no repos found" },
 
   // RepoCard
-  "repo.code": { tr: "kod", en: "code" },
-  "repo.repo": { tr: "repo", en: "repo" },
-  "repo.langs": { tr: "dil", en: "langs" },
-  "repo.moreLangs": { tr: "dil daha", en: "more languages" },
-  "repo.totalCommits": { tr: "Toplam Commit", en: "Total Commits" },
-  "repo.commitsLastMonth": { tr: "son 30 günde", en: "in last 30 days" },
   "repo.noLangs": { tr: "Bu repoda dil bilgisi bulunamadı (boş veya binary dosyalar)", en: "No language data found in this repo (empty or binary files)" },
   "repo.exclude": { tr: "Genel dağılımdan hariç tut", en: "Exclude from distribution" },
   "repo.include": { tr: "Genel dağılıma dahil et", en: "Include in distribution" },
   "repo.commitHistory.load": { tr: "Commit Geçmişini Göster", en: "Show Commit History" },
   "repo.commitHistory.hide": { tr: "Commit Geçmişini Gizle", en: "Hide Commit History" },
-  "repo.commitHistory.loading": { tr: "Commit geçmişi yükleniyor...", en: "Loading commit history..." },
 
   // CommitHistory
   "commit.timeline": { tr: "Dil Dağılımı Zaman Çizelgesi", en: "Language Distribution Timeline" },
@@ -119,12 +67,6 @@ export const translations = {
   "commit.notEnough": { tr: "Yeterli commit geçmişi bulunamadı (en az 2 commit gerekli)", en: "Not enough commit history (at least 2 commits required)" },
   "commit.changes": { tr: "İlk → Son Commit Değişimleri", en: "First → Last Commit Changes" },
   "commit.total": { tr: "Toplam", en: "Total" },
-
-  // Rate Limit
-  "rateLimit.label": { tr: "API Limiti", en: "API Limit" },
-  "rateLimit.remaining": { tr: "kalan", en: "remaining" },
-  "rateLimit.reset": { tr: "Yenilenme", en: "Reset" },
-  "rateLimit.warning": { tr: "API limiti azalıyor! Token ekleyerek artırabilirsiniz.", en: "API limit running low! Add a token to increase." },
 
   // Compare
   "compare.title": { tr: "👥 Kullanıcı Karşılaştırması", en: "👥 User Comparison" },
@@ -149,10 +91,7 @@ export const translations = {
   "footer.copyright": { tr: "Repo Monitor © 2026", en: "Repo Monitor © 2026" },
 
   // Organization Analysis
-  "org.toggle": { tr: "Organizasyon analizi", en: "Organization analysis" },
   "org.title": { tr: "Organizasyon analizi", en: "Organization analysis" },
-  "org.placeholder": { tr: "örn: facebook", en: "e.g. facebook" },
-  "org.label": { tr: "Organizasyon Adı", en: "Organization Name" },
   "org.submit": { tr: "Analiz Et", en: "Analyze" },
   "org.loading": { tr: "Org repoları analiz ediliyor...", en: "Analyzing org repos..." },
   "org.members": { tr: "Üye", en: "Members" },
@@ -188,7 +127,6 @@ export const translations = {
   "repos.export.button": { tr: "📸 Seçilenleri PNG İndir", en: "📸 Export Selected as PNG" },
   "repos.export.selectAll": { tr: "Tümünü Seç", en: "Select All" },
   "repos.export.deselectAll": { tr: "Seçimi Temizle", en: "Deselect All" },
-  "repos.export.selected": { tr: "seçili", en: "selected" },
   "repos.export.exporting": { tr: "PNG oluşturuluyor...", en: "Generating PNG..." },
 
   // Compare Enhancements
@@ -374,26 +312,9 @@ export const translations = {
 
   // --- Navigation / Tabs ---
   "nav.analyze": { tr: "Analiz", en: "Analyze" },
-  "nav.watchlist": { tr: "İzleme", en: "Watchlist" },
-  "nav.overview": { tr: "Genel Bakış", en: "Overview" },
   "nav.compare": { tr: "Karşılaştır", en: "Compare" },
-  "nav.searchPlaceholder": { tr: "Kullanıcı, org veya owner/repo ara…", en: "Search a user, org, or owner/repo…" },
-  "nav.tagline": { tr: "GitHub takip & analiz", en: "GitHub tracking & analysis" },
 
-  // --- Overview ---
-  "overview.welcomeTitle": { tr: "GitHub'ı izlemeye başla", en: "Start monitoring GitHub" },
-  "overview.welcomeBody": {
-    tr: "Bir kullanıcı veya repo ara, analiz et ve değişimleri zaman içinde takip etmek için izlemeye al.",
-    en: "Search a user or repo, analyze it, and add it to your watchlist to track changes over time.",
-  },
-  "overview.watching": { tr: "İzlenenler", en: "Watching" },
-  "overview.recent": { tr: "Son aramalar", en: "Recent searches" },
-  "overview.quickAnalyze": { tr: "Hızlı analiz", en: "Quick analyze" },
-  "overview.viewAll": { tr: "Tümünü gör", en: "View all" },
-  "overview.changesPending": { tr: "değişiklik bekliyor", en: "with changes" },
-  "overview.allQuiet": { tr: "Her şey sakin", en: "All quiet" },
-  "overview.noWatches": { tr: "Henüz izlenen yok", en: "Nothing watched yet" },
-  "analyze.modules": { tr: "Gelişmiş modüller", en: "Advanced modules" },
+  // --- Profile visibility ---
   "visibility.title": { tr: "Public Visibility Ratio", en: "Public Visibility Ratio" },
   "visibility.description": {
     tr: "Public profilinin, erişebildiğin toplam kaynak kodunu ne ölçüde temsil ettiğini gösterir.",
@@ -438,37 +359,6 @@ export const translations = {
   "watch.added": { tr: "İzleniyor", en: "Watching" },
   "watch.remove": { tr: "İzlemeyi bırak", en: "Unwatch" },
 
-  // --- Dashboard / Watchlist ---
-  "dash.title": { tr: "📌 İzleme Listesi", en: "📌 Watchlist" },
-  "dash.subtitle": {
-    tr: "İzlediğin profil ve repolardaki değişimleri zaman içinde takip et",
-    en: "Track changes across the profiles and repos you follow over time",
-  },
-  "dash.empty": {
-    tr: "Henüz hiçbir şey izlemiyorsun. Bir profil analiz et ya da repo kartından 'İzle'ye bas — değişimler burada görünür.",
-    en: "You're not watching anything yet. Analyze a profile or hit 'Watch' on a repo card — changes show up here.",
-  },
-  "dash.emptyCta": { tr: "Analize git", en: "Go to Analyze" },
-  "dash.refreshAll": { tr: "Tümünü kontrol et", en: "Check all" },
-  "dash.checking": { tr: "Kontrol ediliyor...", en: "Checking..." },
-  "dash.lastChecked": { tr: "Son kontrol", en: "Last checked" },
-  "dash.never": { tr: "hiç", en: "never" },
-  "dash.baseline": {
-    tr: "📍 Başlangıç kaydedildi — değişimler bir sonraki kontrolde görünür",
-    en: "📍 Baseline recorded — changes appear on the next check",
-  },
-  "dash.noChanges": { tr: "✓ Değişiklik yok", en: "✓ No changes" },
-  "dash.changesSince": { tr: "değişiklikler — son kontrolden bu yana", en: "changes since last check" },
-  "dash.checkNow": { tr: "Şimdi kontrol et", en: "Check now" },
-  "dash.remove": { tr: "Listeden çıkar", en: "Remove from list" },
-  "dash.newRepos": { tr: "yeni repo", en: "new repo(s)" },
-  "dash.removedRepos": { tr: "kaldırılan repo", en: "removed repo(s)" },
-  "dash.newRelease": { tr: "🚀 Yeni sürüm", en: "🚀 New release" },
-  "dash.openDeepDive": { tr: "🔬 Derin analiz", en: "🔬 Deep dive" },
-  "dash.viewProfile": { tr: "Profili analiz et", en: "Analyze profile" },
-  "dash.snapshots": { tr: "kayıt", en: "snapshots" },
-  "dash.error": { tr: "Kontrol başarısız", en: "Check failed" },
-
   // --- Metric labels (shared by diffs + deep dive) ---
   "metric.repoCount": { tr: "Repo", en: "Repos" },
   "metric.totalStars": { tr: "Yıldız", en: "Stars" },
@@ -489,8 +379,6 @@ export const translations = {
 
   // --- Deep Repo Analysis ---
   "deep.title": { tr: "🔬 Derin Repo Analizi", en: "🔬 Deep Repo Analysis" },
-  "deep.loading": { tr: "Repo analiz ediliyor...", en: "Analyzing repository..." },
-  "deep.back": { tr: "← Geri dön", en: "← Back" },
   "deep.openOnGithub": { tr: "GitHub'da aç", en: "Open on GitHub" },
   "deep.busFactor": { tr: "Bus Factor", en: "Bus Factor" },
   "deep.busFactorDesc": {
@@ -522,7 +410,6 @@ export const translations = {
   "deep.archived": { tr: "📦 Arşivlenmiş", en: "📦 Archived" },
   "deep.lastCommit": { tr: "Son commit", en: "Last commit" },
   "deep.created": { tr: "Oluşturuldu", en: "Created" },
-  "deep.notFound": { tr: "Repo bulunamadı", en: "Repository not found" },
   "deep.dow.0": { tr: "Paz", en: "Sun" },
   "deep.dow.1": { tr: "Pzt", en: "Mon" },
   "deep.dow.2": { tr: "Sal", en: "Tue" },
@@ -560,6 +447,202 @@ export const translations = {
   "leaderboard.polish": { tr: "🛡️ Vitrin & Özen", en: "🛡️ Presentation Polish" },
   "leaderboard.focus": { tr: "⚡ Odak & Yoğunluk", en: "⚡ Focus Density" },
   "leaderboard.recency": { tr: "🔥 Güncel Momentum", en: "🔥 Momentum Booster" },
+
+  // ── Shell: navigation, search, preferences ───────────────────────────────
+  "nav.watch": { tr: "İzleme", en: "Watch" },
+  "search.placeholder": {
+    tr: "Kullanıcı, org veya owner/repo",
+    en: "User, org or owner/repo",
+  },
+  "search.asUser": { tr: "Kullanıcı olarak analiz et", en: "Analyze as user" },
+  "search.asRepo": { tr: "Repo detayını aç", en: "Open repository detail" },
+  "search.invalid": {
+    tr: "Geçerli bir kullanıcı adı ya da owner/repo yazın",
+    en: "Enter a valid username or owner/repo",
+  },
+  "locale.switch": { tr: "Switch to English", en: "Türkçe'ye geç" },
+
+  // ── Identity & quota (one control, one place) ─────────────────────────────
+  "auth.account": { tr: "Hesap ve kota", en: "Account and quota" },
+  "auth.signIn": { tr: "Giriş yap", en: "Sign in" },
+  "auth.signOut": { tr: "Çıkış", en: "Sign out" },
+  "auth.signedIn": { tr: "GitHub ile bağlı", en: "Connected with GitHub" },
+  "auth.anonymous": { tr: "Oturum açılmadı", en: "Not signed in" },
+  "auth.anonymousHint": {
+    tr: "Giriş yapınca saatlik limit 5.000 isteğe çıkar",
+    en: "Signing in raises the hourly limit to 5,000 requests",
+  },
+  "auth.addToken": { tr: "Token ekle", en: "Add token" },
+  "quota.label": { tr: "API kotası", en: "API quota" },
+  "quota.used": { tr: "kullanıldı", en: "used" },
+  "quota.reset": { tr: "Sıfırlanma", en: "Resets in" },
+  "quota.exhausted": {
+    tr: "Kota bitti. Giriş yapın ya da token ekleyin.",
+    en: "Quota exhausted. Sign in or add a token.",
+  },
+  "quota.lowCeiling": {
+    tr: "Tokensiz saatte 60 istek hakkınız var.",
+    en: "Without a token you get 60 requests per hour.",
+  },
+  "token.advanced": { tr: "Gelişmiş: kişisel token", en: "Advanced: personal token" },
+  "token.placeholder": { tr: "ghp_…", en: "ghp_…" },
+  "token.hint": {
+    tr: "Yalnızca bu tarayıcıda saklanır, istek başlığında gönderilir.",
+    en: "Stored in this browser only and sent as a request header.",
+  },
+  "token.clear": { tr: "Token'ı sil", en: "Clear token" },
+  "token.toggleVisibility": { tr: "Token'ı göster/gizle", en: "Show or hide token" },
+
+  // ── Actions ───────────────────────────────────────────────────────────────
+  "action.retry": { tr: "Tekrar dene", en: "Try again" },
+  "action.cancel": { tr: "Vazgeç", en: "Cancel" },
+  "action.clearFilters": { tr: "Filtreleri temizle", en: "Clear filters" },
+  "action.showAll": { tr: "Tümünü göster", en: "Show all" },
+  "action.showLess": { tr: "Daha az göster", en: "Show less" },
+  "action.openOnGithub": { tr: "GitHub'da aç", en: "Open on GitHub" },
+
+  // ── Errors: one localized pair per machine-readable code ──────────────────
+  "error.not_found.title": { tr: "Bulunamadı", en: "Not found" },
+  "error.not_found.body": {
+    tr: "Bu isimde bir GitHub kullanıcısı, organizasyonu ya da reposu yok.",
+    en: "No GitHub user, organization or repository goes by that name.",
+  },
+  "error.bad_credentials.title": { tr: "Token geçersiz", en: "Invalid token" },
+  "error.bad_credentials.body": {
+    tr: "Kayıtlı token GitHub tarafından kabul edilmedi. Yeniden giriş yapın ya da token'ı güncelleyin.",
+    en: "GitHub rejected the saved token. Sign in again or replace the token.",
+  },
+  "error.rate_limit.title": { tr: "API kotası doldu", en: "API quota exhausted" },
+  "error.rate_limit.body": {
+    tr: "Saatlik istek limiti aşıldı. Giriş yapmak ya da token eklemek limiti 5.000'e çıkarır.",
+    en: "The hourly request limit is spent. Signing in or adding a token raises it to 5,000.",
+  },
+  "error.bad_request.title": { tr: "Eksik istek", en: "Incomplete request" },
+  "error.bad_request.body": {
+    tr: "Aranan hedef okunamadı. Arama alanına kullanıcı adı ya da owner/repo yazın.",
+    en: "The target could not be read. Enter a username or owner/repo in the search field.",
+  },
+  "error.network.title": { tr: "Bağlantı kurulamadı", en: "Connection failed" },
+  "error.network.body": {
+    tr: "İstek tamamlanamadı. Bağlantınızı kontrol edip tekrar deneyin.",
+    en: "The request did not complete. Check your connection and try again.",
+  },
+  "error.unknown.title": { tr: "Beklenmeyen hata", en: "Unexpected error" },
+  "error.unknown.body": {
+    tr: "Analiz tamamlanamadı. Tekrar denemek çoğu durumda yeterli olur.",
+    en: "The analysis did not finish. Trying again usually resolves it.",
+  },
+
+  // ── First-open sample state ───────────────────────────────────────────────
+  "sample.notice": {
+    tr: "Bu örnek bir profildir — düzenin nasıl göründüğünü gösterir.",
+    en: "This is a sample profile — it shows how the layout reads.",
+  },
+  "sample.action": { tr: "Bir profil ara", en: "Search a profile" },
+
+  // ── Analyze: metrics ──────────────────────────────────────────────────────
+  "metric.languages": { tr: "Dil", en: "Languages" },
+  "metric.totalCommits": { tr: "Toplam commit", en: "Total commits" },
+  "metric.lastMonth": { tr: "son 30 gün", en: "last 30 days" },
+  "metric.avgRepoSize": { tr: "Repo ortalaması", en: "Average repo size" },
+  "metric.avgLanguages": { tr: "Repo başına dil", en: "Languages per repo" },
+  "stats.other": { tr: "Diğer", en: "Other" },
+  "stats.noLanguages": {
+    tr: "Bu seçimde dil verisi yok.",
+    en: "No language data in this selection.",
+  },
+
+  // ── Analyze: repository grid ───────────────────────────────────────────────
+  "repos.sortLabel": { tr: "Sıralama", en: "Sort" },
+  "repos.forksExcluded": {
+    tr: "Fork'lar analize dahil edilmez",
+    en: "Forks are excluded from the analysis",
+  },
+  "repos.filter.label": { tr: "Listede filtrele", en: "Filter this list" },
+  "repos.filter.placeholder": { tr: "Listede filtrele", en: "Filter this list" },
+  "repos.noMatch": { tr: "Filtreye uyan repo yok", en: "No repository matches" },
+  "repos.noMatchBody": {
+    tr: "Filtreleri temizleyip tüm listeye dönebilirsiniz.",
+    en: "Clear the filters to get the full list back.",
+  },
+  "repos.export.start": { tr: "PNG olarak seç", en: "Select for PNG" },
+  "repo.private": { tr: "özel", en: "private" },
+  "repo.details": { tr: "Ayrıntı", en: "Details" },
+  "repo.deepDive": { tr: "Derin analiz", en: "Deep dive" },
+  "repo.commitsShort": { tr: "commit", en: "commits" },
+
+  // ── Analyze: secondary panels ─────────────────────────────────────────────
+  "panels.title": { tr: "Ayrıntılı analiz", en: "Detailed analysis" },
+  "panels.activity": { tr: "Aktivite", en: "Activity" },
+  "panels.quality": { tr: "Kalite", en: "Quality" },
+  "panels.persona": { tr: "Persona", en: "Persona" },
+  "panels.insights": { tr: "İçgörüler", en: "Insights" },
+  "panels.tools": { tr: "Araçlar", en: "Tools" },
+  "org.prompt": {
+    tr: "Bu hesabı organizasyon olarak da okuyabiliriz.",
+    en: "This handle can also be read as an organization.",
+  },
+  "org.notAnOrg": {
+    tr: "Bu hesap bir organizasyon değil.",
+    en: "This handle is not an organization.",
+  },
+
+  // ── Watch ─────────────────────────────────────────────────────────────────
+  "watch.title": { tr: "İzleme listesi", en: "Watchlist" },
+  "watch.subtitle": {
+    tr: "Her kontrol, bir öncekiyle karşılaştırılır.",
+    en: "Every check is compared against the previous one.",
+  },
+  "watch.checkAll": { tr: "Tümünü kontrol et", en: "Check all" },
+  "watch.checking": { tr: "Kontrol ediliyor…", en: "Checking…" },
+  "watch.checkNow": { tr: "Şimdi kontrol et", en: "Check now" },
+  "watch.lastChecked": { tr: "Son kontrol", en: "Last checked" },
+  "watch.never": { tr: "hiç", en: "never" },
+  "watch.snapshots": { tr: "kayıt", en: "snapshots" },
+  "watch.baseline": {
+    tr: "Başlangıç kaydı alındı. Bir sonraki kontrol değişimi gösterecek.",
+    en: "Baseline recorded. The next check will show what changed.",
+  },
+  "watch.noBaseline": {
+    tr: "Henüz kayıt yok. Kontrol ederek başlangıcı alın.",
+    en: "No snapshot yet. Run a check to record the baseline.",
+  },
+  "watch.noChanges": {
+    tr: "Son kontrolden bu yana değişiklik yok.",
+    en: "Nothing changed since the last check.",
+  },
+  "watch.newRelease": { tr: "Yeni sürüm", en: "New release" },
+  "watch.newRepos": { tr: "yeni repo", en: "new repos" },
+  "watch.removedRepos": { tr: "kaldırılan repo", en: "removed repos" },
+  "watch.typeUser": { tr: "kullanıcı", en: "user" },
+  "watch.typeRepo": { tr: "repo", en: "repo" },
+  "watch.viewProfile": { tr: "Profili aç", en: "Open profile" },
+  "watch.empty": { tr: "Henüz izlenen bir şey yok", en: "Nothing is being watched yet" },
+  "watch.emptyBody": {
+    tr: "Bir profil ya da repo analiz edip “İzle”ye basın; değişimler burada listelenir.",
+    en: "Analyze a profile or repository and press Watch; changes show up here.",
+  },
+  "watch.emptyCta": { tr: "Bir profil ara", en: "Search a profile" },
+
+  // ── Compare ───────────────────────────────────────────────────────────────
+  "compare.pageTitle": { tr: "İki geliştiriciyi karşılaştır", en: "Compare two developers" },
+  "compare.pageHint": {
+    tr: "Dil dağılımı, hacim ve topluluk sinyallerini yan yana koyar.",
+    en: "Puts language mix, volume and community signals side by side.",
+  },
+  "compare.sideA": { tr: "Birinci kullanıcı", en: "First user" },
+  "compare.sideB": { tr: "İkinci kullanıcı", en: "Second user" },
+  "compare.run": { tr: "Karşılaştır", en: "Compare" },
+  "compare.running": { tr: "Karşılaştırılıyor…", en: "Comparing…" },
+  "compare.needBoth": {
+    tr: "Karşılaştırma için iki kullanıcı adı gerekir.",
+    en: "Two usernames are required to compare.",
+  },
+  "compare.emptyTitle": { tr: "Karşılaştırma bekliyor", en: "Ready to compare" },
+  "compare.emptyBody": {
+    tr: "İki kullanıcı adı girin; sonuç aynı sayfada açılır.",
+    en: "Enter two usernames and the result opens on this page.",
+  },
 } as const;
 
 export type TranslationKey = keyof typeof translations;

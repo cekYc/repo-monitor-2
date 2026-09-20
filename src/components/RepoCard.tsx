@@ -77,6 +77,24 @@ export default function RepoCard({ repo, index, isExcluded, onToggleExclude, own
           </div>
           <div className="flex items-center gap-1.5 shrink-0">
             <div className="flex items-center gap-2.5 text-xs text-muted tnum mr-1">
+              {repo.advancedMetrics && repo.advancedMetrics.totalCommits > 0 && (
+                <span
+                  className="inline-flex items-center gap-1 text-muted"
+                  title={`${t("repo.totalCommits")}: ${repo.advancedMetrics.totalCommits}${
+                    repo.advancedMetrics.commitsLastMonth ? ` (${repo.advancedMetrics.commitsLastMonth} ${t("repo.commitsLastMonth")})` : ""
+                  }`}
+                >
+                  <svg className="w-3.5 h-3.5" fill="none" viewBox="0 0 24 24" strokeWidth={1.6} stroke="currentColor">
+                    <path strokeLinecap="round" strokeLinejoin="round" d="M12 6v6h4.5m4.5 0a9 9 0 11-18 0 9 9 0 0118 0z" />
+                  </svg>
+                  {repo.advancedMetrics.totalCommits}
+                  {repo.advancedMetrics.commitsLastMonth ? (
+                    <span className="text-[10px] text-accent font-semibold ml-0.5">
+                      +{repo.advancedMetrics.commitsLastMonth}
+                    </span>
+                  ) : null}
+                </span>
+              )}
               <span className="inline-flex items-center gap-1" title="★">
                 <svg className="w-3.5 h-3.5" fill="none" viewBox="0 0 24 24" strokeWidth={1.6} stroke="currentColor">
                   <path strokeLinecap="round" strokeLinejoin="round" d="M11.48 3.5a.56.56 0 011.04 0l2.12 4.3 4.74.69a.56.56 0 01.31.96l-3.43 3.34.81 4.73a.56.56 0 01-.82.59L12 16.9l-4.24 2.23a.56.56 0 01-.82-.59l.81-4.73-3.43-3.34a.56.56 0 01.31-.96l4.74-.69z" />

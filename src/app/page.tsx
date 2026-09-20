@@ -107,7 +107,7 @@ function addRecentSearch(username: string, avatarUrl?: string) {
   }
 }
 
-type SortKey = "updated" | "stars" | "size" | "languages" | "name" | "nameDesc" | "created" | "forks" | "score";
+type SortKey = "updated" | "stars" | "size" | "languages" | "name" | "nameDesc" | "created" | "forks" | "score" | "commits" | "commitsLastMonth";
 
 interface ProgressInfo {
   current: number;
@@ -134,6 +134,7 @@ function HomeContent() {
   const [error, setError] = useState<string | null>(null);
   const [sortBy, setSortBy] = useState<SortKey>("updated");
   const [filterLang, setFilterLang] = useState<string>("");
+  const [repoSearch, setRepoSearch] = useState<string>("");
   const [cacheHit, setCacheHit] = useState(false);
   const [lastUsername, setLastUsername] = useState("");
   const [lastToken, setLastToken] = useState("");
@@ -224,6 +225,7 @@ function HomeContent() {
     setExcludedRepos(new Set());
     setSelectedRepos(new Set());
     setProgress(null);
+    setRepoSearch("");
 
     const url = new URL(window.location.href);
     url.searchParams.set("user", username);
@@ -342,16 +344,22 @@ function HomeContent() {
     if (!analysis) return [];
     let repos = [...analysis.repos];
     if (filterLang) repos = repos.filter((r) => r.languagePercentages.some((l) => l.name === filterLang));
+    if (repoSearch.trim()) {
+      const q = repoSearch.toLowerCase().trim();
+      repos = repos.filter((r) => r.name.toLowerCase().includes(q) || (r.description && r.description.toLowerCase().includes(q)));
+    }
     switch (sortBy) {
       case "updated": repos.sort((a, b) => getRepoActivityTimestamp(b) - getRepoActivityTimestamp(a)); break;
+      case "commits": repos.sort((a, b) => (b.advancedMetrics?.totalCommits || 0) - (a.advancedMetrics?.totalCommits || 0)); break;
+      case "commitsLastMonth": repos.sort((a, b) => (b.advancedMetrics?.commitsLastMonth || 0) - (a.advancedMetrics?.commitsLastMonth || 0)); break;
+      case "score": repos.sort((a, b) => (b.advancedMetrics?.projectScore || 0) - (a.advancedMetrics?.projectScore || 0)); break;
       case "stars": repos.sort((a, b) => b.stargazers_count - a.stargazers_count); break;
+      case "created": repos.sort((a, b) => new Date(b.created_at).getTime() - new Date(a.created_at).getTime()); break;
+      case "forks": repos.sort((a, b) => b.forks_count - a.forks_count); break;
       case "size": repos.sort((a, b) => b.totalBytes - a.totalBytes); break;
       case "languages": repos.sort((a, b) => b.languagePercentages.length - a.languagePercentages.length); break;
       case "name": repos.sort((a, b) => a.name.localeCompare(b.name)); break;
       case "nameDesc": repos.sort((a, b) => b.name.localeCompare(a.name)); break;
-      case "created": repos.sort((a, b) => new Date(b.created_at).getTime() - new Date(a.created_at).getTime()); break;
-      case "forks": repos.sort((a, b) => b.forks_count - a.forks_count); break;
-      case "score": repos.sort((a, b) => (b.advancedMetrics?.projectScore || 0) - (a.advancedMetrics?.projectScore || 0)); break;
     }
     return repos;
   };
@@ -438,11 +446,34 @@ function HomeContent() {
 
               {/* Repo list */}
               <div className="rounded-2xl border border-hairline bg-surface p-5">
-                <div className="flex flex-col sm:flex-row items-start sm:items-center justify-between gap-4">
-                  <h2 className="text-base font-semibold text-fg">
+                <div className="flex flex-col lg:flex-row items-start lg:items-center justify-between gap-3">
+                  <h2 className="text-base font-semibold text-fg whitespace-nowrap">
                     {t("repos.title")} <span className="text-faint font-normal tnum">{sortedRepos.length}</span>
                   </h2>
-                  <div className="flex flex-wrap gap-2">
+                  <div className="flex flex-wrap items-center gap-2 w-full lg:w-auto">
+                    {/* Search Bar */}
+                    <div className="relative flex-1 sm:flex-initial sm:w-56 min-w-[170px]">
+                      <input
+                        type="text"
+                        value={repoSearch}
+                        onChange={(e) => setRepoSearch(e.target.value)}
+                        placeholder={t("repos.search.placeholder")}
+                        className="w-full h-9 pl-8 pr-7 rounded-lg border border-hairline bg-canvas text-sm text-fg placeholder:text-faint focus:border-accent outline-none"
+                      />
+                      <svg className="w-4 h-4 text-faint absolute left-2.5 top-1/2 -translate-y-1/2 pointer-events-none" fill="none" viewBox="0 0 24 24" stroke="currentColor">
+                        <path strokeLinecap="round" strokeLinejoin="round" strokeWidth={2} d="M21 21l-6-6m2-5a7 7 0 11-14 0 7 7 0 0114 0z" />
+                      </svg>
+                      {repoSearch && (
+                        <button
+                          type="button"
+                          onClick={() => setRepoSearch("")}
+                          className="absolute right-2 top-1/2 -translate-y-1/2 text-faint hover:text-fg text-xs p-1"
+                        >
+                          ✕
+                        </button>
+                      )}
+                    </div>
+
                     <select value={filterLang} onChange={(e) => setFilterLang(e.target.value)} className={selectClass}>
                       <option value="">{t("repos.allLangs")}</option>
                       {analysis.overallLanguages.map((l) => (
@@ -451,14 +482,16 @@ function HomeContent() {
                     </select>
                     <select value={sortBy} onChange={(e) => setSortBy(e.target.value as SortKey)} className={selectClass}>
                       <option value="updated">{t("repos.sort.updated")}</option>
-                      <option value="created">{t("repos.sort.created")}</option>
+                      <option value="commits">{t("repos.sort.commits")}</option>
+                      <option value="commitsLastMonth">{t("repos.sort.commitsLastMonth")}</option>
+                      <option value="score">{t("repos.sort.score")}</option>
                       <option value="stars">{t("repos.sort.stars")}</option>
+                      <option value="created">{t("repos.sort.created")}</option>
                       <option value="forks">{t("repos.sort.forks")}</option>
                       <option value="size">{t("repos.sort.size")}</option>
                       <option value="languages">{t("repos.sort.languages")}</option>
                       <option value="name">{t("repos.sort.name")}</option>
                       <option value="nameDesc">{t("repos.sort.nameDesc")}</option>
-                      <option value="score">{t("sort.score")}</option>
                     </select>
                   </div>
                 </div>
@@ -516,7 +549,11 @@ function HomeContent() {
 
               {sortedRepos.length === 0 && (
                 <div className="text-center py-12 text-faint">
-                  {filterLang ? `"${filterLang}" ${t("repos.langNotFound")}` : t("repos.notFound")}
+                  {repoSearch
+                    ? `"${repoSearch}" ${t("repos.search.noMatch")}`
+                    : filterLang
+                    ? `"${filterLang}" ${t("repos.langNotFound")}`
+                    : t("repos.notFound")}
                 </div>
               )}
 

@@ -13,6 +13,7 @@ export interface RepoAdvancedMetrics {
   commitDates: string[]; // array of ISO dates or YYYY-MM-DD
   projectScore: number;
   totalCommits: number;
+  commitsLastMonth: number;
   lastMaintenance: string | null;
   scoreBreakdown?: {
     effort: number;   // Max 45 (Aktif mesai günleri ve commit sayısı)
@@ -37,6 +38,12 @@ export interface RepoInfo {
   totalBytes: number;
   private: boolean;
   advancedMetrics?: RepoAdvancedMetrics;
+}
+
+function parseLastPage(linkHeader: string | undefined): number | null {
+  if (!linkHeader) return null;
+  const match = linkHeader.match(/[?&]page=(\d+)>;\s*rel="last"/);
+  return match ? parseInt(match[1], 10) : null;
 }
 
 export interface UserProfile {
@@ -197,15 +204,19 @@ const { data: repos } = await octokit.repos.listForAuthenticatedUser({
         // Fetch commits for advanced metrics
         let commitDates: string[] = [];
         let totalCommits = 0;
+        let commitsLastMonth = 0;
         let lastMaintenance: string | null = null;
         try {
-          const { data: commits } = await octokit.repos.listCommits({
+          const res = await octokit.repos.listCommits({
             owner: username,
             repo: repo.name,
             per_page: 100,
           });
-          totalCommits = commits.length;
+          const commits = res.data;
+          const lastPage = parseLastPage(res.headers.link);
+          totalCommits = lastPage ? lastPage * 100 : commits.length;
           
+          const thirtyDaysAgo = Date.now() - 30 * 24 * 60 * 60 * 1000;
           const datesSet = new Set<string>();
           for (const c of commits) {
             const dateStr = c.commit.author?.date || c.commit.committer?.date;
@@ -213,6 +224,9 @@ const { data: repos } = await octokit.repos.listForAuthenticatedUser({
               if (!lastMaintenance) lastMaintenance = dateStr;
               datesSet.add(dateStr.slice(0, 10)); // YYYY-MM-DD
               commitDates.push(dateStr);
+              if (new Date(dateStr).getTime() >= thirtyDaysAgo) {
+                commitsLastMonth++;
+              }
             }
           }
           commitDates = Array.from(datesSet).sort();
@@ -234,6 +248,7 @@ const { data: repos } = await octokit.repos.listForAuthenticatedUser({
           commitDates,
           projectScore: 0, // Will be calculated after all repos are fetched
           totalCommits,
+          commitsLastMonth,
           lastMaintenance,
         };
 
@@ -502,11 +517,6 @@ export interface RepoDeepAnalysis {
   hasCI: boolean;
 }
 
-function parseLastPage(linkHeader: string | undefined): number | null {
-  if (!linkHeader) return null;
-  const match = linkHeader.match(/[?&]page=(\d+)>;\s*rel="last"/);
-  return match ? parseInt(match[1], 10) : null;
-}
 
 export async function fetchRepoDeepAnalysis(
   owner: string,
@@ -783,15 +793,19 @@ export async function fetchOrgAnalysis(
         // Fetch commits for advanced metrics
         let commitDates: string[] = [];
         let totalCommits = 0;
+        let commitsLastMonth = 0;
         let lastMaintenance: string | null = null;
         try {
-          const { data: commits } = await octokit.repos.listCommits({
+          const res = await octokit.repos.listCommits({
             owner: orgName,
             repo: repo.name,
             per_page: 100,
           });
-          totalCommits = commits.length;
+          const commits = res.data;
+          const lastPage = parseLastPage(res.headers.link);
+          totalCommits = lastPage ? lastPage * 100 : commits.length;
           
+          const thirtyDaysAgo = Date.now() - 30 * 24 * 60 * 60 * 1000;
           const datesSet = new Set<string>();
           for (const c of commits) {
             const dateStr = c.commit.author?.date || c.commit.committer?.date;
@@ -799,6 +813,9 @@ export async function fetchOrgAnalysis(
               if (!lastMaintenance) lastMaintenance = dateStr;
               datesSet.add(dateStr.slice(0, 10)); // YYYY-MM-DD
               commitDates.push(dateStr);
+              if (new Date(dateStr).getTime() >= thirtyDaysAgo) {
+                commitsLastMonth++;
+              }
             }
           }
           commitDates = Array.from(datesSet).sort();
@@ -820,6 +837,7 @@ export async function fetchOrgAnalysis(
           commitDates,
           projectScore: 0, // Will be calculated after all repos are fetched
           totalCommits,
+          commitsLastMonth,
           lastMaintenance,
         };
 

@@ -21,6 +21,9 @@ export type SortKey =
   | "created"
   | "name";
 
+export type SortDirection = "desc" | "asc";
+export type VisibilityFilter = "all" | "public" | "private";
+
 const SORTS: { id: SortKey; labelKey: TranslationKey }[] = [
   { id: "updated", labelKey: "repos.sort.updated" },
   { id: "commits", labelKey: "repos.sort.commits" },
@@ -34,38 +37,44 @@ const SORTS: { id: SortKey; labelKey: TranslationKey }[] = [
   { id: "name", labelKey: "repos.sort.name" },
 ];
 
-function sortRepos(repos: RepoInfo[], key: SortKey): RepoInfo[] {
+function sortRepos(repos: RepoInfo[], key: SortKey, direction: SortDirection): RepoInfo[] {
   const out = [...repos];
+  const mul = direction === "desc" ? 1 : -1;
+
   switch (key) {
     case "updated":
-      return out.sort((a, b) => getRepoActivityTimestamp(b) - getRepoActivityTimestamp(a));
+      return out.sort((a, b) => mul * (getRepoActivityTimestamp(b) - getRepoActivityTimestamp(a)));
     case "commits":
       return out.sort(
-        (a, b) => (b.advancedMetrics?.totalCommits ?? 0) - (a.advancedMetrics?.totalCommits ?? 0)
+        (a, b) => mul * ((b.advancedMetrics?.totalCommits ?? 0) - (a.advancedMetrics?.totalCommits ?? 0))
       );
     case "commitsLastMonth":
       return out.sort(
         (a, b) =>
-          (b.advancedMetrics?.commitsLastMonth ?? 0) - (a.advancedMetrics?.commitsLastMonth ?? 0)
+          mul * ((b.advancedMetrics?.commitsLastMonth ?? 0) - (a.advancedMetrics?.commitsLastMonth ?? 0))
       );
     case "score":
       return out.sort(
-        (a, b) => (b.advancedMetrics?.projectScore ?? 0) - (a.advancedMetrics?.projectScore ?? 0)
+        (a, b) => mul * ((b.advancedMetrics?.projectScore ?? 0) - (a.advancedMetrics?.projectScore ?? 0))
       );
     case "stars":
-      return out.sort((a, b) => b.stargazers_count - a.stargazers_count);
+      return out.sort((a, b) => mul * (b.stargazers_count - a.stargazers_count));
     case "forks":
-      return out.sort((a, b) => b.forks_count - a.forks_count);
+      return out.sort((a, b) => mul * (b.forks_count - a.forks_count));
     case "size":
-      return out.sort((a, b) => b.totalBytes - a.totalBytes);
+      return out.sort((a, b) => mul * (b.totalBytes - a.totalBytes));
     case "languages":
-      return out.sort((a, b) => b.languagePercentages.length - a.languagePercentages.length);
+      return out.sort((a, b) => mul * (b.languagePercentages.length - a.languagePercentages.length));
     case "created":
       return out.sort(
-        (a, b) => new Date(b.created_at).getTime() - new Date(a.created_at).getTime()
+        (a, b) => mul * (new Date(b.created_at).getTime() - new Date(a.created_at).getTime())
       );
     case "name":
-      return out.sort((a, b) => a.name.localeCompare(b.name));
+      return out.sort((a, b) =>
+        direction === "asc"
+          ? a.name.localeCompare(b.name)
+          : b.name.localeCompare(a.name)
+      );
   }
 }
 
@@ -93,8 +102,10 @@ export default function RepoGrid({
 }) {
   const { t } = useLocale();
   const [query, setQuery] = useState("");
+  const [visibility, setVisibility] = useState<VisibilityFilter>("all");
   const [lang, setLang] = useState("");
   const [sort, setSort] = useState<SortKey>("updated");
+  const [sortDir, setSortDir] = useState<SortDirection>("desc");
   const [selectionMode, setSelectionMode] = useState(false);
   const [selected, setSelected] = useState<Set<string>>(new Set());
   const [exporting, setExporting] = useState(false);
@@ -102,6 +113,11 @@ export default function RepoGrid({
 
   const visible = useMemo(() => {
     let list = repos;
+    if (visibility === "public") {
+      list = list.filter((r) => !r.private);
+    } else if (visibility === "private") {
+      list = list.filter((r) => r.private);
+    }
     if (lang) list = list.filter((r) => r.languagePercentages.some((l) => l.name === lang));
     const q = query.trim().toLowerCase();
     if (q) {
@@ -111,13 +127,14 @@ export default function RepoGrid({
           (r.description?.toLowerCase().includes(q) ?? false)
       );
     }
-    return sortRepos(list, sort);
-  }, [repos, lang, query, sort]);
+    return sortRepos(list, sort, sortDir);
+  }, [repos, visibility, lang, query, sort, sortDir]);
 
-  const filtering = Boolean(query.trim() || lang);
+  const filtering = Boolean(query.trim() || lang || visibility !== "all");
   const clearFilters = () => {
     setQuery("");
     setLang("");
+    setVisibility("all");
   };
 
   const toggleSelect = useCallback((name: string) => {
@@ -195,6 +212,17 @@ export default function RepoGrid({
               </label>
 
               <select
+                value={visibility}
+                onChange={(e) => setVisibility(e.target.value as VisibilityFilter)}
+                aria-label={t("repos.visibility.label")}
+                className="field w-auto cursor-pointer"
+              >
+                <option value="all">{t("repos.visibility.all")}</option>
+                <option value="public">{t("repos.visibility.public")}</option>
+                <option value="private">{t("repos.visibility.private")}</option>
+              </select>
+
+              <select
                 value={lang}
                 onChange={(e) => setLang(e.target.value)}
                 aria-label={t("repos.allLangs")}
@@ -220,6 +248,44 @@ export default function RepoGrid({
                   </option>
                 ))}
               </select>
+
+              <button
+                type="button"
+                onClick={() => setSortDir((prev) => (prev === "desc" ? "asc" : "desc"))}
+                aria-label={sortDir === "desc" ? t("repos.sort.desc") : t("repos.sort.asc")}
+                title={sortDir === "desc" ? t("repos.sort.desc") : t("repos.sort.asc")}
+                className="field w-auto cursor-pointer inline-flex items-center gap-1.5 select-none hover:border-hairline-strong transition-colors"
+              >
+                {sortDir === "desc" ? (
+                  <>
+                    <svg
+                      className="w-3.5 h-3.5 text-faint shrink-0"
+                      fill="none"
+                      viewBox="0 0 24 24"
+                      strokeWidth={2}
+                      stroke="currentColor"
+                      aria-hidden
+                    >
+                      <path strokeLinecap="round" strokeLinejoin="round" d="M19 14l-7 7m0 0l-7-7m7 7V3" />
+                    </svg>
+                    <span>{t("repos.sort.desc")}</span>
+                  </>
+                ) : (
+                  <>
+                    <svg
+                      className="w-3.5 h-3.5 text-faint shrink-0"
+                      fill="none"
+                      viewBox="0 0 24 24"
+                      strokeWidth={2}
+                      stroke="currentColor"
+                      aria-hidden
+                    >
+                      <path strokeLinecap="round" strokeLinejoin="round" d="M5 10l7-7m0 0l7 7m-7-7v18" />
+                    </svg>
+                    <span>{t("repos.sort.asc")}</span>
+                  </>
+                )}
+              </button>
             </>
           }
         />

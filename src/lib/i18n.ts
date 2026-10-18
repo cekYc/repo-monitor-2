@@ -46,7 +46,7 @@ export const translations = {
   "repos.sort.stars": { tr: "Yıldız Sayısı", en: "Star Count" },
   "repos.sort.size": { tr: "Kod Boyutu", en: "Code Size" },
   "repos.sort.languages": { tr: "Dil Sayısı", en: "Language Count" },
-  "repos.sort.name": { tr: "İsim (A-Z)", en: "Name (A-Z)" },
+  "repos.sort.name": { tr: "Repo Adı", en: "Repo Name" },
   "repos.sort.created": { tr: "Oluşturulma Tarihi", en: "Created Date" },
   "repos.sort.forks": { tr: "Fork Sayısı", en: "Fork Count" },
   "repos.sort.score": { tr: "Proje Skoru (En Değerli)", en: "Project Score (Most Valuable)" },
@@ -554,6 +554,13 @@ export const translations = {
 
   // ── Analyze: repository grid ───────────────────────────────────────────────
   "repos.sortLabel": { tr: "Sıralama", en: "Sort" },
+  "repos.sort.orderLabel": { tr: "Sıralama yönü", en: "Sort order" },
+  "repos.sort.desc": { tr: "Yüksekten düşüğe", en: "High to low" },
+  "repos.sort.asc": { tr: "Düşükten yükseğe", en: "Low to high" },
+  "repos.visibility.label": { tr: "Görünürlük", en: "Visibility" },
+  "repos.visibility.all": { tr: "Hepsi", en: "All" },
+  "repos.visibility.public": { tr: "Sadece Public", en: "Public only" },
+  "repos.visibility.private": { tr: "Sadece Private", en: "Private only" },
   "repos.forksExcluded": {
     tr: "Fork'lar analize dahil edilmez",
     en: "Forks are excluded from the analysis",

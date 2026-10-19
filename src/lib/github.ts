@@ -230,7 +230,22 @@ const { data: repos } = await octokit.repos.listForAuthenticatedUser({
           
           const thirtyDaysAgo = Date.now() - 30 * 24 * 60 * 60 * 1000;
           const datesSet = new Set<string>();
+          const normalizedUsername = username.toLowerCase();
+          let userCommitsInSample = 0;
+
           for (const c of commits) {
+            const authorLogin = c.author?.login?.toLowerCase();
+            const committerLogin = c.committer?.login?.toLowerCase();
+            const authorName = c.commit.author?.name?.toLowerCase();
+            if (
+              authorLogin === normalizedUsername ||
+              committerLogin === normalizedUsername ||
+              authorName === normalizedUsername ||
+              (!authorLogin && !committerLogin)
+            ) {
+              userCommitsInSample++;
+            }
+
             const dateStr = c.commit.author?.date || c.commit.committer?.date;
             if (dateStr) {
               if (!lastMaintenance) lastMaintenance = dateStr;
@@ -242,44 +257,97 @@ const { data: repos } = await octokit.repos.listForAuthenticatedUser({
             }
           }
           commitDates = Array.from(datesSet).sort();
-        } catch (e) {
-          // ignore error if repo is empty or commits cannot be fetched
+
+          const sampleRatio = commits.length > 0 ? userCommitsInSample / commits.length : 1;
+          const ratio = Math.min(1, Math.max(0.01, Math.round(sampleRatio * 10000) / 10000));
+          const userCommits = Math.max(1, Math.round(totalCommits * ratio));
+          const contributedBytes = ratio >= 0.99 ? totalBytes : Math.round(totalBytes * ratio);
+
+          const userContribution: UserContributionStats = {
+            contributedBytes,
+            contributedLines: Math.round(contributedBytes / 45),
+            commits: userCommits,
+            ratio,
+          };
+
+          const createdAt = repo.created_at ? new Date(repo.created_at).getTime() : Date.now();
+          const activityAt = lastMaintenance || repo.pushed_at || repo.created_at;
+          const activityAtMs = activityAt ? new Date(activityAt).getTime() : createdAt;
+          const totalDurationDays = Math.max(1, Math.round((activityAtMs - createdAt) / (1000 * 60 * 60 * 24)));
+          const activeDays = commitDates.length;
+          const developmentDensity = totalDurationDays > 0 ? activeDays / totalDurationDays : 0;
+
+          const advancedMetrics: RepoAdvancedMetrics = {
+            activeDays,
+            totalDurationDays,
+            developmentDensity,
+            commitDates,
+            projectScore: 0, // Will be calculated after all repos are fetched
+            totalCommits,
+            commitsLastMonth,
+            lastMaintenance,
+          };
+
+          return {
+            name: repo.name,
+            description: repo.description,
+            html_url: repo.html_url,
+            stargazers_count: repo.stargazers_count ?? 0,
+            forks_count: repo.forks_count ?? 0,
+            size: repo.size ?? 0,
+            created_at: repo.created_at ?? "",
+            updated_at: repo.updated_at ?? "",
+            pushed_at: repo.pushed_at ?? "",
+            languages,
+            languagePercentages,
+            totalBytes,
+            private: repo.private ?? false,
+            advancedMetrics,
+            userContribution,
+          } satisfies RepoInfo;
+        } catch {
+          // Fallback if commits fetch fails
+          const createdAt = repo.created_at ? new Date(repo.created_at).getTime() : Date.now();
+          const activityAt = repo.pushed_at || repo.created_at;
+          const activityAtMs = activityAt ? new Date(activityAt).getTime() : createdAt;
+          const totalDurationDays = Math.max(1, Math.round((activityAtMs - createdAt) / (1000 * 60 * 60 * 24)));
+
+          const userContribution: UserContributionStats = {
+            contributedBytes: totalBytes,
+            contributedLines: Math.round(totalBytes / 45),
+            commits: totalCommits || 1,
+            ratio: 1,
+          };
+
+          const advancedMetrics: RepoAdvancedMetrics = {
+            activeDays: 1,
+            totalDurationDays,
+            developmentDensity: totalDurationDays > 0 ? 1 / totalDurationDays : 0,
+            commitDates: [],
+            projectScore: 0,
+            totalCommits: 1,
+            commitsLastMonth: 0,
+            lastMaintenance: repo.pushed_at || null,
+          };
+
+          return {
+            name: repo.name,
+            description: repo.description,
+            html_url: repo.html_url,
+            stargazers_count: repo.stargazers_count ?? 0,
+            forks_count: repo.forks_count ?? 0,
+            size: repo.size ?? 0,
+            created_at: repo.created_at ?? "",
+            updated_at: repo.updated_at ?? "",
+            pushed_at: repo.pushed_at ?? "",
+            languages,
+            languagePercentages,
+            totalBytes,
+            private: repo.private ?? false,
+            advancedMetrics,
+            userContribution,
+          } satisfies RepoInfo;
         }
-
-        const createdAt = repo.created_at ? new Date(repo.created_at).getTime() : Date.now();
-        const activityAt = lastMaintenance || repo.pushed_at || repo.created_at;
-        const activityAtMs = activityAt ? new Date(activityAt).getTime() : createdAt;
-        const totalDurationDays = Math.max(1, Math.round((activityAtMs - createdAt) / (1000 * 60 * 60 * 24)));
-        const activeDays = commitDates.length;
-        const developmentDensity = totalDurationDays > 0 ? activeDays / totalDurationDays : 0;
-
-        const advancedMetrics: RepoAdvancedMetrics = {
-          activeDays,
-          totalDurationDays,
-          developmentDensity,
-          commitDates,
-          projectScore: 0, // Will be calculated after all repos are fetched
-          totalCommits,
-          commitsLastMonth,
-          lastMaintenance,
-        };
-
-        return {
-          name: repo.name,
-          description: repo.description,
-          html_url: repo.html_url,
-          stargazers_count: repo.stargazers_count ?? 0,
-          forks_count: repo.forks_count ?? 0,
-          size: repo.size ?? 0,
-          created_at: repo.created_at ?? "",
-          updated_at: repo.updated_at ?? "",
-          pushed_at: repo.pushed_at ?? "",
-          languages,
-          languagePercentages,
-          totalBytes,
-          private: repo.private ?? false,
-          advancedMetrics,
-        } satisfies RepoInfo;
       })
     );
     repoInfos.push(...results);

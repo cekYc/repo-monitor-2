@@ -145,6 +145,12 @@ function buildRepo(seed: RepoSeed): RepoInfo {
       commitsLastMonth: seed.commitsLastMonth,
       lastMaintenance: seed.pushed,
     },
+    userContribution: {
+      contributedBytes: totalBytes,
+      contributedLines: Math.round(totalBytes / 45),
+      commits: seed.commits,
+      ratio: 1,
+    },
   };
 }
 

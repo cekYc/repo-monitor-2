@@ -219,17 +219,19 @@ export default function RepoCard({
 
         <footer className="flex items-center justify-between gap-2 mt-3 pt-3 border-t border-hairline">
           <div className="flex flex-wrap items-center gap-x-2 gap-y-0.5 t-caption text-faint tnum min-w-0">
-            {repo.isContributed && repo.userContribution ? (
+            {repo.userContribution && repo.totalBytes > 0 ? (
               <span
                 className="inline-flex items-center gap-1 font-medium"
-                title={`${t("repo.contributionShareTitle")}: ${formatBytes(repo.userContribution.contributedBytes)} / ${t("repo.totalSize")}: ${formatBytes(repo.totalBytes)} (%${(repo.userContribution.ratio * 100).toFixed(1)})`}
+                title={`${t("repo.contributionShareTitle")}: ${formatBytes(repo.userContribution.contributedBytes)} / ${t("repo.totalSize")}: ${formatBytes(repo.totalBytes)} (%${repo.userContribution.ratio >= 0.999 ? "100" : (repo.userContribution.ratio * 100).toFixed(1)})`}
               >
                 <span className="text-accent-text font-semibold">
                   {formatBytes(repo.userContribution.contributedBytes)}
                 </span>
                 <span className="text-faint">/ {formatBytes(repo.totalBytes)}</span>
                 <span className="text-[10px] px-1 py-0.2 rounded bg-accent-soft text-accent-text font-mono ml-0.5">
-                  %{(repo.userContribution.ratio * 100).toFixed(repo.userContribution.ratio < 0.01 ? 2 : 1)}
+                  %{repo.userContribution.ratio >= 0.999
+                    ? "100"
+                    : (repo.userContribution.ratio * 100).toFixed(repo.userContribution.ratio < 0.01 ? 2 : 1)}
                 </span>
               </span>
             ) : (
@@ -273,7 +275,7 @@ export default function RepoCard({
 
       {expanded && (
         <div className="border-t border-hairline bg-panel/60 p-4 rounded-b-card">
-          {repo.isContributed && repo.userContribution && (
+          {repo.userContribution && (
             <div className="mb-3.5 p-3 rounded-lg bg-surface border border-hairline space-y-2">
               <div className="flex items-center justify-between text-xs">
                 <span className="text-muted flex items-center gap-1.5 font-medium">
@@ -284,7 +286,9 @@ export default function RepoCard({
                   {formatBytes(repo.userContribution.contributedBytes)}{" "}
                   <span className="text-faint font-normal">/ {formatBytes(repo.totalBytes)}</span>{" "}
                   <span className="text-accent-text font-medium">
-                    (%{(repo.userContribution.ratio * 100).toFixed(repo.userContribution.ratio < 0.01 ? 2 : 1)})
+                    (%{repo.userContribution.ratio >= 0.999
+                      ? "100"
+                      : (repo.userContribution.ratio * 100).toFixed(repo.userContribution.ratio < 0.01 ? 2 : 1)})
                   </span>
                 </span>
               </div>

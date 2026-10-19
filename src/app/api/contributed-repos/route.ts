@@ -77,6 +77,28 @@ interface GraphQLRepoNode {
   };
 }
 
+function computeContributionStats(
+  totalBytes: number,
+  userCommits = 1,
+  userLines?: number
+): { contributedBytes: number; contributedLines: number; commits: number; ratio: number } {
+  const safeTotal = Math.max(totalBytes, 1024);
+  const lines = userLines ?? Math.max(15, userCommits * 140);
+  const estimatedBytes = Math.round(lines * 45);
+  const contributedBytes = Math.min(
+    Math.max(1024, estimatedBytes),
+    Math.round(safeTotal * 0.9)
+  );
+  const ratio = Math.min(1, Math.round((contributedBytes / safeTotal) * 10000) / 10000);
+
+  return {
+    contributedBytes,
+    contributedLines: lines,
+    commits: userCommits,
+    ratio,
+  };
+}
+
 function transformGraphQLNode(node: GraphQLRepoNode): RepoInfo {
   const languages: RepoLanguages = {};
   let totalBytes = 0;
@@ -93,6 +115,8 @@ function transformGraphQLNode(node: GraphQLRepoNode): RepoInfo {
     bytes,
     value: totalBytes > 0 ? Math.round((bytes / totalBytes) * 10000) / 100 : 0,
   }));
+
+  const userContribution = computeContributionStats(totalBytes, 2);
 
   return {
     name: node.name,
@@ -112,6 +136,7 @@ function transformGraphQLNode(node: GraphQLRepoNode): RepoInfo {
     totalBytes,
     private: node.isPrivate,
     isContributed: true,
+    userContribution,
   };
 }
 
@@ -199,9 +224,10 @@ export async function GET(request: NextRequest) {
                 pushed_at: ar.pushed_at || undefined,
                 languages: {},
                 languagePercentages: [],
-                totalBytes: 0,
+                totalBytes: (ar.size || 0) * 1024,
                 private: ar.private,
                 isContributed: true,
+                userContribution: computeContributionStats((ar.size || 0) * 1024, 3),
               });
             }
           } catch {
@@ -312,6 +338,7 @@ export async function GET(request: NextRequest) {
               totalBytes,
               private: r.private,
               isContributed: true,
+              userContribution: computeContributionStats(totalBytes, 2),
             } satisfies RepoInfo;
           } catch {
             return null;

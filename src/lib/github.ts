@@ -23,6 +23,13 @@ export interface RepoAdvancedMetrics {
   };
 }
 
+export interface UserContributionStats {
+  contributedBytes: number;
+  contributedLines?: number;
+  commits?: number;
+  ratio: number;
+}
+
 export interface RepoInfo {
   name: string;
   description: string | null;
@@ -42,6 +49,7 @@ export interface RepoInfo {
   ownerLogin?: string;
   ownerAvatar?: string;
   isContributed?: boolean;
+  userContribution?: UserContributionStats;
 }
 
 function parseLastPage(linkHeader: string | undefined): number | null {

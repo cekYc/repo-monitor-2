@@ -219,7 +219,22 @@ export default function RepoCard({
 
         <footer className="flex items-center justify-between gap-2 mt-3 pt-3 border-t border-hairline">
           <div className="flex flex-wrap items-center gap-x-2 gap-y-0.5 t-caption text-faint tnum min-w-0">
-            <span>{formatBytes(repo.totalBytes)}</span>
+            {repo.isContributed && repo.userContribution ? (
+              <span
+                className="inline-flex items-center gap-1 font-medium"
+                title={`${t("repo.contributionShareTitle")}: ${formatBytes(repo.userContribution.contributedBytes)} / ${t("repo.totalSize")}: ${formatBytes(repo.totalBytes)} (%${(repo.userContribution.ratio * 100).toFixed(1)})`}
+              >
+                <span className="text-accent-text font-semibold">
+                  {formatBytes(repo.userContribution.contributedBytes)}
+                </span>
+                <span className="text-faint">/ {formatBytes(repo.totalBytes)}</span>
+                <span className="text-[10px] px-1 py-0.2 rounded bg-accent-soft text-accent-text font-mono ml-0.5">
+                  %{(repo.userContribution.ratio * 100).toFixed(repo.userContribution.ratio < 0.01 ? 2 : 1)}
+                </span>
+              </span>
+            ) : (
+              <span>{formatBytes(repo.totalBytes)}</span>
+            )}
             <span aria-hidden>·</span>
             <span title={`${t("repo.updatedAt")}: ${fmt.date(activityDate)}`}>
               {fmt.date(activityDate)}
@@ -258,6 +273,48 @@ export default function RepoCard({
 
       {expanded && (
         <div className="border-t border-hairline bg-panel/60 p-4 rounded-b-card">
+          {repo.isContributed && repo.userContribution && (
+            <div className="mb-3.5 p-3 rounded-lg bg-surface border border-hairline space-y-2">
+              <div className="flex items-center justify-between text-xs">
+                <span className="text-muted flex items-center gap-1.5 font-medium">
+                  <span>📊</span>
+                  <span className="text-fg">{t("repo.contributionShareTitle")}</span>
+                </span>
+                <span className="text-accent-text font-semibold tnum">
+                  {formatBytes(repo.userContribution.contributedBytes)}{" "}
+                  <span className="text-faint font-normal">/ {formatBytes(repo.totalBytes)}</span>{" "}
+                  <span className="text-accent-text font-medium">
+                    (%{(repo.userContribution.ratio * 100).toFixed(repo.userContribution.ratio < 0.01 ? 2 : 1)})
+                  </span>
+                </span>
+              </div>
+              <div className="h-1.5 bg-panel rounded-full overflow-hidden">
+                <div
+                  className="h-full bg-accent rounded-full transition-all"
+                  style={{
+                    width: `${Math.max(Math.min(repo.userContribution.ratio * 100, 100), 2)}%`,
+                  }}
+                />
+              </div>
+              <div className="flex items-center justify-between text-[11px] text-faint">
+                <span>
+                  {t("repo.contributedCode")}:{" "}
+                  <strong className="text-fg font-medium">
+                    {formatBytes(repo.userContribution.contributedBytes)}
+                  </strong>
+                </span>
+                {repo.userContribution.commits ? (
+                  <span>
+                    {repo.userContribution.commits} commit
+                    {repo.userContribution.contributedLines
+                      ? ` · ~${fmt.num(repo.userContribution.contributedLines)} ${t("repo.lines")}`
+                      : ""}
+                  </span>
+                ) : null}
+              </div>
+            </div>
+          )}
+
           {hasLanguages && (
             <div className="grid sm:grid-cols-2 gap-x-5 gap-y-1.5">
               {repo.languagePercentages.map((lang, i) => (

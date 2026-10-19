@@ -65,7 +65,11 @@ function sortRepos(repos: RepoInfo[], key: SortKey, direction: SortDirection): R
     case "forks":
       return out.sort((a, b) => mul * (b.forks_count - a.forks_count));
     case "size":
-      return out.sort((a, b) => mul * (b.totalBytes - a.totalBytes));
+      return out.sort((a, b) => {
+        const sizeB = b.userContribution?.contributedBytes ?? b.totalBytes;
+        const sizeA = a.userContribution?.contributedBytes ?? a.totalBytes;
+        return mul * (sizeB - sizeA);
+      });
     case "languages":
       return out.sort((a, b) => mul * (b.languagePercentages.length - a.languagePercentages.length));
     case "created":

@@ -221,6 +221,12 @@ export function buildSampleContributedRepos(): RepoInfo[] {
         commitsLastMonth: 2,
         lastMaintenance: "2026-10-12T14:20:00Z",
       },
+      userContribution: {
+        contributedBytes: 1_840_000,
+        contributedLines: 41200,
+        commits: 8,
+        ratio: 0.0215,
+      },
     },
     {
       name: "next.js",
@@ -254,6 +260,12 @@ export function buildSampleContributedRepos(): RepoInfo[] {
         commitsLastMonth: 1,
         lastMaintenance: "2026-09-15T09:12:00Z",
       },
+      userContribution: {
+        contributedBytes: 340_000,
+        contributedLines: 7800,
+        commits: 4,
+        ratio: 0.0034,
+      },
     },
     {
       name: "tailwindcss",
@@ -286,6 +298,12 @@ export function buildSampleContributedRepos(): RepoInfo[] {
         totalCommits: 3,
         commitsLastMonth: 1,
         lastMaintenance: "2026-10-05T16:30:00Z",
+      },
+      userContribution: {
+        contributedBytes: 174_080,
+        contributedLines: 3850,
+        commits: 3,
+        ratio: 0.0072,
       },
     },
   ];

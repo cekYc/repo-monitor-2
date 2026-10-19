@@ -595,7 +595,7 @@ export const translations = {
   "repo.private": { tr: "özel", en: "private" },
   "repo.contributed": { tr: "katkı", en: "contributed" },
   "repo.contributionShare": { tr: "Katkı Payı", en: "Contribution Share" },
-  "repo.contributionShareTitle": { tr: "Sizin Katkı Payınız", en: "Your Contribution Share" },
+  "repo.contributionShareTitle": { tr: "Repo Sahibinin Katkı Payı", en: "Repo Owner's Contribution Share" },
   "repo.contributedCode": { tr: "Katkı Sağlanan Kod", en: "Contributed Code" },
   "repo.totalSize": { tr: "Toplam Boyut", en: "Total Size" },
   "repo.lines": { tr: "satır kod", en: "lines of code" },

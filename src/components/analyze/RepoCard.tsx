@@ -77,6 +77,9 @@ export default function RepoCard({
 
   const repoOwner = repo.ownerLogin || owner;
   const repoFullName = repo.fullName || (repo.ownerLogin ? `${repo.ownerLogin}/${repo.name}` : repo.name);
+  const contributionLabel = repo.isContributed
+    ? t("repo.contributionShare")
+    : t("repo.contributionShareTitle");
 
   return (
     <article
@@ -222,7 +225,7 @@ export default function RepoCard({
             {repo.userContribution && repo.totalBytes > 0 ? (
               <span
                 className="inline-flex items-center gap-1 font-medium"
-                title={`${t("repo.contributionShareTitle")}: ${formatBytes(repo.userContribution.contributedBytes)} / ${t("repo.totalSize")}: ${formatBytes(repo.totalBytes)} (%${repo.userContribution.ratio >= 0.999 ? "100" : (repo.userContribution.ratio * 100).toFixed(1)})`}
+                title={`${contributionLabel}: ${formatBytes(repo.userContribution.contributedBytes)} / ${t("repo.totalSize")}: ${formatBytes(repo.totalBytes)} (%${repo.userContribution.ratio >= 0.999 ? "100" : (repo.userContribution.ratio * 100).toFixed(1)})`}
               >
                 <span className="text-accent-text font-semibold">
                   {formatBytes(repo.userContribution.contributedBytes)}
@@ -280,7 +283,7 @@ export default function RepoCard({
               <div className="flex items-center justify-between text-xs">
                 <span className="text-muted flex items-center gap-1.5 font-medium">
                   <span>📊</span>
-                  <span className="text-fg">{t("repo.contributionShareTitle")}</span>
+                  <span className="text-fg">{contributionLabel}</span>
                 </span>
                 <span className="text-accent-text font-semibold tnum">
                   {formatBytes(repo.userContribution.contributedBytes)}{" "}

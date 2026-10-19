@@ -1,11 +1,13 @@
 "use client";
 
-import { useCallback, useMemo, useRef, useState } from "react";
+import { useCallback, useEffect, useMemo, useRef, useState } from "react";
 import EmptyState from "@/components/ui/EmptyState";
 import RepoCard from "@/components/analyze/RepoCard";
 import { SectionHeader } from "@/components/ui/Card";
 import { useLocale } from "@/components/LocaleProvider";
 import { getRepoActivityTimestamp } from "@/lib/repo-activity";
+import { tokenHeaders } from "@/lib/token";
+import { buildSampleContributedRepos } from "@/lib/sample-analysis";
 import type { RepoInfo } from "@/lib/github";
 import type { TranslationKey } from "@/lib/i18n";
 
@@ -23,6 +25,7 @@ export type SortKey =
 
 export type SortDirection = "desc" | "asc";
 export type VisibilityFilter = "all" | "public" | "private";
+export type RepoTab = "owned" | "contributed";
 
 const SORTS: { id: SortKey; labelKey: TranslationKey }[] = [
   { id: "updated", labelKey: "repos.sort.updated" },
@@ -70,19 +73,17 @@ function sortRepos(repos: RepoInfo[], key: SortKey, direction: SortDirection): R
         (a, b) => mul * (new Date(b.created_at).getTime() - new Date(a.created_at).getTime())
       );
     case "name":
-      return out.sort((a, b) =>
-        direction === "asc"
-          ? a.name.localeCompare(b.name)
-          : b.name.localeCompare(a.name)
-      );
+      return out.sort((a, b) => {
+        const nameA = a.fullName || a.name;
+        const nameB = b.fullName || b.name;
+        return direction === "asc"
+          ? nameA.localeCompare(nameB)
+          : nameB.localeCompare(nameA);
+      });
   }
 }
 
-/** Level 4 of the hierarchy: the repository grid.
- *
- *  The text box here filters the list that is already on screen — it is not a
- *  second search field, and it is labelled and iconed as a filter so it cannot
- *  be mistaken for one. */
+/** Level 4 of the hierarchy: the repository grid with Owned and Contributed tabs. */
 export default function RepoGrid({
   repos,
   languages,
@@ -91,6 +92,7 @@ export default function RepoGrid({
   onToggleExclude,
   onClearExclusions,
   allowExport,
+  isSample = false,
 }: {
   repos: RepoInfo[];
   languages: { name: string; value: number }[];
@@ -99,8 +101,14 @@ export default function RepoGrid({
   onToggleExclude: (name: string) => void;
   onClearExclusions: () => void;
   allowExport: boolean;
+  isSample?: boolean;
 }) {
   const { t } = useLocale();
+  const [tab, setTab] = useState<RepoTab>("owned");
+  const [contributedRepos, setContributedRepos] = useState<RepoInfo[] | null>(null);
+  const [contributedLoading, setContributedLoading] = useState(false);
+  const fetchedOwner = useRef<string | null>(null);
+
   const [query, setQuery] = useState("");
   const [visibility, setVisibility] = useState<VisibilityFilter>("all");
   const [lang, setLang] = useState("");
@@ -111,8 +119,84 @@ export default function RepoGrid({
   const [exporting, setExporting] = useState(false);
   const gridRef = useRef<HTMLDivElement>(null);
 
+  const fetchContributed = useCallback(
+    async (targetOwner: string) => {
+      if (!targetOwner) return;
+      if (isSample || targetOwner.toLowerCase().startsWith("octo-sample")) {
+        setContributedRepos(buildSampleContributedRepos());
+        fetchedOwner.current = targetOwner.toLowerCase();
+        return;
+      }
+      setContributedLoading(true);
+      try {
+        const res = await fetch(
+          `/api/contributed-repos?username=${encodeURIComponent(targetOwner)}`,
+          { headers: tokenHeaders() }
+        );
+        if (!res.ok) throw new Error("Failed to fetch contributed repositories");
+        const data = await res.json();
+        setContributedRepos(data.repos ?? []);
+        fetchedOwner.current = targetOwner.toLowerCase();
+      } catch {
+        setContributedRepos([]);
+      } finally {
+        setContributedLoading(false);
+      }
+    },
+    [isSample]
+  );
+
+  // Reset when analyzed owner changes
+  useEffect(() => {
+    setContributedRepos(null);
+    fetchedOwner.current = null;
+    setTab("owned");
+    setQuery("");
+    setLang("");
+    setVisibility("all");
+    setSelected(new Set());
+    setSelectionMode(false);
+  }, [owner]);
+
+  const switchTab = (nextTab: RepoTab) => {
+    setTab(nextTab);
+    setQuery("");
+    setLang("");
+    setVisibility("all");
+    setSelectionMode(false);
+    setSelected(new Set());
+    if (nextTab === "contributed" && fetchedOwner.current !== owner.toLowerCase()) {
+      fetchContributed(owner);
+    }
+  };
+
+  const activeRepos = useMemo(() => {
+    return tab === "owned" ? repos : (contributedRepos ?? []);
+  }, [tab, repos, contributedRepos]);
+
+  // Compute language options for contributed repos dynamically
+  const contributedLanguages = useMemo(() => {
+    if (!contributedRepos) return [];
+    const map: Record<string, number> = {};
+    let total = 0;
+    for (const r of contributedRepos) {
+      for (const [langName, bytes] of Object.entries(r.languages)) {
+        map[langName] = (map[langName] ?? 0) + bytes;
+        total += bytes;
+      }
+    }
+    return Object.entries(map)
+      .map(([name, bytes]) => ({
+        name,
+        value: total > 0 ? Math.round((bytes / total) * 10000) / 100 : 0,
+      }))
+      .sort((a, b) => b.value - a.value);
+  }, [contributedRepos]);
+
+  const currentLanguages = tab === "owned" ? languages : contributedLanguages;
+
   const visible = useMemo(() => {
-    let list = repos;
+    let list = activeRepos;
     if (visibility === "public") {
       list = list.filter((r) => !r.private);
     } else if (visibility === "private") {
@@ -124,11 +208,12 @@ export default function RepoGrid({
       list = list.filter(
         (r) =>
           r.name.toLowerCase().includes(q) ||
+          (r.fullName?.toLowerCase().includes(q) ?? false) ||
           (r.description?.toLowerCase().includes(q) ?? false)
       );
     }
     return sortRepos(list, sort, sortDir);
-  }, [repos, visibility, lang, query, sort, sortDir]);
+  }, [activeRepos, visibility, lang, query, sort, sortDir]);
 
   const filtering = Boolean(query.trim() || lang || visibility !== "all");
   const clearFilters = () => {
@@ -137,11 +222,11 @@ export default function RepoGrid({
     setVisibility("all");
   };
 
-  const toggleSelect = useCallback((name: string) => {
+  const toggleSelect = useCallback((key: string) => {
     setSelected((prev) => {
       const next = new Set(prev);
-      if (next.has(name)) next.delete(name);
-      else next.add(name);
+      if (next.has(key)) next.delete(key);
+      else next.add(key);
       return next;
     });
   }, []);
@@ -170,25 +255,98 @@ export default function RepoGrid({
         pixelRatio: 2,
       });
       const link = document.createElement("a");
-      link.download = `repos-${owner}-${selected.size}.png`;
+      link.download = `repos-${owner}-${tab}-${selected.size}.png`;
       link.href = dataUrl;
       link.click();
     } catch {
-      // export is best-effort; the grid itself must stay usable
+      // export is best-effort
     } finally {
       hidden.forEach((el) => (el.style.display = ""));
       checkboxes.forEach((el) => (el.style.display = ""));
       setExporting(false);
     }
-  }, [selected, owner]);
+  }, [selected, owner, tab]);
 
   return (
     <section className="space-y-3">
-      <div className="card p-4">
+      <div className="card p-4 space-y-4">
+        {/* Top bar: Tab Switcher & Subtitle */}
+        <div className="flex flex-col sm:flex-row sm:items-center justify-between gap-3 pb-3 border-b border-hairline">
+          <div
+            role="tablist"
+            aria-label={t("repos.title")}
+            className="inline-flex items-center gap-1 p-1 rounded-xl bg-panel border border-hairline"
+          >
+            <button
+              type="button"
+              role="tab"
+              aria-selected={tab === "owned"}
+              onClick={() => switchTab("owned")}
+              className={`flex items-center gap-2 px-3 py-1.5 rounded-lg text-sm font-medium transition-all cursor-pointer ${
+                tab === "owned"
+                  ? "bg-surface text-fg shadow-sm border border-hairline"
+                  : "text-muted hover:text-fg hover:bg-surface/50"
+              }`}
+            >
+              <svg className="w-4 h-4 text-accent" fill="none" viewBox="0 0 24 24" strokeWidth={1.8} stroke="currentColor">
+                <path strokeLinecap="round" strokeLinejoin="round" d="M3.75 9.776c.112-.017.227-.026.344-.026h15.812c.117 0 .232.009.344.026m-16.5 0a2.25 2.25 0 00-1.883 2.542l.857 6a2.25 2.25 0 002.227 1.932H19.05a2.25 2.25 0 002.227-1.932l.857-6a2.25 2.25 0 00-1.883-2.542m-16.5 0V6A2.25 2.25 0 016 3.75h3.879a1.5 1.5 0 011.06.44l2.122 2.12a1.5 1.5 0 001.06.44H18A2.25 2.25 0 0120.25 9v.776" />
+              </svg>
+              <span>{t("repos.tab.owned")}</span>
+              <span
+                className={`text-xs px-1.5 py-0.5 rounded-md font-mono ${
+                  tab === "owned" ? "bg-accent/15 text-accent-text" : "bg-surface text-faint"
+                }`}
+              >
+                {repos.length}
+              </span>
+            </button>
+
+            <button
+              type="button"
+              role="tab"
+              aria-selected={tab === "contributed"}
+              onClick={() => switchTab("contributed")}
+              className={`flex items-center gap-2 px-3 py-1.5 rounded-lg text-sm font-medium transition-all cursor-pointer ${
+                tab === "contributed"
+                  ? "bg-surface text-fg shadow-sm border border-hairline"
+                  : "text-muted hover:text-fg hover:bg-surface/50"
+              }`}
+            >
+              <svg className="w-4 h-4 text-accent" fill="none" viewBox="0 0 24 24" strokeWidth={1.8} stroke="currentColor">
+                <path strokeLinecap="round" strokeLinejoin="round" d="M18 18.72a9.094 9.094 0 003.741-.479 3 3 0 00-4.682-2.72m.94 3.198l.001.031c0 .225-.012.447-.037.666A11.944 11.944 0 0112 21c-2.17 0-4.207-.576-5.963-1.584A6.062 6.062 0 016 18.719m12 0a5.971 5.971 0 00-.941-3.197m0 0A5.995 5.995 0 0012 12.75a5.995 5.995 0 00-5.058 2.772m0 0a3 3 0 00-4.681 2.72 8.986 8.986 0 003.74.477m.94-3.197a5.971 5.971 0 00-.94 3.197M15 6.75a3 3 0 11-6 0 3 3 0 016 0zm6 3a2.25 2.25 0 11-4.5 0 2.25 2.25 0 014.5 0zm-13.5 0a2.25 2.25 0 11-4.5 0 2.25 2.25 0 014.5 0z" />
+              </svg>
+              <span>{t("repos.tab.contributed")}</span>
+              {contributedLoading ? (
+                <span className="w-3.5 h-3.5 border-2 border-accent border-t-transparent rounded-full animate-spin inline-block ml-0.5" />
+              ) : contributedRepos !== null ? (
+                <span
+                  className={`text-xs px-1.5 py-0.5 rounded-md font-mono ${
+                    tab === "contributed"
+                      ? "bg-accent/15 text-accent-text"
+                      : "bg-surface text-faint"
+                  }`}
+                >
+                  {contributedRepos.length}
+                </span>
+              ) : null}
+            </button>
+          </div>
+
+          <p className="t-caption text-faint">
+            {tab === "owned" ? t("repos.forksExcluded") : t("repos.contributedHint")}
+          </p>
+        </div>
+
+        {/* Header & Filter Controls Row */}
         <SectionHeader
-          title={t("repos.title")}
-          count={visible.length === repos.length ? repos.length : `${visible.length}/${repos.length}`}
-          hint={t("repos.forksExcluded")}
+          title={tab === "owned" ? t("repos.title") : t("repos.contributedTitle")}
+          count={
+            tab === "contributed" && contributedLoading
+              ? undefined
+              : visible.length === activeRepos.length
+                ? activeRepos.length
+                : `${visible.length}/${activeRepos.length}`
+          }
           right={
             <>
               <label className="relative">
@@ -229,7 +387,7 @@ export default function RepoGrid({
                 className="field w-auto cursor-pointer"
               >
                 <option value="">{t("repos.allLangs")}</option>
-                {languages.map((l) => (
+                {currentLanguages.map((l) => (
                   <option key={l.name} value={l.name}>
                     {l.name} · {l.value}%
                   </option>
@@ -290,9 +448,10 @@ export default function RepoGrid({
           }
         />
 
-        {(excluded.size > 0 || allowExport) && (
-          <div className="flex flex-wrap items-center gap-2 mt-3 pt-3 border-t border-hairline">
-            {excluded.size > 0 && (
+        {/* Exclusion or Export actions bar */}
+        {((tab === "owned" && excluded.size > 0) || allowExport) && (
+          <div className="flex flex-wrap items-center gap-2 pt-3 border-t border-hairline">
+            {tab === "owned" && excluded.size > 0 && (
               <>
                 <span className="t-caption text-warning">
                   {excluded.size} {t("exclusion.banner")}
@@ -309,13 +468,12 @@ export default function RepoGrid({
                   <>
                     <button
                       type="button"
-                      onClick={() =>
+                      onClick={() => {
+                        const allKeys = visible.map((r) => r.fullName || r.name);
                         setSelected(
-                          selected.size === visible.length
-                            ? new Set()
-                            : new Set(visible.map((r) => r.name))
-                        )
-                      }
+                          selected.size === visible.length ? new Set() : new Set(allKeys)
+                        );
+                      }}
                       className="btn btn-ghost btn-sm"
                     >
                       {selected.size === visible.length && visible.length > 0
@@ -358,7 +516,43 @@ export default function RepoGrid({
         )}
       </div>
 
-      {visible.length === 0 ? (
+      {/* Grid Content / Loading / Empty States */}
+      {tab === "contributed" && contributedLoading ? (
+        <div className="space-y-3">
+          <div className="rounded-lg border border-hairline bg-panel px-3 py-2 text-center">
+            <p className="t-caption text-muted flex items-center justify-center gap-2">
+              <span className="w-3.5 h-3.5 border-2 border-accent border-t-transparent rounded-full animate-spin inline-block" />
+              {t("repos.contributedLoading")}
+            </p>
+          </div>
+          <div className="grid sm:grid-cols-2 xl:grid-cols-3 gap-3">
+            {Array.from({ length: 6 }).map((_, i) => (
+              <div key={i} className="card p-4 h-48 animate-pulse flex flex-col justify-between">
+                <div className="space-y-2.5">
+                  <div className="flex items-center gap-2">
+                    <div className="w-5 h-5 rounded-full bg-surface-hover shrink-0" />
+                    <div className="h-4 bg-surface-hover rounded w-1/2" />
+                  </div>
+                  <div className="h-3 bg-surface-hover rounded w-3/4" />
+                  <div className="h-3 bg-surface-hover rounded w-1/2" />
+                </div>
+                <div className="space-y-2 pt-3 border-t border-hairline">
+                  <div className="h-2 bg-surface-hover rounded-full w-full" />
+                  <div className="flex justify-between">
+                    <div className="h-3 bg-surface-hover rounded w-20" />
+                    <div className="h-3 bg-surface-hover rounded w-16" />
+                  </div>
+                </div>
+              </div>
+            ))}
+          </div>
+        </div>
+      ) : activeRepos.length === 0 ? (
+        <EmptyState
+          title={tab === "contributed" ? t("repos.contributedEmpty") : t("repos.notFound")}
+          body={tab === "contributed" ? t("repos.contributedEmptyBody") : undefined}
+        />
+      ) : visible.length === 0 ? (
         <EmptyState
           title={filtering ? t("repos.noMatch") : t("repos.notFound")}
           body={filtering ? t("repos.noMatchBody") : undefined}
@@ -372,19 +566,22 @@ export default function RepoGrid({
         />
       ) : (
         <div ref={gridRef} className="grid sm:grid-cols-2 xl:grid-cols-3 gap-3">
-          {visible.map((repo) => (
-            <div key={repo.name} data-repo-name={repo.name} className="min-w-0">
-              <RepoCard
-                repo={repo}
-                owner={owner}
-                isExcluded={excluded.has(repo.name)}
-                onToggleExclude={onToggleExclude}
-                selectionMode={selectionMode}
-                selected={selected.has(repo.name)}
-                onToggleSelect={toggleSelect}
-              />
-            </div>
-          ))}
+          {visible.map((repo) => {
+            const key = repo.fullName || repo.name;
+            return (
+              <div key={key} data-repo-name={key} className="min-w-0">
+                <RepoCard
+                  repo={repo}
+                  owner={owner}
+                  isExcluded={tab === "owned" ? excluded.has(repo.name) : false}
+                  onToggleExclude={onToggleExclude}
+                  selectionMode={selectionMode}
+                  selected={selected.has(key)}
+                  onToggleSelect={toggleSelect}
+                />
+              </div>
+            );
+          })}
         </div>
       )}
     </section>

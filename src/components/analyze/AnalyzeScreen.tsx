@@ -319,6 +319,7 @@ export default function AnalyzeScreen() {
             onToggleExclude={toggleExclude}
             onClearExclusions={() => setExcluded(new Set())}
             allowExport={!isSample}
+            isSample={isSample}
           />
 
           {!isSample && <SecondaryPanels analysis={shown} token={getStoredToken()} />}

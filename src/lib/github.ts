@@ -38,6 +38,10 @@ export interface RepoInfo {
   totalBytes: number;
   private: boolean;
   advancedMetrics?: RepoAdvancedMetrics;
+  fullName?: string;
+  ownerLogin?: string;
+  ownerAvatar?: string;
+  isContributed?: boolean;
 }
 
 function parseLastPage(linkHeader: string | undefined): number | null {

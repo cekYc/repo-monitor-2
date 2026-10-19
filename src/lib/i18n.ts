@@ -573,7 +573,27 @@ export const translations = {
     en: "Clear the filters to get the full list back.",
   },
   "repos.export.start": { tr: "PNG olarak seç", en: "Select for PNG" },
+  "repos.tab.owned": { tr: "Kendi Repoları", en: "Created Repos" },
+  "repos.tab.contributed": { tr: "Katkıda Bulunulanlar", en: "Contributed" },
+  "repos.contributedTitle": { tr: "Katkıda Bulunulan Repolar", en: "Contributed Repositories" },
+  "repos.contributedHint": {
+    tr: "Dış repolara yapılan katkılar, PR'lar ve commit'ler",
+    en: "Contributions, pull requests, and commits to external repositories",
+  },
+  "repos.contributedLoading": {
+    tr: "Katkıda bulunulan repolar taranıyor...",
+    en: "Scanning contributed repositories...",
+  },
+  "repos.contributedEmpty": {
+    tr: "Katkıda bulunulan repo bulunamadı",
+    en: "No contributed repositories found",
+  },
+  "repos.contributedEmptyBody": {
+    tr: "Bu kullanıcının harici açık kaynak repolara herkese açık bir katkısı tespit edilemedi.",
+    en: "No public contributions to external repositories found for this user.",
+  },
   "repo.private": { tr: "özel", en: "private" },
+  "repo.contributed": { tr: "katkı", en: "contributed" },
   "repo.details": { tr: "Ayrıntı", en: "Details" },
   "repo.deepDive": { tr: "Derin analiz", en: "Deep dive" },
   "repo.commitsShort": { tr: "commit", en: "commits" },

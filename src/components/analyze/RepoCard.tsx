@@ -5,6 +5,7 @@ import Link from "next/link";
 import CommitHistory from "@/components/CommitHistory";
 import SegmentBar from "@/components/SegmentBar";
 import WatchButton from "@/components/WatchButton";
+import Avatar from "@/components/ui/Avatar";
 import { useLocale } from "@/components/LocaleProvider";
 import useFormat from "@/components/useFormat";
 import { formatBytes, getLanguageColor } from "@/lib/utils";
@@ -74,6 +75,9 @@ export default function RepoCard({
     }
   };
 
+  const repoOwner = repo.ownerLogin || owner;
+  const repoFullName = repo.fullName || (repo.ownerLogin ? `${repo.ownerLogin}/${repo.name}` : repo.name);
+
   return (
     <article
       className={`card flex flex-col h-full transition-colors ${
@@ -86,9 +90,9 @@ export default function RepoCard({
             <button
               type="button"
               data-repo-checkbox
-              onClick={() => onToggleSelect?.(repo.name)}
+              onClick={() => onToggleSelect?.(repoFullName)}
               aria-pressed={selected}
-              aria-label={repo.name}
+              aria-label={repoFullName}
               className={`mt-0.5 shrink-0 w-4 h-4 rounded border grid place-items-center cursor-pointer transition-colors ${
                 selected
                   ? "bg-accent border-accent text-accent-fg"
@@ -105,17 +109,31 @@ export default function RepoCard({
 
           <div className="min-w-0 flex-1">
             <div className="flex items-center gap-1.5 min-w-0">
+              {repo.ownerAvatar && (
+                <Avatar
+                  src={repo.ownerAvatar}
+                  label={repoOwner}
+                  size={16}
+                  rounded="full"
+                />
+              )}
               <a
                 href={repo.html_url}
                 target="_blank"
                 rel="noopener noreferrer"
+                title={repoFullName}
                 className="t-small font-medium text-fg hover:text-accent-text transition-colors truncate font-mono"
               >
-                {repo.name}
+                {repoFullName}
               </a>
               {repo.private && (
                 <span className="t-caption px-1.5 rounded bg-panel text-faint shrink-0">
                   {t("repo.private")}
+                </span>
+              )}
+              {repo.isContributed && (
+                <span className="t-caption px-1.5 py-0.5 rounded bg-accent-soft text-accent-text shrink-0 text-[10px] font-medium leading-none">
+                  {t("repo.contributed")}
                 </span>
               )}
             </div>
@@ -137,34 +155,36 @@ export default function RepoCard({
                 <path strokeLinecap="round" d="M6 7v2a3 3 0 003 3h6a3 3 0 003-3V7M12 14v3" />
               </>
             </Stat>
-            <button
-              type="button"
-              onClick={() => onToggleExclude(repo.name)}
-              title={isExcluded ? t("repo.include") : t("repo.exclude")}
-              aria-label={isExcluded ? t("repo.include") : t("repo.exclude")}
-              className={`p-1 -m-1 rounded transition-colors cursor-pointer ${
-                isExcluded ? "text-warning" : "text-faint hover:text-danger"
-              }`}
-            >
-              <svg className="w-3.5 h-3.5" fill="none" viewBox="0 0 24 24" strokeWidth={1.8} stroke="currentColor">
-                {isExcluded ? (
-                  <path
-                    strokeLinecap="round"
-                    strokeLinejoin="round"
-                    d="M3.98 8.22A10.48 10.48 0 001.93 12C3.23 16.34 7.24 19.5 12 19.5c.99 0 1.95-.14 2.86-.4M6.23 6.23A10.45 10.45 0 0112 4.5c4.76 0 8.77 3.16 10.07 7.5a10.52 10.52 0 01-4.3 5.77M6.23 6.23L3 3m3.23 3.23l3.65 3.65m7.89 7.89L21 21m-3.23-3.23l-3.65-3.65m0 0a3 3 0 10-4.24-4.24m4.24 4.24L9.88 9.88"
-                  />
-                ) : (
-                  <>
+            {!repo.isContributed && (
+              <button
+                type="button"
+                onClick={() => onToggleExclude(repo.name)}
+                title={isExcluded ? t("repo.include") : t("repo.exclude")}
+                aria-label={isExcluded ? t("repo.include") : t("repo.exclude")}
+                className={`p-1 -m-1 rounded transition-colors cursor-pointer ${
+                  isExcluded ? "text-warning" : "text-faint hover:text-danger"
+                }`}
+              >
+                <svg className="w-3.5 h-3.5" fill="none" viewBox="0 0 24 24" strokeWidth={1.8} stroke="currentColor">
+                  {isExcluded ? (
                     <path
                       strokeLinecap="round"
                       strokeLinejoin="round"
-                      d="M2.04 12.32a1 1 0 010-.64C3.42 7.51 7.36 4.5 12 4.5s8.57 3.01 9.96 7.18a1 1 0 010 .64C20.58 16.49 16.64 19.5 12 19.5s-8.57-3.01-9.96-7.18z"
+                      d="M3.98 8.22A10.48 10.48 0 001.93 12C3.23 16.34 7.24 19.5 12 19.5c.99 0 1.95-.14 2.86-.4M6.23 6.23A10.45 10.45 0 0112 4.5c4.76 0 8.77 3.16 10.07 7.5a10.52 10.52 0 01-4.3 5.77M6.23 6.23L3 3m3.23 3.23l3.65 3.65m7.89 7.89L21 21m-3.23-3.23l-3.65-3.65m0 0a3 3 0 10-4.24-4.24m4.24 4.24L9.88 9.88"
                     />
-                    <path strokeLinecap="round" strokeLinejoin="round" d="M15 12a3 3 0 11-6 0 3 3 0 016 0z" />
-                  </>
-                )}
-              </svg>
-            </button>
+                  ) : (
+                    <>
+                      <path
+                        strokeLinecap="round"
+                        strokeLinejoin="round"
+                        d="M2.04 12.32a1 1 0 010-.64C3.42 7.51 7.36 4.5 12 4.5s8.57 3.01 9.96 7.18a1 1 0 010 .64C20.58 16.49 16.64 19.5 12 19.5s-8.57-3.01-9.96-7.18z"
+                      />
+                      <path strokeLinecap="round" strokeLinejoin="round" d="M15 12a3 3 0 11-6 0 3 3 0 016 0z" />
+                    </>
+                  )}
+                </svg>
+              </button>
+            )}
           </div>
         </header>
 
@@ -263,7 +283,7 @@ export default function RepoCard({
           )}
 
           <div className="flex flex-wrap items-center gap-2 mt-4">
-            <Link href={`/repo/${owner}/${repo.name}`} className="btn btn-soft btn-sm">
+            <Link href={`/repo/${repoOwner}/${repo.name}`} className="btn btn-soft btn-sm">
               {t("repo.deepDive")}
             </Link>
             <button
@@ -278,7 +298,7 @@ export default function RepoCard({
                   ? t("repo.commitHistory.hide")
                   : t("repo.commitHistory.load")}
             </button>
-            <WatchButton type="repo" label={`${owner}/${repo.name}`} size="sm" />
+            <WatchButton type="repo" label={repoFullName} size="sm" />
           </div>
 
           {historyError && (

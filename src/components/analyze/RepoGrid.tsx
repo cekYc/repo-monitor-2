@@ -120,6 +120,7 @@ export default function RepoGrid({
   const [dailyData, setDailyData] = useState<UserDailyActivityResponse | null>(null);
   const [dailyLoading, setDailyLoading] = useState(false);
   const fetchedDailyOwner = useRef<string | null>(null);
+  const dailyAbort = useRef<AbortController | null>(null);
 
   const [query, setQuery] = useState("");
   const [visibility, setVisibility] = useState<VisibilityFilter>("all");
@@ -158,6 +159,9 @@ export default function RepoGrid({
     [isSample]
   );
 
+  /** The daily endpoint streams snapshots (SSE): the repo list first, then line
+   *  stats as they arrive. Each snapshot replaces the previous one; the loading
+   *  flag only covers the wait for the first. */
   const fetchDaily = useCallback(
     async (targetOwner: string) => {
       if (!targetOwner) return;
@@ -166,29 +170,72 @@ export default function RepoGrid({
         fetchedDailyOwner.current = targetOwner.toLowerCase();
         return;
       }
+      dailyAbort.current?.abort();
+      const controller = new AbortController();
+      dailyAbort.current = controller;
       setDailyLoading(true);
+      let received = false;
       try {
         const res = await fetch(
           `/api/daily-activity?username=${encodeURIComponent(targetOwner)}`,
-          { headers: tokenHeaders() }
+          { headers: tokenHeaders(), signal: controller.signal }
         );
-        if (!res.ok) throw new Error("Failed to fetch daily activity");
-        const data = (await res.json()) as UserDailyActivityResponse;
-        setDailyData(data);
-        fetchedDailyOwner.current = targetOwner.toLowerCase();
+        if (!res.ok || !res.body) throw new Error("Failed to fetch daily activity");
+
+        const reader = res.body.getReader();
+        const decoder = new TextDecoder();
+        let buffer = "";
+        for (;;) {
+          const { done, value } = await reader.read();
+          if (done) break;
+          buffer += decoder.decode(value, { stream: true });
+          const chunks = buffer.split("\n\n");
+          buffer = chunks.pop() ?? "";
+
+          for (const chunk of chunks) {
+            let event = "";
+            let raw = "";
+            for (const line of chunk.trim().split("\n")) {
+              if (line.startsWith("event: ")) event = line.slice(7).trim();
+              else if (line.startsWith("data: ")) raw += line.slice(6);
+            }
+            if (event !== "snapshot" || !raw) continue;
+
+            let snapshot: UserDailyActivityResponse;
+            try {
+              snapshot = JSON.parse(raw) as UserDailyActivityResponse;
+            } catch {
+              continue;
+            }
+            setDailyData(snapshot);
+            if (!received) {
+              received = true;
+              fetchedDailyOwner.current = targetOwner.toLowerCase();
+              setDailyLoading(false);
+            }
+          }
+        }
       } catch {
-        setDailyData(null);
+        if (controller.signal.aborted) return;
+        if (!received) setDailyData(null);
       } finally {
-        setDailyLoading(false);
+        if (dailyAbort.current === controller) {
+          dailyAbort.current = null;
+          setDailyLoading(false);
+        }
       }
     },
     [isSample]
   );
 
+  // Stop a running daily stream when the grid goes away
+  useEffect(() => () => dailyAbort.current?.abort(), []);
+
   // Reset when analyzed owner changes
   useEffect(() => {
     setContributedRepos(null);
     fetchedOwner.current = null;
+    dailyAbort.current?.abort();
     setDailyData(null);
     fetchedDailyOwner.current = null;
     setTab("owned");
@@ -389,7 +436,7 @@ export default function RepoGrid({
                 <path strokeLinecap="round" strokeLinejoin="round" d="M6.75 3v2.25M17.25 3v2.25M3 18.75V7.5a2.25 2.25 0 012.25-2.25h13.5A2.25 2.25 0 0121 7.5v11.25m-18 0A2.25 2.25 0 005.25 21h13.5A2.25 2.25 0 0021 18.75m-18 0v-7.5A2.25 2.25 0 015.25 9h13.5A2.25 2.25 0 0121 11.25v7.5m-9-6h.008v.008H12v-.008zM12 15h.008v.008H12V15zm0 2.25h.008v.008H12v-.008zM9.75 15h.008v.008H9.75V15zm0 2.25h.008v.008H9.75v-.008zM7.5 15h.008v.008H7.5V15zm0 2.25h.008v.008H7.5v-.008zm6.75-4.5h.008v.008h-.008v-.008zm0 2.25h.008v.008h-.008V15zm0 2.25h.008v.008h-.008v-.008zm2.25-4.5h.008v.008H16.5v-.008zm0 2.25h.008v.008H16.5V15z" />
               </svg>
               <span>{t("repos.tab.daily")}</span>
-              {dailyLoading ? (
+              {dailyLoading || dailyData?.loading ? (
                 <span className="w-3.5 h-3.5 border-2 border-accent border-t-transparent rounded-full animate-spin inline-block ml-0.5" />
               ) : dailyData !== null ? (
                 <span

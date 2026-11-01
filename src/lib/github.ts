@@ -1092,7 +1092,8 @@ export interface RepoActivitySummary {
   totalCommits: number;
   totalAdditions: number;
   totalDeletions: number;
-  /** How many of totalCommits the line totals cover (GraphQL reads the latest 35). */
+  /** How many of totalCommits have been read with line stats so far (GraphQL
+   *  reads history page by page, capped per repository). */
   linesCommits: number;
   currentRepoBytes: number;
 }
@@ -1110,4 +1111,8 @@ export interface UserDailyActivityResponse {
     linesCommits: number;
   };
   source: "graphql" | "rest" | "sample";
+  /** True on every streamed snapshot but the last. */
+  loading?: boolean;
+  /** Repos (nameWithOwner, lower-cased) whose newest commits have not arrived yet. */
+  pendingRepos?: string[];
 }

@@ -13,6 +13,16 @@ import type {
 
 export const runtime = "nodejs";
 
+/* The tab fills in stages over one Server-Sent Events response. Every
+ * `snapshot` event carries the whole response as it stands, so the client only
+ * ever replaces its copy:
+ *   1. the repository list (creation days, commit totals), right away;
+ *   2. each repository's newest commits with line stats, a few repos at a time;
+ *   3. older commits page by page, until a repository's history since its
+ *      creation is read or MAX_HISTORY_PER_REPO is reached.
+ * The last snapshot has `loading: false`. Without a token (or when GraphQL is
+ * unavailable) a single REST snapshot is sent instead. */
+
 const REPO_FIELDS = `
   name
   nameWithOwner
@@ -48,9 +58,9 @@ const REPO_FIELDS = `
   }
 `;
 
-// Step 1 lists the repositories only. Asking for per-commit line stats of every
+// Stage 1 lists the repositories only. Asking for per-commit line stats of every
 // repository in this same query makes GitHub compute a couple of thousand diffs
-// at once, and the query times out; the history comes in step 2 instead.
+// at once, and the query times out; the history comes in stages 2 and 3.
 const DAILY_REPOS_GRAPHQL = `
   query($username: String!) {
     user(login: $username) {
@@ -89,10 +99,13 @@ const COMMIT_FIELDS = `
   }
 `;
 
-const OWNED_HISTORY_DEPTH = 35;
-const CONTRIBUTED_HISTORY_DEPTH = 30;
+const FIRST_PAGE_OWNED = 35;
+const FIRST_PAGE_CONTRIBUTED = 30;
+const NEXT_PAGE_SIZE = 50;
+const MAX_HISTORY_PER_REPO = 400;
 const HISTORY_BATCH_SIZE = 6;
 const HISTORY_CONCURRENCY = 3;
+const SNAPSHOT_INTERVAL_MS = 600;
 
 interface GqlCommitNode {
   oid: string;
@@ -135,19 +148,36 @@ interface GqlRepoNode {
     target?: {
       history?: {
         totalCount?: number;
+        pageInfo?: { hasNextPage: boolean; endCursor: string | null };
         nodes?: GqlCommitNode[];
       };
     };
-  };
+  } | null;
 }
 
-interface HistoryTarget {
-  owner: string;
-  name: string;
+interface RepoEntry {
+  key: string; // nameWithOwner, lower-cased
+  node: GqlRepoNode;
   isContributed: boolean;
 }
 
-const historyKey = (owner: string, name: string) => `${owner}/${name}`.toLowerCase();
+interface HistoryTarget {
+  key: string;
+  owner: string;
+  name: string;
+  isContributed: boolean;
+  /** Owned repos read only from their creation day on; older commits are inherited. */
+  since: string | null;
+  after: string | null;
+  first: number;
+}
+
+interface RepoHistory {
+  commits: GqlCommitNode[];
+  totalCount: number | null;
+  hasNextPage: boolean;
+  endCursor: string | null;
+}
 
 /** POSTs one GraphQL query. Failures are logged (never the token) and return
  *  null so the caller can degrade per repository instead of all at once. */
@@ -182,34 +212,43 @@ async function githubGraphql<T>(
   }
 }
 
-/** Step 2: commit history with line stats for a few repositories, one aliased
+/** One page of history with line stats for a few repositories, one aliased
  *  field each. Contributed repos are filtered to the user's commits on GitHub's
- *  side so the window is not spent on other people's work. */
+ *  side so the pages are not spent on other people's work. */
 function buildHistoryQuery(targets: HistoryTarget[]): string {
-  const needsAuthor = targets.some((t) => t.isContributed);
-  const vars = targets.map((_, i) => `$o${i}: String!, $n${i}: String!`);
-  if (needsAuthor) vars.push("$authorId: ID!");
+  const vars: string[] = [];
   const fields = targets.map((t, i) => {
-    const args = t.isContributed
-      ? `first: ${CONTRIBUTED_HISTORY_DEPTH}, author: { id: $authorId }`
-      : `first: ${OWNED_HISTORY_DEPTH}`;
+    vars.push(`$o${i}: String!`, `$n${i}: String!`, `$a${i}: String`);
+    const args = [`first: ${t.first}`, `after: $a${i}`];
+    if (t.isContributed) args.push("author: { id: $authorId }");
+    if (t.since) {
+      vars.push(`$s${i}: GitTimestamp`);
+      args.push(`since: $s${i}`);
+    }
     return `r${i}: repository(owner: $o${i}, name: $n${i}) {
-      defaultBranchRef { target { ... on Commit { history(${args}) { nodes { ${COMMIT_FIELDS} } } } } }
+      defaultBranchRef { target { ... on Commit { history(${args.join(", ")}) {
+        totalCount
+        pageInfo { hasNextPage endCursor }
+        nodes { ${COMMIT_FIELDS} }
+      } } } }
     }`;
   });
+  if (targets.some((t) => t.isContributed)) vars.push("$authorId: ID!");
   return `query(${vars.join(", ")}) {\n${fields.join("\n")}\n}`;
 }
 
-/** Returns each target's commits, or null for a target GitHub did not answer. */
+/** Returns each target's page, or null for a target GitHub did not answer. */
 async function fetchHistoryBatch(
   token: string,
   targets: HistoryTarget[],
   authorId: string
-): Promise<(GqlCommitNode[] | null)[]> {
+): Promise<(RepoHistory | null)[]> {
   const variables: Record<string, unknown> = {};
   targets.forEach((t, i) => {
     variables[`o${i}`] = t.owner;
     variables[`n${i}`] = t.name;
+    variables[`a${i}`] = t.after;
+    if (t.since) variables[`s${i}`] = t.since;
   });
   if (targets.some((t) => t.isContributed)) variables.authorId = authorId;
 
@@ -222,20 +261,29 @@ async function fetchHistoryBatch(
   return targets.map((_, i) => {
     const repo = data?.[`r${i}`];
     if (!repo) return null;
-    return repo.defaultBranchRef?.target?.history?.nodes ?? [];
+    const history = repo.defaultBranchRef?.target?.history;
+    // An empty repository has no default branch: nothing to read, not a failure.
+    if (!history) return { commits: [], totalCount: 0, hasNextPage: false, endCursor: null };
+    return {
+      commits: history.nodes ?? [],
+      totalCount: history.totalCount ?? null,
+      hasNextPage: history.pageInfo?.hasNextPage ?? false,
+      endCursor: history.pageInfo?.endCursor ?? null,
+    };
   });
 }
 
-/** Line stats are expensive for GitHub to compute, so histories are fetched in
+/** Line stats are expensive for GitHub to compute, so pages are fetched in
  *  small batches a few at a time. A repo whose batch fails is retried on its
- *  own; one that still fails is simply missing from the map and the UI shows
- *  it without line stats. */
-async function fetchHistories(
+ *  own; when that fails too it is reported as null. */
+async function runHistoryBatches(
   token: string,
   targets: HistoryTarget[],
-  authorId: string
-): Promise<Map<string, GqlCommitNode[]>> {
-  const out = new Map<string, GqlCommitNode[]>();
+  authorId: string,
+  onPage: (target: HistoryTarget, page: RepoHistory | null) => void,
+  afterBatch: () => void,
+  isCancelled: () => boolean
+): Promise<void> {
   const batches: HistoryTarget[][] = [];
   for (let i = 0; i < targets.length; i += HISTORY_BATCH_SIZE) {
     batches.push(targets.slice(i, i + HISTORY_BATCH_SIZE));
@@ -243,22 +291,22 @@ async function fetchHistories(
 
   let next = 0;
   const worker = async () => {
-    while (next < batches.length) {
+    while (next < batches.length && !isCancelled()) {
       const batch = batches[next++];
       const results = await fetchHistoryBatch(token, batch, authorId);
       for (let i = 0; i < batch.length; i++) {
-        let commits = results[i];
-        if (commits === null && batch.length > 1) {
-          commits = (await fetchHistoryBatch(token, [batch[i]], authorId))[0];
+        let page = results[i];
+        if (page === null && batch.length > 1 && !isCancelled()) {
+          page = (await fetchHistoryBatch(token, [batch[i]], authorId))[0];
         }
-        if (commits !== null) out.set(historyKey(batch[i].owner, batch[i].name), commits);
+        onPage(batch[i], page);
       }
+      afterBatch();
     }
   };
   await Promise.all(
     Array.from({ length: Math.min(HISTORY_CONCURRENCY, batches.length) }, worker)
   );
-  return out;
 }
 
 function ensureDay(map: Map<string, DailyActivityEntry>, date: string): DailyActivityEntry {
@@ -281,7 +329,8 @@ function finalizeResponse(
   username: string,
   dayMap: Map<string, DailyActivityEntry>,
   repoSummaries: RepoActivitySummary[],
-  source: "graphql" | "rest"
+  source: "graphql" | "rest",
+  progress: { loading: boolean; pendingRepos: string[] } = { loading: false, pendingRepos: [] }
 ): UserDailyActivityResponse {
   const days = Array.from(dayMap.values()).sort((a, b) => b.date.localeCompare(a.date));
 
@@ -317,7 +366,422 @@ function finalizeResponse(
     repoSummaries,
     totals,
     source,
+    loading: progress.loading,
+    pendingRepos: progress.pendingRepos,
   };
+}
+
+/** Builds the response from whatever history has arrived so far. Pure: every
+ *  snapshot is recomputed from scratch, so de-duplication and ordering stay
+ *  the same however the pages arrived. */
+function buildGraphqlResponse(
+  username: string,
+  normalizedUser: string,
+  entries: RepoEntry[],
+  histories: Map<string, RepoHistory>,
+  pending: Set<string>,
+  loading: boolean
+): UserDailyActivityResponse {
+  const dayMap = new Map<string, DailyActivityEntry>();
+  const repoSummaries: RepoActivitySummary[] = [];
+  const seenCommitShas = new Set<string>();
+
+  // entries are sorted oldest-created first so inherited/cloned commit SHAs are
+  // attributed to the original repo
+  for (const { key, node, isContributed } of entries) {
+    const totalRepoBytes =
+      node.languages?.totalSize || (node.diskUsage ? node.diskUsage * 1024 : 0);
+    const primaryLanguage = node.languages?.edges?.[0]?.node?.name ?? null;
+    const createdDay = node.createdAt ? node.createdAt.slice(0, 10) : "";
+
+    // Record repo creation on its exact creation date (for owned repos)
+    if (!isContributed && createdDay) {
+      const dayEntry = ensureDay(dayMap, createdDay);
+      const createdItem: DailyRepoCreated = {
+        repoName: node.name,
+        fullName: node.nameWithOwner,
+        htmlUrl: node.url,
+        description: node.description,
+        createdAt: node.createdAt,
+        private: node.isPrivate,
+        primaryLanguage,
+        totalBytes: totalRepoBytes,
+        stars: node.stargazerCount || 0,
+      };
+      dayEntry.reposCreated.push(createdItem);
+    }
+
+    // Commits read so far (none while pending or when the history failed)
+    const history = histories.get(key);
+    const readCommits = (history?.commits ?? []).filter((c) => {
+      if (!c.committedDate) return false;
+      // Do not attribute commits dated before the repository itself was created
+      if (createdDay && c.committedDate.slice(0, 10) < createdDay) return false;
+      // Do not duplicate commits inherited from an older repository
+      if (seenCommitShas.has(c.oid)) return false;
+      seenCommitShas.add(c.oid);
+      return true;
+    });
+    const userCommits = readCommits.filter((c) => {
+      const authorLogin = c.author?.user?.login?.toLowerCase();
+      const authorName = c.author?.name?.toLowerCase();
+      if (authorLogin === normalizedUser || authorName === normalizedUser) {
+        return true;
+      }
+      // In owned repos, if GitHub user mapping is unlinked on git config, include it
+      return !isContributed && !authorLogin;
+    });
+
+    const repoDayCommits = new Map<string, DailyCommitDetail[]>();
+    let repoTotalAdditions = 0;
+    let repoTotalDeletions = 0;
+
+    for (const c of userCommits) {
+      const dateKey = c.committedDate.slice(0, 10);
+      const additions = c.additions || 0;
+      const deletions = c.deletions || 0;
+
+      repoTotalAdditions += additions;
+      repoTotalDeletions += deletions;
+
+      const detail: DailyCommitDetail = {
+        sha: c.oid,
+        shortSha: c.oid.slice(0, 7),
+        message: c.messageHeadline || "Commit",
+        timestamp: c.committedDate,
+        url: c.url,
+        additions,
+        deletions,
+      };
+
+      const list = repoDayCommits.get(dateKey) ?? [];
+      list.push(detail);
+      repoDayCommits.set(dateKey, list);
+    }
+
+    for (const [dateKey, commits] of repoDayCommits.entries()) {
+      const dayEntry = ensureDay(dayMap, dateKey);
+      const repoCommitEntry: DailyRepoCommitActivity = {
+        repoName: node.name,
+        fullName: node.nameWithOwner,
+        ownerLogin: node.owner.login,
+        ownerAvatar: node.owner.avatarUrl,
+        htmlUrl: node.url,
+        isContributed,
+        private: node.isPrivate,
+        primaryLanguage,
+        totalRepoBytes,
+        commitCount: commits.length,
+        additions: commits.reduce((s, c) => s + (c.additions ?? 0), 0),
+        deletions: commits.reduce((s, c) => s + (c.deletions ?? 0), 0),
+        linesKnown: true,
+        commits,
+      };
+      dayEntry.repoCommits.push(repoCommitEntry);
+    }
+
+    // The stage-2/3 count starts at the creation day; the stage-1 count, used
+    // until then, still includes inherited history.
+    const listedTotal = node.defaultBranchRef?.target?.history?.totalCount ?? 0;
+    const historyTotal = history?.totalCount ?? (isContributed ? 0 : listedTotal);
+    const sortedDates = Array.from(repoDayCommits.keys()).sort();
+
+    if (!isContributed || userCommits.length > 0) {
+      repoSummaries.push({
+        repoName: node.name,
+        fullName: node.nameWithOwner,
+        htmlUrl: node.url,
+        isContributed,
+        private: node.isPrivate,
+        primaryLanguage,
+        createdAt: node.createdAt,
+        firstCommitDate: sortedDates[0] ?? (createdDay || null),
+        lastCommitDate:
+          sortedDates[sortedDates.length - 1] ??
+          (node.pushedAt ? node.pushedAt.slice(0, 10) : null),
+        activeDays: sortedDates.length,
+        totalCommits: Math.max(userCommits.length, historyTotal),
+        totalAdditions: repoTotalAdditions,
+        totalDeletions: repoTotalDeletions,
+        linesCommits: readCommits.length,
+        currentRepoBytes: totalRepoBytes,
+      });
+    }
+  }
+
+  return finalizeResponse(username, dayMap, repoSummaries, "graphql", {
+    loading,
+    pendingRepos: Array.from(pending),
+  });
+}
+
+/** Stages 1–3 for a token holder. Returns false only when the repository list
+ *  itself could not be read, so the caller can fall back to REST. */
+async function streamGraphqlActivity(
+  token: string,
+  username: string,
+  normalizedUser: string,
+  emit: (snapshot: UserDailyActivityResponse) => void,
+  isCancelled: () => boolean
+): Promise<boolean> {
+  const reposData = await githubGraphql<{
+    user: {
+      id: string;
+      repositories?: { nodes?: (GqlRepoNode | null)[] };
+      repositoriesContributedTo?: { nodes?: (GqlRepoNode | null)[] };
+    } | null;
+  }>(token, DAILY_REPOS_GRAPHQL, { username }, "repositories");
+  const userNode = reposData?.user;
+  if (!userNode) return false;
+
+  const ownedNodes = (userNode.repositories?.nodes ?? []).filter(
+    (n): n is GqlRepoNode => Boolean(n?.nameWithOwner)
+  );
+  const contributedNodes = (userNode.repositoriesContributedTo?.nodes ?? []).filter(
+    (n): n is GqlRepoNode =>
+      Boolean(n?.nameWithOwner) && n?.owner?.login?.toLowerCase() !== normalizedUser
+  );
+
+  const seenRepos = new Set<string>();
+  const entries: RepoEntry[] = [
+    ...ownedNodes.map((node) => ({ node, isContributed: false })),
+    ...contributedNodes.map((node) => ({ node, isContributed: true })),
+  ]
+    .sort((a, b) => (a.node.createdAt || "").localeCompare(b.node.createdAt || ""))
+    .map((e) => ({ ...e, key: e.node.nameWithOwner.toLowerCase() }))
+    .filter((e) => {
+      if (seenRepos.has(e.key)) return false;
+      seenRepos.add(e.key);
+      return true;
+    });
+
+  const histories = new Map<string, RepoHistory>();
+  const pending = new Set(entries.map((e) => e.key));
+  const snapshot = (loading: boolean) =>
+    buildGraphqlResponse(username, normalizedUser, entries, histories, pending, loading);
+
+  const toTarget = (e: RepoEntry, after: string | null, first: number): HistoryTarget => ({
+    key: e.key,
+    owner: e.node.owner.login,
+    name: e.node.name,
+    isContributed: e.isContributed,
+    since: !e.isContributed && e.node.createdAt ? `${e.node.createdAt.slice(0, 10)}T00:00:00Z` : null,
+    after,
+    first,
+  });
+
+  const onPage = (target: HistoryTarget, page: RepoHistory | null) => {
+    pending.delete(target.key);
+    const prev = histories.get(target.key);
+    if (!page) {
+      // Keep what was read; just stop paging this repository.
+      if (prev) prev.hasNextPage = false;
+      return;
+    }
+    histories.set(target.key, {
+      commits: prev ? [...prev.commits, ...page.commits] : page.commits,
+      totalCount: page.totalCount ?? prev?.totalCount ?? null,
+      hasNextPage: page.hasNextPage && page.commits.length > 0,
+      endCursor: page.endCursor,
+    });
+  };
+
+  let lastEmit = Date.now();
+  const emitThrottled = () => {
+    if (Date.now() - lastEmit < SNAPSHOT_INTERVAL_MS) return;
+    lastEmit = Date.now();
+    emit(snapshot(true));
+  };
+
+  emit(snapshot(true));
+  try {
+    // Stage 2: the newest commits of every repository
+    await runHistoryBatches(
+      token,
+      entries.map((e) =>
+        toTarget(e, null, e.isContributed ? FIRST_PAGE_CONTRIBUTED : FIRST_PAGE_OWNED)
+      ),
+      userNode.id,
+      onPage,
+      emitThrottled,
+      isCancelled
+    );
+
+    // Stage 3: older pages until each history is read or capped
+    while (!isCancelled()) {
+      const more = entries.filter((e) => {
+        const h = histories.get(e.key);
+        return Boolean(h?.hasNextPage && h.endCursor && h.commits.length < MAX_HISTORY_PER_REPO);
+      });
+      if (more.length === 0) break;
+      await runHistoryBatches(
+        token,
+        more.map((e) => toTarget(e, histories.get(e.key)?.endCursor ?? null, NEXT_PAGE_SIZE)),
+        userNode.id,
+        onPage,
+        emitThrottled,
+        isCancelled
+      );
+    }
+  } catch (err) {
+    console.warn(
+      `[daily-activity] history stopped early: ${err instanceof Error ? err.message : "unknown error"}`
+    );
+  }
+
+  pending.clear();
+  emit(snapshot(false));
+  return true;
+}
+
+/** Token-less (or GraphQL-less) path: public repositories only and no line
+ *  stats, since those would cost one REST request per commit. */
+async function buildRestResponse(
+  username: string,
+  octokit: Octokit
+): Promise<UserDailyActivityResponse> {
+  const dayMap = new Map<string, DailyActivityEntry>();
+  const repoSummaries: RepoActivitySummary[] = [];
+
+  const { data: repos } = await octokit.repos.listForUser({
+    username,
+    type: "owner",
+    per_page: 100,
+    sort: "pushed",
+  });
+
+  const ownRepos = repos.filter((r) => !r.fork);
+
+  // Record creation dates for all owned repos
+  for (const r of ownRepos) {
+    if (!r.created_at) continue;
+    const createdDay = r.created_at.slice(0, 10);
+    const dayEntry = ensureDay(dayMap, createdDay);
+    const totalBytes = (r.size || 0) * 1024;
+    dayEntry.reposCreated.push({
+      repoName: r.name,
+      fullName: r.full_name,
+      htmlUrl: r.html_url,
+      description: r.description,
+      createdAt: r.created_at,
+      private: r.private ?? false,
+      primaryLanguage: r.language ?? null,
+      totalBytes,
+      stars: r.stargazers_count ?? 0,
+    });
+  }
+
+  // Fetch commit histories for owned repos (up to 35 repos in batches, sorted oldest-created first for SHA deduplication)
+  const targetRepos = [...ownRepos.slice(0, 35)].sort((a, b) =>
+    (a.created_at || "").localeCompare(b.created_at || "")
+  );
+  const seenCommitShas = new Set<string>();
+  const BATCH_SIZE = 7;
+
+  for (let i = 0; i < targetRepos.length; i += BATCH_SIZE) {
+    const batch = targetRepos.slice(i, i + BATCH_SIZE);
+    const batchFetched = await Promise.all(
+      batch.map(async (r) => {
+        try {
+          const { data: commits } = await octokit.repos.listCommits({
+            owner: username,
+            repo: r.name,
+            per_page: 30,
+          });
+          return { repo: r, commits };
+        } catch {
+          return null;
+        }
+      })
+    );
+
+    for (const item of batchFetched) {
+      if (!item) continue;
+      const { repo: r, commits: rawCommits } = item;
+      const createdDay = r.created_at ? r.created_at.slice(0, 10) : "";
+
+      // Filter out commits dated before the repo was created or inherited from an older repo
+      const commits = rawCommits.filter((c) => {
+        const dateIso = c.commit.author?.date || c.commit.committer?.date;
+        if (!dateIso) return false;
+        const dateKey = dateIso.slice(0, 10);
+        if (createdDay && dateKey < createdDay) return false;
+        if (seenCommitShas.has(c.sha)) return false;
+        return true;
+      });
+
+      const totalRepoBytes = (r.size || 0) * 1024;
+      const repoDayCommits = new Map<string, DailyCommitDetail[]>();
+
+      // The REST commit list carries no line stats (that would cost one request
+      // per commit), so additions/deletions stay unknown rather than estimated.
+      for (const c of commits) {
+        seenCommitShas.add(c.sha);
+        const dateIso = c.commit.author?.date || c.commit.committer?.date;
+        if (!dateIso) continue;
+        const dateKey = dateIso.slice(0, 10);
+
+        const detail: DailyCommitDetail = {
+          sha: c.sha,
+          shortSha: c.sha.slice(0, 7),
+          message: (c.commit.message || "Commit").split("\n")[0],
+          timestamp: dateIso,
+          url: c.html_url,
+          additions: null,
+          deletions: null,
+        };
+
+        const list = repoDayCommits.get(dateKey) ?? [];
+        list.push(detail);
+        repoDayCommits.set(dateKey, list);
+      }
+
+      for (const [dateKey, dayCommits] of repoDayCommits.entries()) {
+        const dayEntry = ensureDay(dayMap, dateKey);
+
+        dayEntry.repoCommits.push({
+          repoName: r.name,
+          fullName: r.full_name,
+          ownerLogin: r.owner.login,
+          ownerAvatar: r.owner.avatar_url,
+          htmlUrl: r.html_url,
+          isContributed: false,
+          private: r.private ?? false,
+          primaryLanguage: r.language ?? null,
+          totalRepoBytes,
+          commitCount: dayCommits.length,
+          additions: 0,
+          deletions: 0,
+          linesKnown: false,
+          commits: dayCommits,
+        });
+      }
+
+      const sortedDates = Array.from(repoDayCommits.keys()).sort();
+      repoSummaries.push({
+        repoName: r.name,
+        fullName: r.full_name,
+        htmlUrl: r.html_url,
+        isContributed: false,
+        private: r.private ?? false,
+        primaryLanguage: r.language ?? null,
+        createdAt: r.created_at || "",
+        firstCommitDate:
+          sortedDates[0] ?? (r.created_at ? r.created_at.slice(0, 10) : null),
+        lastCommitDate:
+          sortedDates[sortedDates.length - 1] ??
+          (r.pushed_at ? r.pushed_at.slice(0, 10) : null),
+        activeDays: Math.max(sortedDates.length, commits.length > 0 ? 1 : 0),
+        totalCommits: commits.length,
+        totalAdditions: 0,
+        totalDeletions: 0,
+        linesCommits: 0,
+        currentRepoBytes: totalRepoBytes,
+      });
+    }
+  }
+
+  return finalizeResponse(username, dayMap, repoSummaries, "rest");
 }
 
 export async function GET(request: NextRequest) {
@@ -327,346 +791,59 @@ export async function GET(request: NextRequest) {
   }
 
   const normalizedUser = username.toLowerCase();
-  if (normalizedUser === "sample" || normalizedUser.startsWith("octo-sample")) {
-    return NextResponse.json(buildSampleDailyActivity());
-  }
-
+  const isSample = normalizedUser === "sample" || normalizedUser.startsWith("octo-sample");
   const { token } = await resolveToken(request);
-  const octokit = token ? new Octokit({ auth: token }) : new Octokit();
 
-  // 1. GraphQL when a token is available: repository list, then line stats
-  if (token) {
-    try {
-      const reposData = await githubGraphql<{
-        user: {
-          id: string;
-          repositories?: { nodes?: (GqlRepoNode | null)[] };
-          repositoriesContributedTo?: { nodes?: (GqlRepoNode | null)[] };
-        } | null;
-      }>(token, DAILY_REPOS_GRAPHQL, { username }, "repositories");
-      const userNode = reposData?.user;
+  const encoder = new TextEncoder();
+  let cancelled = false;
 
-      if (userNode) {
-        const ownedNodes = (userNode.repositories?.nodes ?? []).filter(
-          (n): n is GqlRepoNode => Boolean(n?.nameWithOwner)
-        );
-        const contributedNodes = (userNode.repositoriesContributedTo?.nodes ?? []).filter(
-          (n): n is GqlRepoNode =>
-            Boolean(n?.nameWithOwner) && n?.owner?.login?.toLowerCase() !== normalizedUser
-        );
+  const stream = new ReadableStream({
+    async start(controller) {
+      const send = (event: string, data: unknown) => {
+        if (cancelled) return;
+        controller.enqueue(encoder.encode(`event: ${event}\ndata: ${JSON.stringify(data)}\n\n`));
+      };
 
-        const dayMap = new Map<string, DailyActivityEntry>();
-        const repoSummaries: RepoActivitySummary[] = [];
-        const seenRepos = new Set<string>();
-        const seenCommitShas = new Set<string>();
-
-        // Process older repos first so inherited/cloned commit SHAs are attributed to the original repo
-        const allRepoEntries = [
-          ...ownedNodes.map((node) => ({ node, isContributed: false })),
-          ...contributedNodes.map((node) => ({ node, isContributed: true })),
-        ].sort((a, b) => (a.node.createdAt || "").localeCompare(b.node.createdAt || ""));
-
-        const histories = await fetchHistories(
-          token,
-          allRepoEntries.map(({ node, isContributed }) => ({
-            owner: node.owner.login,
-            name: node.name,
-            isContributed,
-          })),
-          userNode.id
-        );
-
-        for (const { node, isContributed } of allRepoEntries) {
-          if (!node || !node.nameWithOwner) continue;
-          const key = node.nameWithOwner.toLowerCase();
-          if (seenRepos.has(key)) continue;
-          seenRepos.add(key);
-
-          const totalRepoBytes =
-            node.languages?.totalSize || (node.diskUsage ? node.diskUsage * 1024 : 0);
-          const primaryLanguage = node.languages?.edges?.[0]?.node?.name ?? null;
-          const createdDay = node.createdAt ? node.createdAt.slice(0, 10) : "";
-
-          // Record repo creation on its exact creation date (for owned repos)
-          if (!isContributed && createdDay) {
-            const dayEntry = ensureDay(dayMap, createdDay);
-            const createdItem: DailyRepoCreated = {
-              repoName: node.name,
-              fullName: node.nameWithOwner,
-              htmlUrl: node.url,
-              description: node.description,
-              createdAt: node.createdAt,
-              private: node.isPrivate,
-              primaryLanguage,
-              totalBytes: totalRepoBytes,
-              stars: node.stargazerCount || 0,
-            };
-            dayEntry.reposCreated.push(createdItem);
-          }
-
-          // Process commits in repository history (empty when step 2 failed for it)
-          const rawCommits = histories.get(historyKey(node.owner.login, node.name)) ?? [];
-          const userCommits = rawCommits.filter((c) => {
-            if (!c.committedDate) return false;
-            const commitDay = c.committedDate.slice(0, 10);
-            // Do not attribute commits dated before the repository itself was created
-            if (createdDay && commitDay < createdDay) return false;
-            // Do not duplicate commits inherited from an older repository
-            if (seenCommitShas.has(c.oid)) return false;
-
-            const authorLogin = c.author?.user?.login?.toLowerCase();
-            const authorName = c.author?.name?.toLowerCase();
-            if (authorLogin === normalizedUser || authorName === normalizedUser) {
-              return true;
-            }
-            // In owned repos, if GitHub user mapping is unlinked on git config, include it
-            if (!isContributed && !authorLogin) {
-              return true;
-            }
-            return false;
-          });
-
-          const repoDayCommits = new Map<string, DailyCommitDetail[]>();
-          let repoTotalAdditions = 0;
-          let repoTotalDeletions = 0;
-
-          for (const c of userCommits) {
-            if (!c.committedDate) continue;
-            seenCommitShas.add(c.oid);
-            const dateKey = c.committedDate.slice(0, 10);
-            const additions = c.additions || 0;
-            const deletions = c.deletions || 0;
-
-            repoTotalAdditions += additions;
-            repoTotalDeletions += deletions;
-
-            const detail: DailyCommitDetail = {
-              sha: c.oid,
-              shortSha: c.oid.slice(0, 7),
-              message: c.messageHeadline || "Commit",
-              timestamp: c.committedDate,
-              url: c.url,
-              additions,
-              deletions,
-            };
-
-            const list = repoDayCommits.get(dateKey) ?? [];
-            list.push(detail);
-            repoDayCommits.set(dateKey, list);
-          }
-
-          for (const [dateKey, commits] of repoDayCommits.entries()) {
-            const dayEntry = ensureDay(dayMap, dateKey);
-            const additions = commits.reduce((s, c) => s + (c.additions ?? 0), 0);
-            const deletions = commits.reduce((s, c) => s + (c.deletions ?? 0), 0);
-
-            const repoCommitEntry: DailyRepoCommitActivity = {
-              repoName: node.name,
-              fullName: node.nameWithOwner,
-              ownerLogin: node.owner.login,
-              ownerAvatar: node.owner.avatarUrl,
-              htmlUrl: node.url,
-              isContributed,
-              private: node.isPrivate,
-              primaryLanguage,
-              totalRepoBytes,
-              commitCount: commits.length,
-              additions,
-              deletions,
-              linesKnown: true,
-              commits,
-            };
-
-            dayEntry.repoCommits.push(repoCommitEntry);
-          }
-
-          const sortedDates = Array.from(repoDayCommits.keys()).sort();
-          const historyTotal = node.defaultBranchRef?.target?.history?.totalCount ?? userCommits.length;
-          const effectiveTotalCommits = isContributed
-            ? userCommits.length
-            : Math.max(userCommits.length, historyTotal);
-
-          if (!isContributed || userCommits.length > 0) {
-            repoSummaries.push({
-              repoName: node.name,
-              fullName: node.nameWithOwner,
-              htmlUrl: node.url,
-              isContributed,
-              private: node.isPrivate,
-              primaryLanguage,
-              createdAt: node.createdAt,
-              firstCommitDate: sortedDates[0] ?? (node.createdAt ? node.createdAt.slice(0, 10) : null),
-              lastCommitDate:
-                sortedDates[sortedDates.length - 1] ??
-                (node.pushedAt ? node.pushedAt.slice(0, 10) : null),
-              activeDays: Math.max(sortedDates.length, userCommits.length > 0 ? 1 : 0),
-              totalCommits: effectiveTotalCommits,
-              totalAdditions: repoTotalAdditions,
-              totalDeletions: repoTotalDeletions,
-              linesCommits: userCommits.length,
-              currentRepoBytes: totalRepoBytes,
-            });
-          }
+      try {
+        if (isSample) {
+          send("snapshot", buildSampleDailyActivity());
+          return;
         }
 
-        return NextResponse.json(
-          finalizeResponse(username, dayMap, repoSummaries, "graphql")
-        );
-      }
-    } catch (err) {
-      console.warn(
-        `[daily-activity] falling back to REST: ${err instanceof Error ? err.message : "unknown error"}`
-      );
-    }
-  }
+        // 1. GraphQL when a token is available, streamed in stages
+        if (token) {
+          const streamed = await streamGraphqlActivity(
+            token,
+            username,
+            normalizedUser,
+            (snapshot) => send("snapshot", snapshot),
+            () => cancelled
+          );
+          if (streamed) return;
+        }
 
-  // 2. REST Fallback (works without token or when GraphQL fails)
-  try {
-    const dayMap = new Map<string, DailyActivityEntry>();
-    const repoSummaries: RepoActivitySummary[] = [];
-
-    const { data: repos } = await octokit.repos.listForUser({
-      username,
-      type: "owner",
-      per_page: 100,
-      sort: "pushed",
-    });
-
-    const ownRepos = repos.filter((r) => !r.fork);
-
-    // Record creation dates for all owned repos
-    for (const r of ownRepos) {
-      if (!r.created_at) continue;
-      const createdDay = r.created_at.slice(0, 10);
-      const dayEntry = ensureDay(dayMap, createdDay);
-      const totalBytes = (r.size || 0) * 1024;
-      dayEntry.reposCreated.push({
-        repoName: r.name,
-        fullName: r.full_name,
-        htmlUrl: r.html_url,
-        description: r.description,
-        createdAt: r.created_at,
-        private: r.private ?? false,
-        primaryLanguage: r.language ?? null,
-        totalBytes,
-        stars: r.stargazers_count ?? 0,
-      });
-    }
-
-    // Fetch commit histories for owned repos (up to 35 repos in batches, sorted oldest-created first for SHA deduplication)
-    const targetRepos = [...ownRepos.slice(0, 35)].sort((a, b) =>
-      (a.created_at || "").localeCompare(b.created_at || "")
-    );
-    const seenCommitShas = new Set<string>();
-    const BATCH_SIZE = 7;
-
-    for (let i = 0; i < targetRepos.length; i += BATCH_SIZE) {
-      const batch = targetRepos.slice(i, i + BATCH_SIZE);
-      const batchFetched = await Promise.all(
-        batch.map(async (r) => {
-          try {
-            const { data: commits } = await octokit.repos.listCommits({
-              owner: username,
-              repo: r.name,
-              per_page: 30,
-            });
-            return { repo: r, commits };
-          } catch {
-            return null;
-          }
-        })
-      );
-
-      for (const item of batchFetched) {
-        if (!item) continue;
-        const { repo: r, commits: rawCommits } = item;
-        const createdDay = r.created_at ? r.created_at.slice(0, 10) : "";
-
-        // Filter out commits dated before the repo was created or inherited from an older repo
-        const commits = rawCommits.filter((c) => {
-          const dateIso = c.commit.author?.date || c.commit.committer?.date;
-          if (!dateIso) return false;
-          const dateKey = dateIso.slice(0, 10);
-          if (createdDay && dateKey < createdDay) return false;
-          if (seenCommitShas.has(c.sha)) return false;
-          return true;
+        // 2. REST fallback (works without token or when GraphQL fails)
+        const octokit = token ? new Octokit({ auth: token }) : new Octokit();
+        send("snapshot", await buildRestResponse(username, octokit));
+      } catch (err: unknown) {
+        send("error", {
+          error: err instanceof Error ? err.message : "Failed to fetch daily activity",
         });
-
-        const totalRepoBytes = (r.size || 0) * 1024;
-        const repoDayCommits = new Map<string, DailyCommitDetail[]>();
-
-        // The REST commit list carries no line stats (that would cost one request
-        // per commit), so additions/deletions stay unknown rather than estimated.
-        for (const c of commits) {
-          seenCommitShas.add(c.sha);
-          const dateIso = c.commit.author?.date || c.commit.committer?.date;
-          if (!dateIso) continue;
-          const dateKey = dateIso.slice(0, 10);
-
-          const detail: DailyCommitDetail = {
-            sha: c.sha,
-            shortSha: c.sha.slice(0, 7),
-            message: (c.commit.message || "Commit").split("\n")[0],
-            timestamp: dateIso,
-            url: c.html_url,
-            additions: null,
-            deletions: null,
-          };
-
-          const list = repoDayCommits.get(dateKey) ?? [];
-          list.push(detail);
-          repoDayCommits.set(dateKey, list);
-        }
-
-        for (const [dateKey, dayCommits] of repoDayCommits.entries()) {
-          const dayEntry = ensureDay(dayMap, dateKey);
-
-          dayEntry.repoCommits.push({
-            repoName: r.name,
-            fullName: r.full_name,
-            ownerLogin: r.owner.login,
-            ownerAvatar: r.owner.avatar_url,
-            htmlUrl: r.html_url,
-            isContributed: false,
-            private: r.private ?? false,
-            primaryLanguage: r.language ?? null,
-            totalRepoBytes,
-            commitCount: dayCommits.length,
-            additions: 0,
-            deletions: 0,
-            linesKnown: false,
-            commits: dayCommits,
-          });
-        }
-
-        const sortedDates = Array.from(repoDayCommits.keys()).sort();
-        repoSummaries.push({
-          repoName: r.name,
-          fullName: r.full_name,
-          htmlUrl: r.html_url,
-          isContributed: false,
-          private: r.private ?? false,
-          primaryLanguage: r.language ?? null,
-          createdAt: r.created_at || "",
-          firstCommitDate:
-            sortedDates[0] ?? (r.created_at ? r.created_at.slice(0, 10) : null),
-          lastCommitDate:
-            sortedDates[sortedDates.length - 1] ??
-            (r.pushed_at ? r.pushed_at.slice(0, 10) : null),
-          activeDays: Math.max(sortedDates.length, commits.length > 0 ? 1 : 0),
-          totalCommits: commits.length,
-          totalAdditions: 0,
-          totalDeletions: 0,
-          linesCommits: 0,
-          currentRepoBytes: totalRepoBytes,
-        });
+      } finally {
+        if (!cancelled) controller.close();
       }
-    }
+    },
+    cancel() {
+      // The visitor left the tab: stop spending their API quota on pages nobody reads.
+      cancelled = true;
+    },
+  });
 
-    return NextResponse.json(finalizeResponse(username, dayMap, repoSummaries, "rest"));
-  } catch (err: unknown) {
-    const message = err instanceof Error ? err.message : "Failed to fetch daily activity";
-    return NextResponse.json({ error: message }, { status: 500 });
-  }
+  return new Response(stream, {
+    headers: {
+      "Content-Type": "text/event-stream",
+      "Cache-Control": "no-cache",
+      Connection: "keep-alive",
+    },
+  });
 }
-

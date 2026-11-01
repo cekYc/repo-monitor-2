@@ -35,6 +35,9 @@ function mergeWithClientRepos(
 ): UserDailyActivityResponse {
   const dayMap = new Map<string, DailyActivityEntry>();
   const summaryMap = new Map<string, RepoActivitySummary>();
+  // Repos whose commits are still streaming in get no client-side stand-in:
+  // their real commits are on the way.
+  const pendingRepos = new Set(apiData?.pendingRepos ?? []);
 
   const ensureDay = (date: string): DailyActivityEntry => {
     let d = dayMap.get(date);
@@ -178,7 +181,7 @@ function mergeWithClientRepos(
       )
     );
 
-    if (!hasApiCommitsForRepo && commitDates.length > 0) {
+    if (!hasApiCommitsForRepo && !pendingRepos.has(fullKey) && commitDates.length > 0) {
       // commitDates holds one entry per active day, so the per-day count is a
       // lower bound. An empty `commits` list marks it as such for the UI.
       const countsByDay = new Map<string, number>();
@@ -278,6 +281,8 @@ function mergeWithClientRepos(
       linesCommits: repoSummaries.reduce((s, r) => s + r.linesCommits, 0),
     },
     source: apiData?.source ?? "rest",
+    loading: apiData?.loading ?? false,
+    pendingRepos: apiData?.pendingRepos ?? [],
   };
 }
 
@@ -465,13 +470,18 @@ export default function DailyActivityTab({
   const { totals } = merged;
   const hasLines = totals.linesCommits > 0;
   const netLines = totals.totalAdditions - totals.totalDeletions;
-  const linesCaption = hasLines
-    ? t("daily.lines.coverage")
+  const pendingRepos = new Set(merged.pendingRepos ?? []);
+  const linesCaption = merged.loading
+    ? t("daily.lines.loading")
         .replace("{n}", fmt.num(totals.linesCommits))
         .replace("{m}", fmt.num(totals.totalCommits))
-    : merged.source === "rest"
-      ? t("daily.lines.signIn")
-      : t("daily.lines.none");
+    : hasLines
+      ? t("daily.lines.coverage")
+          .replace("{n}", fmt.num(totals.linesCommits))
+          .replace("{m}", fmt.num(totals.totalCommits))
+      : merged.source === "rest"
+        ? t("daily.lines.signIn")
+        : t("daily.lines.none");
 
   const visibleDays = showAllDays ? filteredDays : filteredDays.slice(0, INITIAL_DAYS_SHOWN);
 
@@ -514,7 +524,15 @@ export default function DailyActivityTab({
           ) : (
             <span className="mt-2 t-stat text-faint">—</span>
           )}
-          <p className="t-caption text-faint tnum mt-1">{linesCaption}</p>
+          <p className="t-caption text-faint tnum mt-1 flex items-center gap-1.5">
+            {merged.loading && (
+              <span
+                className="w-3 h-3 border-2 border-accent border-t-transparent rounded-full animate-spin inline-block shrink-0"
+                aria-hidden
+              />
+            )}
+            {linesCaption}
+          </p>
         </div>
 
         <div className="card p-3.5 flex flex-col justify-between">
@@ -984,7 +1002,11 @@ export default function DailyActivityTab({
                       {fmt.num(r.totalCommits)}
                     </td>
                     <td className="py-3 px-3 text-right tnum whitespace-nowrap">
-                      {r.linesCommits > 0 ? (
+                      {pendingRepos.has(r.fullName.toLowerCase()) ? (
+                        <span className="t-caption text-faint" title={t("daily.lines.pending")}>
+                          …
+                        </span>
+                      ) : r.linesCommits > 0 ? (
                         <>
                           <span className="block t-small text-success font-medium">
                             +{fmt.num(r.totalAdditions)}

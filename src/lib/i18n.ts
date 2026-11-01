@@ -594,6 +594,11 @@ export const translations = {
     en: "Line stats: {n} of {m} commits",
   },
   "daily.lines.lastN": { tr: "son {n} commit", en: "last {n} commits" },
+  "daily.lines.loading": {
+    tr: "Satır verisi yükleniyor: {n} / {m} commit",
+    en: "Loading line stats: {n} of {m} commits",
+  },
+  "daily.lines.pending": { tr: "Yükleniyor", en: "Loading" },
   "daily.lines.none": { tr: "Satır verisi yok", en: "No line stats" },
   "daily.lines.signIn": {
     tr: "Satır verisi için giriş yap",

@@ -289,11 +289,13 @@ export async function GET(request: NextRequest) {
           const dayMap = new Map<string, DailyActivityEntry>();
           const repoSummaries: RepoActivitySummary[] = [];
           const seenRepos = new Set<string>();
+          const seenCommitShas = new Set<string>();
 
+          // Process older repos first so inherited/cloned commit SHAs are attributed to the original repo
           const allRepoEntries = [
             ...ownedNodes.map((node) => ({ node, isContributed: false })),
             ...contributedNodes.map((node) => ({ node, isContributed: true })),
-          ];
+          ].sort((a, b) => (a.node.createdAt || "").localeCompare(b.node.createdAt || ""));
 
           for (const { node, isContributed } of allRepoEntries) {
             if (!node || !node.nameWithOwner) continue;
@@ -304,10 +306,10 @@ export async function GET(request: NextRequest) {
             const totalRepoBytes =
               node.languages?.totalSize || (node.diskUsage ? node.diskUsage * 1024 : 0);
             const primaryLanguage = node.languages?.edges?.[0]?.node?.name ?? null;
+            const createdDay = node.createdAt ? node.createdAt.slice(0, 10) : "";
 
             // Record repo creation on its exact creation date (for owned repos)
-            if (!isContributed && node.createdAt) {
-              const createdDay = node.createdAt.slice(0, 10);
+            if (!isContributed && createdDay) {
               const dayEntry = ensureDay(dayMap, createdDay);
               const createdItem: DailyRepoCreated = {
                 repoName: node.name,
@@ -326,6 +328,13 @@ export async function GET(request: NextRequest) {
             // Process commits in repository history
             const rawCommits = node.defaultBranchRef?.target?.history?.nodes ?? [];
             const userCommits = rawCommits.filter((c) => {
+              if (!c.committedDate) return false;
+              const commitDay = c.committedDate.slice(0, 10);
+              // Do not attribute commits dated before the repository itself was created
+              if (createdDay && commitDay < createdDay) return false;
+              // Do not duplicate commits inherited from an older repository
+              if (seenCommitShas.has(c.oid)) return false;
+
               const authorLogin = c.author?.user?.login?.toLowerCase();
               const authorName = c.author?.name?.toLowerCase();
               if (authorLogin === normalizedUser || authorName === normalizedUser) {
@@ -346,6 +355,7 @@ export async function GET(request: NextRequest) {
 
             for (const c of userCommits) {
               if (!c.committedDate) continue;
+              seenCommitShas.add(c.oid);
               const dateKey = c.committedDate.slice(0, 10);
               let additions = c.additions || 0;
               const deletions = c.deletions || 0;
@@ -491,128 +501,149 @@ export async function GET(request: NextRequest) {
       });
     }
 
-    // Fetch commit histories for top 12 most recently pushed owned repos
-    const targetRepos = ownRepos.slice(0, 12);
-    const BATCH_SIZE = 4;
+    // Fetch commit histories for owned repos (up to 35 repos in batches, sorted oldest-created first for SHA deduplication)
+    const targetRepos = [...ownRepos.slice(0, 35)].sort((a, b) =>
+      (a.created_at || "").localeCompare(b.created_at || "")
+    );
+    const seenCommitShas = new Set<string>();
+    const BATCH_SIZE = 7;
 
     for (let i = 0; i < targetRepos.length; i += BATCH_SIZE) {
       const batch = targetRepos.slice(i, i + BATCH_SIZE);
-      await Promise.all(
+      const batchFetched = await Promise.all(
         batch.map(async (r) => {
           try {
             const { data: commits } = await octokit.repos.listCommits({
               owner: username,
               repo: r.name,
-              per_page: 25,
+              per_page: 30,
             });
-
-            const totalRepoBytes = (r.size || 0) * 1024;
-            const avgCommitBytes =
-              commits.length > 0
-                ? Math.max(512, Math.round(totalRepoBytes / Math.max(commits.length, 1)))
-                : 2048;
-
-            const repoDayCommits = new Map<string, DailyCommitDetail[]>();
-            let repoAdditions = 0;
-            let repoDeletions = 0;
-            let repoAddedBytes = 0;
-            let repoDeletedBytes = 0;
-
-            for (let idx = 0; idx < commits.length; idx++) {
-              const c = commits[idx];
-              const dateIso = c.commit.author?.date || c.commit.committer?.date;
-              if (!dateIso) continue;
-              const dateKey = dateIso.slice(0, 10);
-
-              // Deterministic per-commit size estimation based on SHA and repo size
-              const shaSeed = parseInt(c.sha.slice(0, 6), 16) || 100;
-              const factor = 0.6 + ((shaSeed % 80) / 100);
-              const addedBytes = Math.max(256, Math.round(avgCommitBytes * factor));
-              const deletedBytes =
-                idx === commits.length - 1
-                  ? 0
-                  : Math.round(addedBytes * (0.12 + ((shaSeed % 25) / 100)));
-              const additions = Math.max(1, Math.round(addedBytes / BYTES_PER_LINE));
-              const deletions = Math.round(deletedBytes / BYTES_PER_LINE);
-
-              repoAdditions += additions;
-              repoDeletions += deletions;
-              repoAddedBytes += addedBytes;
-              repoDeletedBytes += deletedBytes;
-
-              const detail: DailyCommitDetail = {
-                sha: c.sha,
-                shortSha: c.sha.slice(0, 7),
-                message: (c.commit.message || "Commit").split("\n")[0],
-                timestamp: dateIso,
-                url: c.html_url,
-                additions,
-                deletions,
-                addedBytes,
-                deletedBytes,
-                netBytes: addedBytes - deletedBytes,
-              };
-
-              const list = repoDayCommits.get(dateKey) ?? [];
-              list.push(detail);
-              repoDayCommits.set(dateKey, list);
-            }
-
-            for (const [dateKey, dayCommits] of repoDayCommits.entries()) {
-              const dayEntry = ensureDay(dayMap, dateKey);
-              const additions = dayCommits.reduce((s, c) => s + c.additions, 0);
-              const deletions = dayCommits.reduce((s, c) => s + c.deletions, 0);
-              const addedBytes = dayCommits.reduce((s, c) => s + c.addedBytes, 0);
-              const deletedBytes = dayCommits.reduce((s, c) => s + c.deletedBytes, 0);
-
-              dayEntry.repoCommits.push({
-                repoName: r.name,
-                fullName: r.full_name,
-                ownerLogin: r.owner.login,
-                ownerAvatar: r.owner.avatar_url,
-                htmlUrl: r.html_url,
-                isContributed: false,
-                private: r.private ?? false,
-                primaryLanguage: r.language ?? null,
-                totalRepoBytes,
-                commitCount: dayCommits.length,
-                additions,
-                deletions,
-                addedBytes,
-                deletedBytes,
-                netBytes: addedBytes - deletedBytes,
-                commits: dayCommits,
-              });
-            }
-
-            const sortedDates = Array.from(repoDayCommits.keys()).sort();
-            repoSummaries.push({
-              repoName: r.name,
-              fullName: r.full_name,
-              htmlUrl: r.html_url,
-              isContributed: false,
-              private: r.private ?? false,
-              primaryLanguage: r.language ?? null,
-              createdAt: r.created_at || "",
-              firstCommitDate:
-                sortedDates[0] ?? (r.created_at ? r.created_at.slice(0, 10) : null),
-              lastCommitDate:
-                sortedDates[sortedDates.length - 1] ??
-                (r.pushed_at ? r.pushed_at.slice(0, 10) : null),
-              activeDays: Math.max(sortedDates.length, commits.length > 0 ? 1 : 0),
-              totalCommits: commits.length,
-              totalAdditions: repoAdditions,
-              totalDeletions: repoDeletions,
-              totalAddedBytes: repoAddedBytes,
-              totalDeletedBytes: repoDeletedBytes,
-              netBytes: repoAddedBytes - repoDeletedBytes,
-              currentRepoBytes: totalRepoBytes,
-            });
+            return { repo: r, commits };
           } catch {
-            // Skip repo if commit listing fails
+            return null;
           }
         })
       );
+
+      for (const item of batchFetched) {
+        if (!item) continue;
+        const { repo: r, commits: rawCommits } = item;
+        const createdDay = r.created_at ? r.created_at.slice(0, 10) : "";
+
+        // Filter out commits dated before the repo was created or inherited from an older repo
+        const commits = rawCommits.filter((c) => {
+          const dateIso = c.commit.author?.date || c.commit.committer?.date;
+          if (!dateIso) return false;
+          const dateKey = dateIso.slice(0, 10);
+          if (createdDay && dateKey < createdDay) return false;
+          if (seenCommitShas.has(c.sha)) return false;
+          return true;
+        });
+
+        const totalRepoBytes = (r.size || 0) * 1024;
+        const avgCommitBytes =
+          commits.length > 0
+            ? Math.max(512, Math.round(totalRepoBytes / Math.max(commits.length, 1)))
+            : 2048;
+
+        const repoDayCommits = new Map<string, DailyCommitDetail[]>();
+        let repoAdditions = 0;
+        let repoDeletions = 0;
+        let repoAddedBytes = 0;
+        let repoDeletedBytes = 0;
+
+        for (let idx = 0; idx < commits.length; idx++) {
+          const c = commits[idx];
+          seenCommitShas.add(c.sha);
+          const dateIso = c.commit.author?.date || c.commit.committer?.date;
+          if (!dateIso) continue;
+          const dateKey = dateIso.slice(0, 10);
+
+          // Deterministic per-commit size estimation based on SHA and repo size
+          const shaSeed = parseInt(c.sha.slice(0, 6), 16) || 100;
+          const factor = 0.6 + ((shaSeed % 80) / 100);
+          const addedBytes = Math.max(256, Math.round(avgCommitBytes * factor));
+          const deletedBytes =
+            idx === commits.length - 1
+              ? 0
+              : Math.round(addedBytes * (0.12 + ((shaSeed % 25) / 100)));
+          const additions = Math.max(1, Math.round(addedBytes / BYTES_PER_LINE));
+          const deletions = Math.round(deletedBytes / BYTES_PER_LINE);
+
+          repoAdditions += additions;
+          repoDeletions += deletions;
+          repoAddedBytes += addedBytes;
+          repoDeletedBytes += deletedBytes;
+
+          const detail: DailyCommitDetail = {
+            sha: c.sha,
+            shortSha: c.sha.slice(0, 7),
+            message: (c.commit.message || "Commit").split("\n")[0],
+            timestamp: dateIso,
+            url: c.html_url,
+            additions,
+            deletions,
+            addedBytes,
+            deletedBytes,
+            netBytes: addedBytes - deletedBytes,
+          };
+
+          const list = repoDayCommits.get(dateKey) ?? [];
+          list.push(detail);
+          repoDayCommits.set(dateKey, list);
+        }
+
+        for (const [dateKey, dayCommits] of repoDayCommits.entries()) {
+          const dayEntry = ensureDay(dayMap, dateKey);
+          const additions = dayCommits.reduce((s, c) => s + c.additions, 0);
+          const deletions = dayCommits.reduce((s, c) => s + c.deletions, 0);
+          const addedBytes = dayCommits.reduce((s, c) => s + c.addedBytes, 0);
+          const deletedBytes = dayCommits.reduce((s, c) => s + c.deletedBytes, 0);
+
+          dayEntry.repoCommits.push({
+            repoName: r.name,
+            fullName: r.full_name,
+            ownerLogin: r.owner.login,
+            ownerAvatar: r.owner.avatar_url,
+            htmlUrl: r.html_url,
+            isContributed: false,
+            private: r.private ?? false,
+            primaryLanguage: r.language ?? null,
+            totalRepoBytes,
+            commitCount: dayCommits.length,
+            additions,
+            deletions,
+            addedBytes,
+            deletedBytes,
+            netBytes: addedBytes - deletedBytes,
+            commits: dayCommits,
+          });
+        }
+
+        const sortedDates = Array.from(repoDayCommits.keys()).sort();
+        repoSummaries.push({
+          repoName: r.name,
+          fullName: r.full_name,
+          htmlUrl: r.html_url,
+          isContributed: false,
+          private: r.private ?? false,
+          primaryLanguage: r.language ?? null,
+          createdAt: r.created_at || "",
+          firstCommitDate:
+            sortedDates[0] ?? (r.created_at ? r.created_at.slice(0, 10) : null),
+          lastCommitDate:
+            sortedDates[sortedDates.length - 1] ??
+            (r.pushed_at ? r.pushed_at.slice(0, 10) : null),
+          activeDays: Math.max(sortedDates.length, commits.length > 0 ? 1 : 0),
+          totalCommits: commits.length,
+          totalAdditions: repoAdditions,
+          totalDeletions: repoDeletions,
+          totalAddedBytes: repoAddedBytes,
+          totalDeletedBytes: repoDeletedBytes,
+          netBytes: repoAddedBytes - repoDeletedBytes,
+          currentRepoBytes: totalRepoBytes,
+        });
+      }
     }
 
     return NextResponse.json(finalizeResponse(username, dayMap, repoSummaries, "rest"));

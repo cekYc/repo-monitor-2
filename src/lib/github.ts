@@ -231,9 +231,19 @@ export async function fetchUserAnalysis(
           const thirtyDaysAgo = Date.now() - 30 * 24 * 60 * 60 * 1000;
           const datesSet = new Set<string>();
           const normalizedUsername = username.toLowerCase();
+          const repoCreatedDay = repo.created_at ? repo.created_at.slice(0, 10) : "";
           let userCommitsInSample = 0;
+          let validCommitsInSample = 0;
 
           for (const c of commits) {
+            const dateStr = c.commit.author?.date || c.commit.committer?.date;
+            const commitDay = dateStr ? dateStr.slice(0, 10) : "";
+            // Ignore inherited commits dated before the repository itself was created
+            if (repoCreatedDay && commitDay && commitDay < repoCreatedDay) {
+              continue;
+            }
+            validCommitsInSample++;
+
             const authorLogin = c.author?.login?.toLowerCase();
             const committerLogin = c.committer?.login?.toLowerCase();
             const authorName = c.commit.author?.name?.toLowerCase();
@@ -246,10 +256,9 @@ export async function fetchUserAnalysis(
               userCommitsInSample++;
             }
 
-            const dateStr = c.commit.author?.date || c.commit.committer?.date;
             if (dateStr) {
               if (!lastMaintenance) lastMaintenance = dateStr;
-              datesSet.add(dateStr.slice(0, 10)); // YYYY-MM-DD
+              datesSet.add(commitDay); // YYYY-MM-DD
               commitDates.push(dateStr);
               if (new Date(dateStr).getTime() >= thirtyDaysAgo) {
                 commitsLastMonth++;
@@ -257,8 +266,11 @@ export async function fetchUserAnalysis(
             }
           }
           commitDates = Array.from(datesSet).sort();
+          if (!lastPage) {
+            totalCommits = Math.max(validCommitsInSample, 1);
+          }
 
-          const sampleRatio = commits.length > 0 ? userCommitsInSample / commits.length : 1;
+          const sampleRatio = validCommitsInSample > 0 ? userCommitsInSample / validCommitsInSample : 1;
           const ratio = Math.min(1, Math.max(0.01, Math.round(sampleRatio * 10000) / 10000));
           const userCommits = Math.max(1, Math.round(totalCommits * ratio));
           const contributedBytes = ratio >= 0.99 ? totalBytes : Math.round(totalBytes * ratio);

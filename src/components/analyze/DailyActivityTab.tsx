@@ -61,39 +61,91 @@ function mergeWithClientRepos(
     return d;
   };
 
-  if (apiData) {
-    for (const d of apiData.days) {
-      dayMap.set(d.date, {
-        ...d,
-        reposCreated: [...d.reposCreated],
-        repoCommits: d.repoCommits.map((rc) => ({
-          ...rc,
-          commits: [...rc.commits],
-        })),
-      });
-    }
-    for (const s of apiData.repoSummaries) {
-      summaryMap.set(s.fullName.toLowerCase(), { ...s });
-    }
-  }
-
   // Merge all owned repos & contributed repos from client state
   const allClientRepos = [
     ...ownedRepos.map((r) => ({ repo: r, isContributed: false })),
     ...(contributedRepos ?? []).map((r) => ({ repo: r, isContributed: true })),
   ];
 
+  // Build lookup maps for creation dates and accurate source code bytes
+  const createdDateByRepo = new Map<string, string>();
+  const accurateBytesByRepo = new Map<string, number>();
+
+  if (apiData) {
+    for (const s of apiData.repoSummaries) {
+      if (s.createdAt) {
+        createdDateByRepo.set(s.fullName.toLowerCase(), s.createdAt.slice(0, 10));
+        createdDateByRepo.set(s.repoName.toLowerCase(), s.createdAt.slice(0, 10));
+      }
+    }
+  }
+
+  for (const { repo } of allClientRepos) {
+    const repoOwner = repo.ownerLogin || owner;
+    const fullName = (repo.fullName || `${repoOwner}/${repo.name}`).toLowerCase();
+    const shortName = repo.name.toLowerCase();
+    if (repo.created_at) {
+      const cDay = repo.created_at.slice(0, 10);
+      createdDateByRepo.set(fullName, cDay);
+      createdDateByRepo.set(shortName, cDay);
+    }
+    if (repo.totalBytes > 0) {
+      accurateBytesByRepo.set(fullName, repo.totalBytes);
+      accurateBytesByRepo.set(shortName, repo.totalBytes);
+    }
+  }
+
+  if (apiData) {
+    for (const d of apiData.days) {
+      const validCommits = d.repoCommits
+        .filter((rc) => {
+          const cDay =
+            createdDateByRepo.get(rc.fullName.toLowerCase()) ||
+            createdDateByRepo.get(rc.repoName.toLowerCase());
+          return !cDay || d.date >= cDay;
+        })
+        .map((rc) => {
+          const exactBytes =
+            accurateBytesByRepo.get(rc.fullName.toLowerCase()) ??
+            accurateBytesByRepo.get(rc.repoName.toLowerCase());
+          return {
+            ...rc,
+            totalRepoBytes: exactBytes ?? rc.totalRepoBytes,
+            commits: [...rc.commits],
+          };
+        });
+
+      const updatedCreated = d.reposCreated.map((rc) => {
+        const exactBytes =
+          accurateBytesByRepo.get(rc.fullName.toLowerCase()) ??
+          accurateBytesByRepo.get(rc.repoName.toLowerCase());
+        return exactBytes !== undefined ? { ...rc, totalBytes: exactBytes } : { ...rc };
+      });
+
+      if (updatedCreated.length > 0 || validCommits.length > 0) {
+        dayMap.set(d.date, {
+          ...d,
+          reposCreated: updatedCreated,
+          repoCommits: validCommits,
+        });
+      }
+    }
+    for (const s of apiData.repoSummaries) {
+      summaryMap.set(s.fullName.toLowerCase(), { ...s });
+    }
+  }
+
   for (const { repo, isContributed } of allClientRepos) {
     const repoOwner = repo.ownerLogin || owner;
     const fullName = repo.fullName || `${repoOwner}/${repo.name}`;
     const fullKey = fullName.toLowerCase();
     const primaryLanguage = repo.languagePercentages?.[0]?.name ?? null;
-    const totalBytes = repo.totalBytes || (repo.size || 0) * 1024;
+    const totalBytes = repo.totalBytes > 0 ? repo.totalBytes : (repo.size || 0) * 1024;
+    const repoCreatedDay = repo.created_at ? repo.created_at.slice(0, 10) : "";
 
     // 1. Ensure creation date is recorded for owned repos
-    if (!isContributed && repo.created_at) {
-      const createdDate = repo.created_at.slice(0, 10);
-      const dayEntry = ensureDay(createdDate);
+    if (!isContributed && repoCreatedDay) {
+      const dayEntry = ensureDay(repoCreatedDay);
       const exists = dayEntry.reposCreated.some(
         (rc) => rc.fullName.toLowerCase() === fullKey || rc.repoName.toLowerCase() === repo.name.toLowerCase()
       );
@@ -110,17 +162,20 @@ function mergeWithClientRepos(
           stars: repo.stargazers_count,
         });
       } else {
-        // Update totalBytes from accurate client language analysis
+        // Prefer exact client language analysis bytes over diskUsage
         dayEntry.reposCreated = dayEntry.reposCreated.map((rc) =>
           rc.fullName.toLowerCase() === fullKey || rc.repoName.toLowerCase() === repo.name.toLowerCase()
-            ? { ...rc, totalBytes: Math.max(rc.totalBytes, totalBytes), primaryLanguage: rc.primaryLanguage || primaryLanguage }
+            ? { ...rc, totalBytes, primaryLanguage: rc.primaryLanguage || primaryLanguage }
             : rc
         );
       }
     }
 
     // 2. Ensure commit dates from advancedMetrics are present if API didn't have commits for this repo
-    const commitDates = repo.advancedMetrics?.commitDates ?? [];
+    const rawCommitDates = repo.advancedMetrics?.commitDates ?? [];
+    const commitDates = rawCommitDates.filter(
+      (d) => !repoCreatedDay || d.slice(0, 10) >= repoCreatedDay
+    );
     const totalCommits =
       repo.userContribution?.commits ?? repo.advancedMetrics?.totalCommits ?? 0;
     const contributedBytes = repo.userContribution?.contributedBytes ?? totalBytes;
@@ -138,6 +193,7 @@ function mergeWithClientRepos(
       const dateCounts = new Map<string, string[]>();
       for (const rawDate of commitDates) {
         const dKey = rawDate.slice(0, 10);
+        if (repoCreatedDay && dKey < repoCreatedDay) continue;
         const list = dateCounts.get(dKey) ?? [];
         list.push(rawDate);
         dateCounts.set(dKey, list);
@@ -157,7 +213,7 @@ function mergeWithClientRepos(
           Math.round(totalCommits / uniqueDays) || 1
         );
         const addedBytes = avgDayAddedBytes;
-        const deletedBytes = dKey === repo.created_at?.slice(0, 10) ? 0 : avgDayDeletedBytes;
+        const deletedBytes = dKey === repoCreatedDay ? 0 : avgDayDeletedBytes;
         const additions = Math.max(1, Math.round(addedBytes / BYTES_PER_LINE));
         const deletions = Math.round(deletedBytes / BYTES_PER_LINE);
 
@@ -185,8 +241,11 @@ function mergeWithClientRepos(
     // 3. Ensure repo summary exists and uses accurate client bytes
     const existingSummary = summaryMap.get(fullKey);
     if (existingSummary) {
-      existingSummary.currentRepoBytes = Math.max(existingSummary.currentRepoBytes, totalBytes);
+      existingSummary.currentRepoBytes = totalBytes;
       existingSummary.primaryLanguage = existingSummary.primaryLanguage || primaryLanguage;
+      if (repoCreatedDay && existingSummary.firstCommitDate && existingSummary.firstCommitDate < repoCreatedDay) {
+        existingSummary.firstCommitDate = repoCreatedDay;
+      }
       if (totalCommits > existingSummary.totalCommits) {
         existingSummary.totalCommits = totalCommits;
       }
@@ -206,11 +265,11 @@ function mergeWithClientRepos(
         primaryLanguage,
         createdAt: repo.created_at,
         firstCommitDate:
-          sortedDates[0] ?? (repo.created_at ? repo.created_at.slice(0, 10) : null),
+          sortedDates[0] ?? (repoCreatedDay || null),
         lastCommitDate:
           sortedDates[sortedDates.length - 1] ??
           (repo.pushed_at ? repo.pushed_at.slice(0, 10) : null),
-        activeDays: repo.advancedMetrics?.activeDays ?? Math.max(sortedDates.length, 1),
+        activeDays: Math.max(sortedDates.length, 1),
         totalCommits: Math.max(totalCommits, 1),
         totalAdditions: Math.max(1, Math.round(addedBytes / BYTES_PER_LINE)),
         totalDeletions: Math.round(deletedBytes / BYTES_PER_LINE),
@@ -222,8 +281,10 @@ function mergeWithClientRepos(
     }
   }
 
-  // Re-compute day totals
-  const days = Array.from(dayMap.values()).sort((a, b) => b.date.localeCompare(a.date));
+  // Re-compute day totals and filter out any empty days
+  const days = Array.from(dayMap.values())
+    .filter((d) => d.reposCreated.length > 0 || d.repoCommits.length > 0)
+    .sort((a, b) => b.date.localeCompare(a.date));
   for (const day of days) {
     day.repoCommits.sort(
       (a, b) =>

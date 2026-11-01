@@ -13,8 +13,12 @@ import {
   YAxis,
 } from "recharts";
 import { SectionHeader } from "@/components/ui/Card";
+import Segmented from "@/components/ui/Segmented";
 import { useLocale } from "@/components/LocaleProvider";
 import { formatBytes, getLanguageColor } from "@/lib/utils";
+import type { RepoInfo } from "@/lib/github";
+
+export type VisibilityFilter = "all" | "public" | "private";
 
 interface Lang {
   name: string;
@@ -28,9 +32,41 @@ const PIE_SLICES = 8;
 /** Level 2 of the hierarchy: the language DNA — one donut, one bar chart and a
  *  short table. The table stays short on purpose; the full list is one click
  *  away rather than 30 rows deep. */
-export default function LanguageDna({ languages }: { languages: Lang[] }) {
+export default function LanguageDna({
+  languages: initialLanguages,
+  repos,
+}: {
+  languages: Lang[];
+  repos?: RepoInfo[];
+}) {
   const { t } = useLocale();
+  const [visibility, setVisibility] = useState<VisibilityFilter>("all");
   const [showAll, setShowAll] = useState(false);
+
+  const languages = useMemo(() => {
+    if (!repos || visibility === "all") return initialLanguages;
+
+    const filtered = repos.filter((r) =>
+      visibility === "public" ? !r.private : r.private
+    );
+
+    const bytesByLang: Record<string, number> = {};
+    let total = 0;
+    for (const repo of filtered) {
+      for (const [lang, bytes] of Object.entries(repo.languages)) {
+        bytesByLang[lang] = (bytesByLang[lang] ?? 0) + bytes;
+        total += bytes;
+      }
+    }
+
+    return Object.entries(bytesByLang)
+      .map(([name, bytes]) => ({
+        name,
+        value: total > 0 ? Math.round((bytes / total) * 10000) / 100 : 0,
+        bytes,
+      }))
+      .sort((a, b) => b.bytes - a.bytes);
+  }, [repos, initialLanguages, visibility]);
 
   const pieData = useMemo(() => {
     const top = languages.slice(0, PIE_SLICES);
@@ -43,10 +79,46 @@ export default function LanguageDna({ languages }: { languages: Lang[] }) {
 
   const barData = useMemo(() => languages.slice(0, PIE_SLICES), [languages]);
 
+  const filterControl = (
+    <div className="flex items-center gap-2">
+      <select
+        value={visibility}
+        onChange={(e) => {
+          setVisibility(e.target.value as VisibilityFilter);
+          setShowAll(false);
+        }}
+        aria-label={t("repos.visibility.label")}
+        className="field sm:hidden w-auto cursor-pointer text-xs h-8 py-1 px-2.5"
+      >
+        <option value="all">{t("repos.visibility.all")}</option>
+        <option value="public">{t("repos.visibility.public")}</option>
+        <option value="private">{t("repos.visibility.private")}</option>
+      </select>
+
+      <Segmented
+        items={[
+          { id: "all", label: t("repos.visibility.all") },
+          { id: "public", label: t("repos.visibility.public") },
+          { id: "private", label: t("repos.visibility.private") },
+        ]}
+        value={visibility}
+        onChange={(val) => {
+          setVisibility(val);
+          setShowAll(false);
+        }}
+        className="hidden sm:inline-flex"
+      />
+    </div>
+  );
+
   if (languages.length === 0) {
     return (
-      <section className="card p-4">
-        <SectionHeader title={t("stats.distribution.title")} />
+      <section className="card p-4 md:p-5">
+        <SectionHeader
+          title={t("stats.distribution.title")}
+          count={`0 ${t("stats.language")}`}
+          right={filterControl}
+        />
         <p className="t-caption text-faint mt-3">{t("stats.noLanguages")}</p>
       </section>
     );
@@ -59,6 +131,7 @@ export default function LanguageDna({ languages }: { languages: Lang[] }) {
       <SectionHeader
         title={t("stats.distribution.title")}
         count={`${languages.length} ${t("stats.language")}`}
+        right={filterControl}
       />
 
       <div className="grid lg:grid-cols-2 gap-5 mt-4">

@@ -303,7 +303,7 @@ export default function AnalyzeScreen() {
               onExport={isSample ? undefined : exportPng}
               exporting={exporting}
             />
-            <LanguageDna languages={languages} />
+            <LanguageDna languages={languages} repos={repos} />
             <MetricGrid
               repos={repos}
               totalBytes={totalBytes}

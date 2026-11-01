@@ -599,6 +599,18 @@ export const translations = {
     en: "Loading line stats: {n} of {m} commits",
   },
   "daily.lines.pending": { tr: "Yükleniyor", en: "Loading" },
+  "daily.trend.title": { tr: "Zaman içinde aktivite", en: "Activity over time" },
+  "daily.trend.grain.day": { tr: "Günlük", en: "Daily" },
+  "daily.trend.grain.week": { tr: "Haftalık", en: "Weekly" },
+  "daily.trend.grain.month": { tr: "Aylık", en: "Monthly" },
+  "daily.trend.commits": { tr: "Commit", en: "Commits" },
+  "daily.trend.lines": { tr: "Satır", en: "Lines" },
+  "daily.trend.added": { tr: "Eklenen satır", en: "Lines added" },
+  "daily.trend.deleted": { tr: "Silinen satır", en: "Lines removed" },
+  "daily.trend.partial": {
+    tr: "Bu dönemde bazı commit'lerin satır verisi yok",
+    en: "Some commits in this period have no line stats",
+  },
   "daily.lines.none": { tr: "Satır verisi yok", en: "No line stats" },
   "daily.lines.signIn": {
     tr: "Satır verisi için giriş yap",

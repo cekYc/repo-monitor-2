@@ -2,6 +2,7 @@
 
 import { useMemo, useState } from "react";
 import Link from "next/link";
+import ActivityTrendChart from "@/components/analyze/ActivityTrendChart";
 import EmptyState from "@/components/ui/EmptyState";
 import Segmented from "@/components/ui/Segmented";
 import Avatar from "@/components/ui/Avatar";
@@ -626,7 +627,10 @@ export default function DailyActivityTab({
         </div>
       </div>
 
-      {/* 3. Content Area */}
+      {/* 3. Trend over time — below the filters, so it follows them */}
+      <ActivityTrendChart days={filteredDays} />
+
+      {/* 4. Content Area */}
       {view === "timeline" ? (
         filteredDays.length === 0 ? (
           <EmptyState
@@ -930,7 +934,7 @@ export default function DailyActivityTab({
           </div>
         )
       ) : (
-        /* 4. Per-Repo Summary Table View */
+        /* 5. Per-Repo Summary Table View */
         <div className="card overflow-hidden">
           <div className="overflow-x-auto">
             <table className="w-full text-left border-collapse">

@@ -38,6 +38,11 @@
   --danger-soft: #fdecec;
   --neutral-soft: #f1f1f3;
 
+  /* Chart marks for line deltas. Validated as a pair (dataviz validator:
+     lightness band, CVD ΔE ≥ 8, contrast ≥ 3:1) against each theme's surface. */
+  --chart-add: #059669;
+  --chart-del: #dc2626;
+
   /* Radius scale */
   --radius-sm: 8px;
   --radius-md: 10px;
@@ -79,6 +84,10 @@
   --danger: #f87171;
   --danger-soft: #2d1616;
   --neutral-soft: #1b1b21;
+
+  /* Same pair, stepped into the dark lightness band (validated on --surface) */
+  --chart-add: #12ab7a;
+  --chart-del: #e5393d;
 
   --shadow-pop: 0 1px 2px rgba(0, 0, 0, 0.5), 0 14px 40px -10px rgba(0, 0, 0, 0.7);
 }

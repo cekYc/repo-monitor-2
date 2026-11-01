@@ -152,6 +152,15 @@ vurgu rengi değildir.
 `--success` yalnızca pozitif delta, `--danger` negatif delta ve hata,
 `--warning` dışlama/uyarı. **Kota göstergesinde yeşil kullanılmaz** — bkz. §6.
 
+### Grafik renkleri
+Eklenen/silinen satır grafikte `--chart-add` / `--chart-del` ile çizilir
+(koyu `#12ab7a` / `#e5393d`, açık `#059669` / `#dc2626`). Metindeki
+`--success`/`--danger` koyu temada çizgi için fazla parlaktır; bu çift her
+temanın yüzeyine karşı ayrı doğrulanmıştır (parlaklık bandı, renk körlüğü
+ΔE ≥ 8, kontrast ≥ 3:1). Silinen satırlar sıfırın altına çizilir; yön renkten
+değil konumdan okunur. Ölçeği farklı iki ölçü (commit ve satır) asla aynı
+y-eksenini paylaşmaz: ortak zaman ekseninde iki ayrı grafik olur.
+
 ### Yarıçap ve gölge
 `8 / 10 / 12 / 16 / 999px`. Kartlar `16px`, popover ve alan kontrolleri
 `10–12px`. Tek gölge `--shadow-pop` vardır ve yalnızca yüzen katmanlarda

@@ -182,7 +182,7 @@ export default function ProjectLeaderboard({ repos }: ProjectLeaderboardProps) {
           <button
             onClick={handleExport}
             disabled={exporting}
-            className="shrink-0 text-xs px-3 py-2 rounded-xl bg-accent text-accent-fg hover:opacity-90 transition-opacity cursor-pointer disabled:opacity-50 font-semibold shadow-sm"
+            className="btn btn-ghost btn-sm shrink-0"
           >
             {exporting ? t("timeline.exporting") : t("timeline.export")}
           </button>

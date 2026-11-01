@@ -177,8 +177,6 @@ interface GqlRepoNode {
   };
 }
 
-const BYTES_PER_LINE = 45;
-
 function ensureDay(map: Map<string, DailyActivityEntry>, date: string): DailyActivityEntry {
   let entry = map.get(date);
   if (!entry) {
@@ -189,9 +187,6 @@ function ensureDay(map: Map<string, DailyActivityEntry>, date: string): DailyAct
       totalCommits: 0,
       totalAdditions: 0,
       totalDeletions: 0,
-      totalAddedBytes: 0,
-      totalDeletedBytes: 0,
-      netBytes: 0,
     };
     map.set(date, entry);
   }
@@ -209,15 +204,12 @@ function finalizeResponse(
   for (const day of days) {
     day.repoCommits.sort(
       (a, b) =>
-        Math.abs(b.netBytes) + b.addedBytes - (Math.abs(a.netBytes) + a.addedBytes) ||
+        b.additions + b.deletions - (a.additions + a.deletions) ||
         b.commitCount - a.commitCount
     );
     day.totalCommits = day.repoCommits.reduce((s, r) => s + r.commitCount, 0);
     day.totalAdditions = day.repoCommits.reduce((s, r) => s + r.additions, 0);
     day.totalDeletions = day.repoCommits.reduce((s, r) => s + r.deletions, 0);
-    day.totalAddedBytes = day.repoCommits.reduce((s, r) => s + r.addedBytes, 0);
-    day.totalDeletedBytes = day.repoCommits.reduce((s, r) => s + r.deletedBytes, 0);
-    day.netBytes = day.totalAddedBytes - day.totalDeletedBytes;
   }
 
   repoSummaries.sort(
@@ -232,9 +224,7 @@ function finalizeResponse(
     totalCommits: repoSummaries.reduce((s, r) => s + r.totalCommits, 0),
     totalAdditions: repoSummaries.reduce((s, r) => s + r.totalAdditions, 0),
     totalDeletions: repoSummaries.reduce((s, r) => s + r.totalDeletions, 0),
-    totalAddedBytes: repoSummaries.reduce((s, r) => s + r.totalAddedBytes, 0),
-    totalDeletedBytes: repoSummaries.reduce((s, r) => s + r.totalDeletedBytes, 0),
-    netBytes: repoSummaries.reduce((s, r) => s + r.netBytes, 0),
+    linesCommits: repoSummaries.reduce((s, r) => s + r.linesCommits, 0),
   };
 
   return {
@@ -350,29 +340,16 @@ export async function GET(request: NextRequest) {
             const repoDayCommits = new Map<string, DailyCommitDetail[]>();
             let repoTotalAdditions = 0;
             let repoTotalDeletions = 0;
-            let repoTotalAddedBytes = 0;
-            let repoTotalDeletedBytes = 0;
 
             for (const c of userCommits) {
               if (!c.committedDate) continue;
               seenCommitShas.add(c.oid);
               const dateKey = c.committedDate.slice(0, 10);
-              let additions = c.additions || 0;
+              const additions = c.additions || 0;
               const deletions = c.deletions || 0;
-
-              // If single commit has 0 reported line stats on a non-empty owned repo, estimate from repo bytes
-              if (additions === 0 && deletions === 0 && userCommits.length === 1 && totalRepoBytes > 0) {
-                additions = Math.max(1, Math.round(totalRepoBytes / BYTES_PER_LINE));
-              }
-
-              const addedBytes = Math.round(additions * BYTES_PER_LINE);
-              const deletedBytes = Math.round(deletions * BYTES_PER_LINE);
-              const netBytes = addedBytes - deletedBytes;
 
               repoTotalAdditions += additions;
               repoTotalDeletions += deletions;
-              repoTotalAddedBytes += addedBytes;
-              repoTotalDeletedBytes += deletedBytes;
 
               const detail: DailyCommitDetail = {
                 sha: c.oid,
@@ -382,9 +359,6 @@ export async function GET(request: NextRequest) {
                 url: c.url,
                 additions,
                 deletions,
-                addedBytes,
-                deletedBytes,
-                netBytes,
               };
 
               const list = repoDayCommits.get(dateKey) ?? [];
@@ -394,10 +368,8 @@ export async function GET(request: NextRequest) {
 
             for (const [dateKey, commits] of repoDayCommits.entries()) {
               const dayEntry = ensureDay(dayMap, dateKey);
-              const additions = commits.reduce((s, c) => s + c.additions, 0);
-              const deletions = commits.reduce((s, c) => s + c.deletions, 0);
-              const addedBytes = commits.reduce((s, c) => s + c.addedBytes, 0);
-              const deletedBytes = commits.reduce((s, c) => s + c.deletedBytes, 0);
+              const additions = commits.reduce((s, c) => s + (c.additions ?? 0), 0);
+              const deletions = commits.reduce((s, c) => s + (c.deletions ?? 0), 0);
 
               const repoCommitEntry: DailyRepoCommitActivity = {
                 repoName: node.name,
@@ -412,9 +384,7 @@ export async function GET(request: NextRequest) {
                 commitCount: commits.length,
                 additions,
                 deletions,
-                addedBytes,
-                deletedBytes,
-                netBytes: addedBytes - deletedBytes,
+                linesKnown: true,
                 commits,
               };
 
@@ -426,12 +396,6 @@ export async function GET(request: NextRequest) {
             const effectiveTotalCommits = isContributed
               ? userCommits.length
               : Math.max(userCommits.length, historyTotal);
-
-            // If a repo has more historical commits than the 35-commit window and is owned, ensure summary reflects full size
-            if (!isContributed && repoTotalAddedBytes === 0 && totalRepoBytes > 0) {
-              repoTotalAddedBytes = totalRepoBytes;
-              repoTotalAdditions = Math.max(1, Math.round(totalRepoBytes / BYTES_PER_LINE));
-            }
 
             if (!isContributed || userCommits.length > 0) {
               repoSummaries.push({
@@ -450,9 +414,7 @@ export async function GET(request: NextRequest) {
                 totalCommits: effectiveTotalCommits,
                 totalAdditions: repoTotalAdditions,
                 totalDeletions: repoTotalDeletions,
-                totalAddedBytes: repoTotalAddedBytes,
-                totalDeletedBytes: repoTotalDeletedBytes,
-                netBytes: repoTotalAddedBytes - repoTotalDeletedBytes,
+                linesCommits: userCommits.length,
                 currentRepoBytes: totalRepoBytes,
               });
             }
@@ -541,39 +503,15 @@ export async function GET(request: NextRequest) {
         });
 
         const totalRepoBytes = (r.size || 0) * 1024;
-        const avgCommitBytes =
-          commits.length > 0
-            ? Math.max(512, Math.round(totalRepoBytes / Math.max(commits.length, 1)))
-            : 2048;
-
         const repoDayCommits = new Map<string, DailyCommitDetail[]>();
-        let repoAdditions = 0;
-        let repoDeletions = 0;
-        let repoAddedBytes = 0;
-        let repoDeletedBytes = 0;
 
-        for (let idx = 0; idx < commits.length; idx++) {
-          const c = commits[idx];
+        // The REST commit list carries no line stats (that would cost one request
+        // per commit), so additions/deletions stay unknown rather than estimated.
+        for (const c of commits) {
           seenCommitShas.add(c.sha);
           const dateIso = c.commit.author?.date || c.commit.committer?.date;
           if (!dateIso) continue;
           const dateKey = dateIso.slice(0, 10);
-
-          // Deterministic per-commit size estimation based on SHA and repo size
-          const shaSeed = parseInt(c.sha.slice(0, 6), 16) || 100;
-          const factor = 0.6 + ((shaSeed % 80) / 100);
-          const addedBytes = Math.max(256, Math.round(avgCommitBytes * factor));
-          const deletedBytes =
-            idx === commits.length - 1
-              ? 0
-              : Math.round(addedBytes * (0.12 + ((shaSeed % 25) / 100)));
-          const additions = Math.max(1, Math.round(addedBytes / BYTES_PER_LINE));
-          const deletions = Math.round(deletedBytes / BYTES_PER_LINE);
-
-          repoAdditions += additions;
-          repoDeletions += deletions;
-          repoAddedBytes += addedBytes;
-          repoDeletedBytes += deletedBytes;
 
           const detail: DailyCommitDetail = {
             sha: c.sha,
@@ -581,11 +519,8 @@ export async function GET(request: NextRequest) {
             message: (c.commit.message || "Commit").split("\n")[0],
             timestamp: dateIso,
             url: c.html_url,
-            additions,
-            deletions,
-            addedBytes,
-            deletedBytes,
-            netBytes: addedBytes - deletedBytes,
+            additions: null,
+            deletions: null,
           };
 
           const list = repoDayCommits.get(dateKey) ?? [];
@@ -595,10 +530,6 @@ export async function GET(request: NextRequest) {
 
         for (const [dateKey, dayCommits] of repoDayCommits.entries()) {
           const dayEntry = ensureDay(dayMap, dateKey);
-          const additions = dayCommits.reduce((s, c) => s + c.additions, 0);
-          const deletions = dayCommits.reduce((s, c) => s + c.deletions, 0);
-          const addedBytes = dayCommits.reduce((s, c) => s + c.addedBytes, 0);
-          const deletedBytes = dayCommits.reduce((s, c) => s + c.deletedBytes, 0);
 
           dayEntry.repoCommits.push({
             repoName: r.name,
@@ -611,11 +542,9 @@ export async function GET(request: NextRequest) {
             primaryLanguage: r.language ?? null,
             totalRepoBytes,
             commitCount: dayCommits.length,
-            additions,
-            deletions,
-            addedBytes,
-            deletedBytes,
-            netBytes: addedBytes - deletedBytes,
+            additions: 0,
+            deletions: 0,
+            linesKnown: false,
             commits: dayCommits,
           });
         }
@@ -636,11 +565,9 @@ export async function GET(request: NextRequest) {
             (r.pushed_at ? r.pushed_at.slice(0, 10) : null),
           activeDays: Math.max(sortedDates.length, commits.length > 0 ? 1 : 0),
           totalCommits: commits.length,
-          totalAdditions: repoAdditions,
-          totalDeletions: repoDeletions,
-          totalAddedBytes: repoAddedBytes,
-          totalDeletedBytes: repoDeletedBytes,
-          netBytes: repoAddedBytes - repoDeletedBytes,
+          totalAdditions: 0,
+          totalDeletions: 0,
+          linesCommits: 0,
           currentRepoBytes: totalRepoBytes,
         });
       }

@@ -304,11 +304,7 @@ export default function AnalyzeScreen() {
               exporting={exporting}
             />
             <LanguageDna languages={languages} repos={repos} />
-            <MetricGrid
-              repos={repos}
-              totalBytes={totalBytes}
-              languageCount={languages.length}
-            />
+            <MetricGrid repos={repos} totalBytes={totalBytes} />
           </div>
 
           <RepoGrid

@@ -39,7 +39,7 @@ export default function RepoCard({
   selected?: boolean;
   onToggleSelect?: (name: string) => void;
 }) {
-  const { t } = useLocale();
+  const { t, locale } = useLocale();
   const fmt = useFormat();
   const [expanded, setExpanded] = useState(false);
   const [history, setHistory] = useState<RepoCommitHistory | null>(null);
@@ -80,6 +80,17 @@ export default function RepoCard({
   const contributionLabel = repo.isContributed
     ? t("repo.contributionShare")
     : t("repo.contributionShareTitle");
+
+  // A share is only worth printing when it is a real split; a sole author's
+  // "553 KB / 553 KB %100" repeats the size twice and says nothing.
+  const contribution = repo.userContribution;
+  const ratio = contribution?.ratio ?? 1;
+  const sharePct = (ratio * 100).toLocaleString(fmt.tag, {
+    maximumFractionDigits: ratio < 0.01 ? 2 : 1,
+  });
+  const shareText = locale === "tr" ? `%${sharePct}` : `${sharePct}%`;
+  const showShare = Boolean(contribution) && repo.totalBytes > 0 && ratio < 0.999;
+  const extraLangs = repo.languagePercentages.length - 3;
 
   return (
     <article
@@ -198,21 +209,20 @@ export default function RepoCard({
         {hasLanguages ? (
           <div className="mt-auto pt-3.5">
             <SegmentBar segments={repo.languagePercentages} height={8} max={6} />
-            <div className="flex flex-wrap gap-x-3 gap-y-1 mt-2">
+            {/* One line, always: long names truncate instead of pushing the bar up */}
+            <div className="flex items-center gap-3 mt-2 min-w-0 overflow-hidden whitespace-nowrap">
               {repo.languagePercentages.slice(0, 3).map((lang, i) => (
-                <span key={lang.name} className="inline-flex items-center gap-1.5 t-caption text-muted">
+                <span key={lang.name} className="inline-flex items-center gap-1.5 t-caption text-muted min-w-0">
                   <span
-                    className="w-1.5 h-1.5 rounded-full"
+                    className="w-1.5 h-1.5 rounded-full shrink-0"
                     style={{ background: getLanguageColor(lang.name, i) }}
                   />
-                  {lang.name}
-                  <span className="text-faint tnum">{lang.value}%</span>
+                  <span className="truncate">{lang.name}</span>
+                  <span className="text-faint tnum shrink-0">{lang.value}%</span>
                 </span>
               ))}
-              {repo.languagePercentages.length > 3 && (
-                <span className="t-caption text-faint tnum">
-                  +{repo.languagePercentages.length - 3}
-                </span>
+              {extraLangs > 0 && (
+                <span className="t-caption text-faint tnum shrink-0">+{extraLangs}</span>
               )}
             </div>
           </div>
@@ -220,41 +230,46 @@ export default function RepoCard({
           <p className="mt-auto pt-3.5 t-caption text-faint">{t("repo.noLangs")}</p>
         )}
 
-        <footer className="flex items-center justify-between gap-2 mt-3 pt-3 border-t border-hairline">
-          <div className="flex flex-wrap items-center gap-x-2 gap-y-0.5 t-caption text-faint tnum min-w-0">
-            {repo.userContribution && repo.totalBytes > 0 ? (
-              <span
-                className="inline-flex items-center gap-1 font-medium"
-                title={`${contributionLabel}: ${formatBytes(repo.userContribution.contributedBytes)} / ${t("repo.totalSize")}: ${formatBytes(repo.totalBytes)} (%${repo.userContribution.ratio >= 0.999 ? "100" : (repo.userContribution.ratio * 100).toFixed(1)})`}
+        {/* Two fixed lines: size, then activity. Nothing wraps unpredictably. */}
+        <footer className="flex items-end justify-between gap-2 mt-3 pt-3 border-t border-hairline">
+          <div className="min-w-0 space-y-0.5 t-caption text-faint tnum">
+            {showShare && contribution ? (
+              <div
+                className="flex items-center gap-1 min-w-0"
+                title={`${contributionLabel}: ≈${formatBytes(contribution.contributedBytes)} / ${t("repo.totalSize")}: ${formatBytes(repo.totalBytes)} (${shareText}) — ${t("repo.shareEstimate")}`}
               >
                 <span className="text-accent-text font-semibold">
-                  {formatBytes(repo.userContribution.contributedBytes)}
+                  ≈{formatBytes(contribution.contributedBytes)}
                 </span>
-                <span className="text-faint">/ {formatBytes(repo.totalBytes)}</span>
-                <span className="text-[10px] px-1 py-0.2 rounded bg-accent-soft text-accent-text font-mono ml-0.5">
-                  %{repo.userContribution.ratio >= 0.999
-                    ? "100"
-                    : (repo.userContribution.ratio * 100).toFixed(repo.userContribution.ratio < 0.01 ? 2 : 1)}
+                <span className="truncate">/ {formatBytes(repo.totalBytes)}</span>
+                <span className="shrink-0 text-[10px] px-1 rounded bg-accent-soft text-accent-text font-medium ml-0.5">
+                  {shareText} {t("repo.shareShort")}
                 </span>
-              </span>
+              </div>
             ) : (
-              <span>{formatBytes(repo.totalBytes)}</span>
+              <div className="text-muted font-medium">{formatBytes(repo.totalBytes)}</div>
             )}
-            <span aria-hidden>·</span>
-            <span title={`${t("repo.updatedAt")}: ${fmt.date(activityDate)}`}>
-              {fmt.date(activityDate)}
-            </span>
-            {metrics && metrics.totalCommits > 0 && (
-              <>
-                <span aria-hidden>·</span>
-                <span title={t("metric.totalCommits")}>
-                  {fmt.num(metrics.totalCommits)} {t("repo.commitsShort")}
+            <div className="truncate">
+              <span title={`${t("repo.updatedAt")}: ${fmt.date(activityDate)}`}>
+                {fmt.date(activityDate)}
+              </span>
+              {metrics && metrics.totalCommits > 0 && (
+                <>
+                  <span aria-hidden> · </span>
+                  <span title={t("metric.totalCommits")}>
+                    {fmt.num(metrics.totalCommits)} {t("repo.commitsShort")}
+                  </span>
                   {metrics.commitsLastMonth > 0 && (
-                    <span className="text-accent-text font-medium"> +{fmt.num(metrics.commitsLastMonth)}</span>
+                    <>
+                      <span aria-hidden> · </span>
+                      <span className="text-accent-text font-medium">
+                        +{fmt.num(metrics.commitsLastMonth)} {t("metric.lastMonth")}
+                      </span>
+                    </>
                   )}
-                </span>
-              </>
-            )}
+                </>
+              )}
+            </div>
           </div>
           <button
             type="button"
@@ -281,18 +296,11 @@ export default function RepoCard({
           {repo.userContribution && (
             <div className="mb-3.5 p-3 rounded-lg bg-surface border border-hairline space-y-2">
               <div className="flex items-center justify-between text-xs">
-                <span className="text-muted flex items-center gap-1.5 font-medium">
-                  <span>📊</span>
-                  <span className="text-fg">{contributionLabel}</span>
-                </span>
+                <span className="text-fg font-medium">{contributionLabel}</span>
                 <span className="text-accent-text font-semibold tnum">
                   {formatBytes(repo.userContribution.contributedBytes)}{" "}
                   <span className="text-faint font-normal">/ {formatBytes(repo.totalBytes)}</span>{" "}
-                  <span className="text-accent-text font-medium">
-                    (%{repo.userContribution.ratio >= 0.999
-                      ? "100"
-                      : (repo.userContribution.ratio * 100).toFixed(repo.userContribution.ratio < 0.01 ? 2 : 1)})
-                  </span>
+                  <span className="text-accent-text font-medium">({shareText})</span>
                 </span>
               </div>
               <div className="h-1.5 bg-panel rounded-full overflow-hidden">

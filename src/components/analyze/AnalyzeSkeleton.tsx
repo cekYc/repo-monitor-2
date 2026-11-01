@@ -33,15 +33,15 @@ export default function AnalyzeSkeleton() {
       {/* Language DNA */}
       <div className="card p-4 md:p-5">
         <Skeleton className="h-4 w-36" />
-        <div className="grid lg:grid-cols-2 gap-5 mt-4">
+        <div className="grid lg:grid-cols-[240px_minmax(0,1fr)] gap-6 mt-4">
           <Skeleton className="h-[200px] rounded-lg" />
           <Skeleton className="h-[200px] rounded-lg" />
         </div>
       </div>
 
       {/* Metrics */}
-      <div className="grid grid-cols-2 sm:grid-cols-4 gap-3">
-        {Array.from({ length: 8 }).map((_, i) => (
+      <div className="grid grid-cols-2 sm:grid-cols-3 lg:grid-cols-6 gap-3">
+        {Array.from({ length: 6 }).map((_, i) => (
           <div key={i} className="card p-4">
             <Skeleton className="h-2.5 w-16" />
             <Skeleton className="h-6 w-20 mt-3" />

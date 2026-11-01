@@ -1,6 +1,6 @@
 "use client";
 
-import { useState, useEffect, useCallback } from "react";
+import { Fragment, useState, useEffect, useCallback } from "react";
 import { useLocale } from "@/components/LocaleProvider";
 
 interface DayData {
@@ -127,13 +127,18 @@ export default function ContributionHeatmap({ username, token }: ContributionHea
     return headers;
   };
 
-  const monthHeaders = getMonthHeaders();
+  // A month that starts in the last two columns before the next one has no room
+  // for its label; dropping it keeps "Kas" and "Ara" from printing over each other.
+  const monthHeaders = getMonthHeaders().filter(
+    (mh, i, all) => i === all.length - 1 || all[i + 1].weekIndex - mh.weekIndex >= 3
+  );
+  const monthAtWeek = new Map(monthHeaders.map((mh) => [mh.weekIndex, mh.label]));
 
   if (loading) {
     return (
-      <div className="bg-surface rounded-2xl p-6 border border-hairline">
-        <h2 className="text-base font-semibold text-fg mb-4">{t("heatmap.title")}</h2>
-        <div className="text-center py-6 text-gray-400 text-sm">
+      <div className="card p-4 md:p-5">
+        <h2 className="t-title text-fg mb-4">{t("heatmap.title")}</h2>
+        <div className="text-center py-6 t-small text-faint">
           <svg className="animate-spin h-4 w-4 inline mr-2" viewBox="0 0 24 24" fill="none">
             <circle className="opacity-25" cx="12" cy="12" r="10" stroke="currentColor" strokeWidth="4" />
             <path className="opacity-75" fill="currentColor" d="M4 12a8 8 0 018-8V0C5.373 0 0 5.373 0 12h4z" />
@@ -146,9 +151,9 @@ export default function ContributionHeatmap({ username, token }: ContributionHea
 
   if (loaded && days.length === 0) {
     return (
-      <div className="bg-surface rounded-2xl p-6 border border-hairline">
-        <h2 className="text-base font-semibold text-fg mb-4">{t("heatmap.title")}</h2>
-        <p className="text-gray-400 text-sm text-center py-4">{t("heatmap.noData")}</p>
+      <div className="card p-4 md:p-5">
+        <h2 className="t-title text-fg mb-4">{t("heatmap.title")}</h2>
+        <p className="t-small text-faint text-center py-4">{t("heatmap.noData")}</p>
       </div>
     );
   }
@@ -156,69 +161,70 @@ export default function ContributionHeatmap({ username, token }: ContributionHea
   if (!loaded) return null;
 
   return (
-    <div className="bg-surface rounded-2xl p-6 border border-hairline">
-      <div className="flex items-center justify-between mb-4">
-        <h2 className="text-base font-semibold text-fg">{t("heatmap.title")}</h2>
+    <div className="card p-4 md:p-5">
+      <div className="flex items-center justify-between gap-3 mb-4">
+        <h2 className="t-title text-fg">{t("heatmap.title")}</h2>
         <div className="flex items-center gap-3">
           {source === "events" && (
-            <span className="text-[10px] text-amber-500 dark:text-amber-400" title={t("heatmap.eventsNote")}>
-              ⚠️ {t("heatmap.eventsOnly")}
+            <span className="t-caption text-warning" title={t("heatmap.eventsNote")}>
+              {t("heatmap.eventsOnly")}
             </span>
           )}
-          <span className="text-sm text-gray-400 dark:text-gray-500">
+          <span className="t-small text-faint tnum">
             {totalEvents} {t("heatmap.events")}
           </span>
         </div>
       </div>
 
+      {/* The grid stretches to the card width; below ~560px it scrolls instead of
+          shrinking the cells into specks. */}
       <div className="overflow-x-auto">
-        <div className="inline-block min-w-max">
-          {/* Month labels */}
-          <div className="flex ml-8 mb-1">
-            {monthHeaders.map((mh, i) => (
-              <div
-                key={`${mh.label}-${i}`}
-                className="text-xs text-gray-400 dark:text-gray-500"
-                style={{ position: "relative", left: `${mh.weekIndex * 14}px`, width: 0, whiteSpace: "nowrap" }}
-              >
-                {mh.label}
+        <div className="min-w-[560px]">
+          <div
+            className="grid gap-[3px]"
+            style={{ gridTemplateColumns: `28px repeat(${weeks.length}, minmax(0, 1fr))` }}
+          >
+            {/* Month labels */}
+            <div />
+            {weeks.map((_, wi) => (
+              <div key={`m-${wi}`} className="relative h-4">
+                {monthAtWeek.has(wi) && (
+                  <span className="absolute left-0 top-0 t-caption text-faint whitespace-nowrap">
+                    {monthAtWeek.get(wi)}
+                  </span>
+                )}
               </div>
             ))}
-          </div>
 
-          <div className="flex gap-0.5">
-            {/* Day labels */}
-            <div className="flex flex-col gap-0.5 mr-1 justify-between py-0.5">
-              {[0, 1, 2, 3, 4, 5, 6].map((dow) => (
-                <div key={dow} className="h-3 text-[9px] text-gray-400 dark:text-gray-500 leading-3 w-6 text-right pr-1">
+            {/* One row per weekday: label, then that weekday across every week */}
+            {[0, 1, 2, 3, 4, 5, 6].map((dow) => (
+              <Fragment key={dow}>
+                <div className="text-[10px] leading-none text-faint self-center text-right pr-1">
                   {dow === 0 ? dayLabels[0] : dow === 2 ? dayLabels[1] : dow === 4 ? dayLabels[2] : ""}
                 </div>
-              ))}
-            </div>
-
-            {/* Weeks grid */}
-            {weeks.map((week, wi) => (
-              <div key={wi} className="flex flex-col gap-0.5">
-                {week.map((day, di) => (
-                  <div
-                    key={`${wi}-${di}`}
-                    className={`w-3 h-3 rounded-sm ${day ? getColor(day.count) : "bg-transparent"} transition-colors`}
-                    title={day ? `${new Date(day.date).toLocaleDateString(dateLocale)} — ${day.count} ${t("heatmap.events")}` : ""}
-                  />
-                ))}
-              </div>
+                {weeks.map((week, wi) => {
+                  const day = week[dow];
+                  return (
+                    <div
+                      key={`${wi}-${dow}`}
+                      className={`aspect-square rounded-[3px] ${day ? getColor(day.count) : ""} transition-colors`}
+                      title={day ? `${new Date(day.date).toLocaleDateString(dateLocale)} — ${day.count} ${t("heatmap.events")}` : undefined}
+                    />
+                  );
+                })}
+              </Fragment>
             ))}
           </div>
 
           {/* Legend */}
           <div className="flex items-center justify-end gap-1 mt-3">
-            <span className="text-[10px] text-gray-400 dark:text-gray-500 mr-1">{t("heatmap.less")}</span>
-            <div className="w-3 h-3 rounded-sm bg-panel" />
-            <div className="w-3 h-3 rounded-sm bg-green-200 dark:bg-green-900" />
-            <div className="w-3 h-3 rounded-sm bg-green-400 dark:bg-green-700" />
-            <div className="w-3 h-3 rounded-sm bg-green-500 dark:bg-green-600" />
-            <div className="w-3 h-3 rounded-sm bg-green-600 dark:bg-green-500" />
-            <span className="text-[10px] text-gray-400 dark:text-gray-500 ml-1">{t("heatmap.more")}</span>
+            <span className="text-[10px] text-faint mr-1">{t("heatmap.less")}</span>
+            <div className="w-3 h-3 rounded-[3px] bg-panel" />
+            <div className="w-3 h-3 rounded-[3px] bg-green-200 dark:bg-green-900" />
+            <div className="w-3 h-3 rounded-[3px] bg-green-400 dark:bg-green-700" />
+            <div className="w-3 h-3 rounded-[3px] bg-green-500 dark:bg-green-600" />
+            <div className="w-3 h-3 rounded-[3px] bg-green-600 dark:bg-green-500" />
+            <span className="text-[10px] text-faint ml-1">{t("heatmap.more")}</span>
           </div>
         </div>
       </div>

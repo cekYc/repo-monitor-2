@@ -364,9 +364,9 @@ export default function UserCompare({ userA, userB }: UserCompareProps) {
         <button
           onClick={handleExportPng}
           disabled={exporting}
-          className="shrink-0 rounded-lg bg-accent-soft px-3 py-1.5 text-xs font-medium text-accent-text transition-colors hover:bg-panel disabled:opacity-50"
+          className="btn btn-ghost btn-sm shrink-0"
         >
-          {exporting ? "…" : t("compare.exportPng")}
+          {exporting ? t("stats.exporting") : t("compare.exportPng")}
         </button>
       </div>
 

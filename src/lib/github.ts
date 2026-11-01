@@ -1024,7 +1024,10 @@ export async function fetchOrgAnalysis(
   };
 }
 
-// --- Daily Activity & Code Size Change Analysis ---
+// --- Daily Activity & Line Change Analysis ---
+// Line counts are what GitHub reports per commit (GraphQL only). Nothing here is
+// converted to bytes or estimated: when a source carries no line stats, the
+// fields stay empty and the UI says so.
 
 export interface DailyCommitDetail {
   sha: string;
@@ -1032,11 +1035,8 @@ export interface DailyCommitDetail {
   message: string;
   timestamp: string; // ISO date-time
   url: string;
-  additions: number; // lines added
-  deletions: number; // lines deleted
-  addedBytes: number;
-  deletedBytes: number;
-  netBytes: number;
+  additions: number | null; // lines added; null when the source has no line stats
+  deletions: number | null; // lines deleted; null when the source has no line stats
 }
 
 export interface DailyRepoCommitActivity {
@@ -1052,9 +1052,8 @@ export interface DailyRepoCommitActivity {
   commitCount: number;
   additions: number;
   deletions: number;
-  addedBytes: number;
-  deletedBytes: number;
-  netBytes: number;
+  /** False when these commits came without line stats (REST fallback, client-side dates). */
+  linesKnown: boolean;
   commits: DailyCommitDetail[];
 }
 
@@ -1077,9 +1076,6 @@ export interface DailyActivityEntry {
   totalCommits: number;
   totalAdditions: number;
   totalDeletions: number;
-  totalAddedBytes: number;
-  totalDeletedBytes: number;
-  netBytes: number;
 }
 
 export interface RepoActivitySummary {
@@ -1096,9 +1092,8 @@ export interface RepoActivitySummary {
   totalCommits: number;
   totalAdditions: number;
   totalDeletions: number;
-  totalAddedBytes: number;
-  totalDeletedBytes: number;
-  netBytes: number;
+  /** How many of totalCommits the line totals cover (GraphQL reads the latest 35). */
+  linesCommits: number;
   currentRepoBytes: number;
 }
 
@@ -1112,9 +1107,7 @@ export interface UserDailyActivityResponse {
     totalCommits: number;
     totalAdditions: number;
     totalDeletions: number;
-    totalAddedBytes: number;
-    totalDeletedBytes: number;
-    netBytes: number;
+    linesCommits: number;
   };
   source: "graphql" | "rest" | "sample";
 }

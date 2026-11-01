@@ -340,9 +340,7 @@ export function buildSampleDailyActivity(): UserDailyActivityResponse {
           commitCount: 3,
           additions: 412,
           deletions: 86,
-          addedBytes: 18_540,
-          deletedBytes: 3_870,
-          netBytes: 14_670,
+          linesKnown: true,
           commits: [
             {
               sha: "8f3c2a19d4e7b6a1234567890abcdef123456789",
@@ -352,9 +350,6 @@ export function buildSampleDailyActivity(): UserDailyActivityResponse {
               url: "https://github.com/kubernetes/kubernetes/commit/8f3c2a1",
               additions: 210,
               deletions: 48,
-              addedBytes: 9_450,
-              deletedBytes: 2_160,
-              netBytes: 7_290,
             },
             {
               sha: "4b9e1d02c3f8a7b6543210fedcba9876543210fe",
@@ -364,9 +359,6 @@ export function buildSampleDailyActivity(): UserDailyActivityResponse {
               url: "https://github.com/kubernetes/kubernetes/commit/4b9e1d0",
               additions: 154,
               deletions: 12,
-              addedBytes: 6_930,
-              deletedBytes: 540,
-              netBytes: 6_390,
             },
             {
               sha: "1c7a5e88b2d4f0a9876543210abcdef987654321",
@@ -376,9 +368,6 @@ export function buildSampleDailyActivity(): UserDailyActivityResponse {
               url: "https://github.com/kubernetes/kubernetes/commit/1c7a5e8",
               additions: 48,
               deletions: 26,
-              addedBytes: 2_160,
-              deletedBytes: 1_170,
-              netBytes: 990,
             },
           ],
         },
@@ -386,9 +375,6 @@ export function buildSampleDailyActivity(): UserDailyActivityResponse {
       totalCommits: 3,
       totalAdditions: 412,
       totalDeletions: 86,
-      totalAddedBytes: 18_540,
-      totalDeletedBytes: 3_870,
-      netBytes: 14_670,
     },
     {
       date: "2026-09-12",
@@ -406,9 +392,7 @@ export function buildSampleDailyActivity(): UserDailyActivityResponse {
           commitCount: 4,
           additions: 640,
           deletions: 125,
-          addedBytes: 28_800,
-          deletedBytes: 5_625,
-          netBytes: 23_175,
+          linesKnown: true,
           commits: [
             {
               sha: "a12bc34def5678901234567890abcdef12345678",
@@ -418,9 +402,6 @@ export function buildSampleDailyActivity(): UserDailyActivityResponse {
               url: "https://github.com/octo-sample/atlas-ui/commit/a12bc34",
               additions: 340,
               deletions: 45,
-              addedBytes: 15_300,
-              deletedBytes: 2_025,
-              netBytes: 13_275,
             },
             {
               sha: "b23cd45efa6789012345678901abcdef23456789",
@@ -430,9 +411,6 @@ export function buildSampleDailyActivity(): UserDailyActivityResponse {
               url: "https://github.com/octo-sample/atlas-ui/commit/b23cd45",
               additions: 180,
               deletions: 30,
-              addedBytes: 8_100,
-              deletedBytes: 1_350,
-              netBytes: 6_750,
             },
             {
               sha: "c34de56fab7890123456789012abcdef34567890",
@@ -442,9 +420,6 @@ export function buildSampleDailyActivity(): UserDailyActivityResponse {
               url: "https://github.com/octo-sample/atlas-ui/commit/c34de56",
               additions: 65,
               deletions: 40,
-              addedBytes: 2_925,
-              deletedBytes: 1_800,
-              netBytes: 1_125,
             },
             {
               sha: "d45ef67abc8901234567890123abcdef45678901",
@@ -454,9 +429,6 @@ export function buildSampleDailyActivity(): UserDailyActivityResponse {
               url: "https://github.com/octo-sample/atlas-ui/commit/d45ef67",
               additions: 55,
               deletions: 10,
-              addedBytes: 2_475,
-              deletedBytes: 450,
-              netBytes: 2_025,
             },
           ],
         },
@@ -472,9 +444,7 @@ export function buildSampleDailyActivity(): UserDailyActivityResponse {
           commitCount: 2,
           additions: 195,
           deletions: 68,
-          addedBytes: 8_775,
-          deletedBytes: 3_060,
-          netBytes: 5_715,
+          linesKnown: true,
           commits: [
             {
               sha: "e56fa78bcd9012345678901234abcdef56789012",
@@ -484,9 +454,6 @@ export function buildSampleDailyActivity(): UserDailyActivityResponse {
               url: "https://github.com/octo-sample/rust-diffs/commit/e56fa78",
               additions: 145,
               deletions: 52,
-              addedBytes: 6_525,
-              deletedBytes: 2_340,
-              netBytes: 4_185,
             },
             {
               sha: "f67ab89cde0123456789012345abcdef67890123",
@@ -496,9 +463,6 @@ export function buildSampleDailyActivity(): UserDailyActivityResponse {
               url: "https://github.com/octo-sample/rust-diffs/commit/f67ab89",
               additions: 50,
               deletions: 16,
-              addedBytes: 2_250,
-              deletedBytes: 720,
-              netBytes: 1_530,
             },
           ],
         },
@@ -506,9 +470,6 @@ export function buildSampleDailyActivity(): UserDailyActivityResponse {
       totalCommits: 6,
       totalAdditions: 835,
       totalDeletions: 193,
-      totalAddedBytes: 37_575,
-      totalDeletedBytes: 8_685,
-      netBytes: 28_890,
     },
     {
       date: "2025-06-23",
@@ -538,9 +499,7 @@ export function buildSampleDailyActivity(): UserDailyActivityResponse {
           commitCount: 3,
           additions: 520,
           deletions: 15,
-          addedBytes: 23_400,
-          deletedBytes: 675,
-          netBytes: 22_725,
+          linesKnown: true,
           commits: [
             {
               sha: "91827364554637281910abcdef1234567890abcd",
@@ -550,9 +509,6 @@ export function buildSampleDailyActivity(): UserDailyActivityResponse {
               url: "https://github.com/octo-sample/svelte-gauge/commit/9182736",
               additions: 410,
               deletions: 0,
-              addedBytes: 18_450,
-              deletedBytes: 0,
-              netBytes: 18_450,
             },
             {
               sha: "827364554637281910abcdef1234567890abcdef",
@@ -562,9 +518,6 @@ export function buildSampleDailyActivity(): UserDailyActivityResponse {
               url: "https://github.com/octo-sample/svelte-gauge/commit/8273645",
               additions: 110,
               deletions: 15,
-              addedBytes: 4_950,
-              deletedBytes: 675,
-              netBytes: 4_275,
             },
           ],
         },
@@ -572,9 +525,6 @@ export function buildSampleDailyActivity(): UserDailyActivityResponse {
       totalCommits: 3,
       totalAdditions: 520,
       totalDeletions: 15,
-      totalAddedBytes: 23_400,
-      totalDeletedBytes: 675,
-      netBytes: 22_725,
     },
     {
       date: "2024-02-11",
@@ -604,9 +554,7 @@ export function buildSampleDailyActivity(): UserDailyActivityResponse {
           commitCount: 2,
           additions: 890,
           deletions: 0,
-          addedBytes: 40_050,
-          deletedBytes: 0,
-          netBytes: 40_050,
+          linesKnown: true,
           commits: [
             {
               sha: "7766554433221100ffeeddccbbaa998877665544",
@@ -616,9 +564,6 @@ export function buildSampleDailyActivity(): UserDailyActivityResponse {
               url: "https://github.com/octo-sample/atlas-ui/commit/7766554",
               additions: 890,
               deletions: 0,
-              addedBytes: 40_050,
-              deletedBytes: 0,
-              netBytes: 40_050,
             },
           ],
         },
@@ -626,17 +571,15 @@ export function buildSampleDailyActivity(): UserDailyActivityResponse {
       totalCommits: 2,
       totalAdditions: 890,
       totalDeletions: 0,
-      totalAddedBytes: 40_050,
-      totalDeletedBytes: 0,
-      netBytes: 40_050,
     },
   ];
 
   const repoSummaries: RepoActivitySummary[] = SEEDS.map((s) => {
     const totalBytes = Object.values(s.languages).reduce((a, b) => a + b, 0);
     const primaryLanguage = Object.entries(s.languages).sort((a, b) => b[1] - a[1])[0]?.[0] ?? null;
-    const addedBytes = Math.round(totalBytes * 1.28);
-    const deletedBytes = Math.round(totalBytes * 0.28);
+    const sampleDays = days
+      .flatMap((d) => d.repoCommits)
+      .filter((rc) => rc.fullName === `octo-sample/${s.name}`);
     return {
       repoName: s.name,
       fullName: `octo-sample/${s.name}`,
@@ -649,11 +592,9 @@ export function buildSampleDailyActivity(): UserDailyActivityResponse {
       lastCommitDate: s.pushed.slice(0, 10),
       activeDays: s.activeDays,
       totalCommits: s.commits,
-      totalAdditions: Math.round(addedBytes / 45),
-      totalDeletions: Math.round(deletedBytes / 45),
-      totalAddedBytes: addedBytes,
-      totalDeletedBytes: deletedBytes,
-      netBytes: totalBytes,
+      totalAdditions: sampleDays.reduce((acc, rc) => acc + rc.additions, 0),
+      totalDeletions: sampleDays.reduce((acc, rc) => acc + rc.deletions, 0),
+      linesCommits: sampleDays.reduce((acc, rc) => acc + rc.commitCount, 0),
       currentRepoBytes: totalBytes,
     };
   });
@@ -668,9 +609,7 @@ export function buildSampleDailyActivity(): UserDailyActivityResponse {
       totalCommits: SEEDS.reduce((acc, s) => acc + s.commits, 0),
       totalAdditions: repoSummaries.reduce((acc, r) => acc + r.totalAdditions, 0),
       totalDeletions: repoSummaries.reduce((acc, r) => acc + r.totalDeletions, 0),
-      totalAddedBytes: repoSummaries.reduce((acc, r) => acc + r.totalAddedBytes, 0),
-      totalDeletedBytes: repoSummaries.reduce((acc, r) => acc + r.totalDeletedBytes, 0),
-      netBytes: repoSummaries.reduce((acc, r) => acc + r.netBytes, 0),
+      linesCommits: repoSummaries.reduce((acc, r) => acc + r.linesCommits, 0),
     },
     source: "sample",
   };

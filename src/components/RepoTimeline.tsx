@@ -115,7 +115,7 @@ export default function RepoTimeline({ repos }: RepoTimelineProps) {
         <button
           onClick={handleExport}
           disabled={exporting}
-          className="text-xs px-3 py-1.5 rounded-lg bg-accent-soft text-accent-text hover:bg-accent-soft/70 transition-colors cursor-pointer disabled:opacity-50 font-medium"
+          className="btn btn-ghost btn-sm shrink-0"
         >
           {exporting ? t("timeline.exporting") : t("timeline.export")}
         </button>

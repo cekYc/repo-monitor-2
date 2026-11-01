@@ -49,8 +49,11 @@ Sıra sabittir; her seviye bir öncekinden daha az insan ilgilendirir.
 
 1. **Profil özeti** — avatar, ad, bio, takipçi/takip/repo/toplam boyut,
    dil şeridi önizlemesi, `İzle` + PNG + GitHub aksiyonları.
-2. **Dil DNA'sı** — donut + yatay bar + kısa tablo (6 satır, "Tümünü göster").
-3. **Özet metrikler** — tam 8 kutu. Takipçi/takip burada tekrarlanmaz.
+2. **Dil DNA'sı** — donut + satır içi barlı kısa tablo (6 satır, "Tümünü
+   göster"). Her dilin payı bir kez çizilir; ayrı bir bar grafiği yoktur.
+3. **Özet metrikler** — tam 6 kutu. Profil özetinde ya da dil bölümünde
+   görünen sayılar (takipçi, takip, repo sayısı, toplam kod, dil sayısı)
+   burada tekrarlanmaz.
 4. **Repo grid** — filtre + dil + sıralama, 1/2/3 kolon.
 5. **Ayrıntılı analiz** — tek sekme şeridi: Aktivite · Kalite · Persona ·
    İçgörüler · Araçlar. Sekme açılana kadar içeriği mount edilmez, yani
@@ -128,7 +131,11 @@ renk yazılmaz. Her token'ın açık ve koyu karşılığı vardır.
 | `--hairline` | `#232329` | `#e8e8ec` |
 | `--fg` | `#f4f4f5` | `#18181b` |
 | `--muted` | `#a1a1ac` | `#52525b` |
-| `--faint` | `#6c6c78` | `#8b8b95` |
+| `--faint` | `#868692` | `#696973` |
+
+`--faint` metin rengi olarak kullanıldığı için her yüzeyde (canvas, surface,
+panel) en az 4.5:1 kontrast verir (WCAG AA). Rengi koyulaştıran/açan bir
+değişiklik bu eşiği yeniden ölçmelidir.
 
 ### Vurgu — tek mor
 
@@ -183,9 +190,9 @@ ve boş durum metinleri dahil. Sunucu hata **kodu** döndürür (`rate_limit`,
 | Genişlik | Davranış |
 |---|---|
 | `< 640` (base) | Tek kolon. Header: logo + arama + oturum. Dil/tema `SessionMenu` içine katlanır. Kota sayısı yalnızca alarm durumunda görünür. Alt sekme çubuğu açık (`h-56px` + safe-area). |
-| `≥ 640` (`sm`) | Repo grid 2 kolon, metrikler 4 kolon. Dil ve tema header'a döner. Kota sayısı her durumda görünür. |
+| `≥ 640` (`sm`) | Repo grid 2 kolon, metrikler 3 kolon. Dil ve tema header'a döner. Kota sayısı her durumda görünür. |
 | `≥ 768` (`md`) | Alt sekme çubuğu kapanır, bölüm linkleri header'a taşınır. Footer görünür. Yatay iç boşluk `24px`. |
-| `≥ 1024` (`lg`) | Dil DNA'sı donut + bar olarak iki kolona ayrılır. |
+| `≥ 1024` (`lg`) | Dil DNA'sı donut + tablo olarak iki kolona ayrılır. Metrikler tek satırda 6 kolon. |
 | `≥ 1280` (`xl`) | Repo grid 3 kolon; logo yanında kelime markası çıkar. |
 
 İçerik genişliği her yerde `1200px` ile sınırlıdır. 375px'te yatay kaydırma
@@ -263,3 +270,15 @@ tükenir, çözümü de kota bittiğindekiyle aynı eylemdir.
 - **"Fork gizle" anahtarı yok.** Analiz fork'ları sunucuda zaten dışarıda
   bırakıyor (`github.ts`, `allRepos.filter(r => !r.fork)`), dolayısıyla anahtar
   hiçbir şey yapmazdı. Yerine repo listesinde kalıcı bir not var.
+- **Tahmini sayı kesin sayı gibi gösterilmez.** Günlük Aktivite, GitHub'ın
+  commit başına bildirdiği satır sayılarını gösterir; bunlar bayta çevrilmez.
+  Satır istatistiği olmayan kaynaklarda (token'sız REST, istemcinin bildiği
+  commit günleri) değer "—" olur ve "Satır verisi yok" yazar; yalnızca gün
+  bilinen commit sayıları "1+" gibi alt sınır olarak yazılır. Repo kartındaki
+  katkı boyutu commit payından tahmin edildiği için "≈" ile başlar.
+- **Aynı eylemin tek adı var.** Görseli indiren her düğme "PNG indir", seçim
+  modunu açan düğme "PNG için seç" der; ikisi de `btn btn-ghost btn-sm`.
+  Düğme etiketlerinde emoji kullanılmaz.
+- **Sekme etiketleri satır kırmaz.** Repo sekme çubuğu dar ekranda yatay
+  kayar; sekme açıklamaları çubuğun yanında değil, bölüm başlığının altında
+  (`SectionHeader` `hint`) durur.

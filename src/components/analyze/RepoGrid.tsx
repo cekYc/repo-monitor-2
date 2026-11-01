@@ -314,18 +314,18 @@ export default function RepoGrid({
     <section className="space-y-3">
       <div className="card p-4 space-y-4">
         {/* Top bar: Tab Switcher & Subtitle */}
-        <div className="flex flex-col sm:flex-row sm:items-center justify-between gap-3 pb-3 border-b border-hairline">
+        <div className="flex flex-wrap items-center justify-between gap-3 pb-3 border-b border-hairline">
           <div
             role="tablist"
             aria-label={t("repos.title")}
-            className="inline-flex items-center gap-1 p-1 rounded-xl bg-panel border border-hairline"
+            className="flex items-center gap-1 p-1 rounded-xl bg-panel border border-hairline overflow-x-auto max-w-full"
           >
             <button
               type="button"
               role="tab"
               aria-selected={tab === "owned"}
               onClick={() => switchTab("owned")}
-              className={`flex items-center gap-2 px-3 py-1.5 rounded-lg text-sm font-medium transition-all cursor-pointer ${
+              className={`flex items-center gap-2 px-3 py-1.5 rounded-lg text-sm font-medium whitespace-nowrap shrink-0 transition-all cursor-pointer ${
                 tab === "owned"
                   ? "bg-surface text-fg shadow-sm border border-hairline"
                   : "text-muted hover:text-fg hover:bg-surface/50"
@@ -349,7 +349,7 @@ export default function RepoGrid({
               role="tab"
               aria-selected={tab === "contributed"}
               onClick={() => switchTab("contributed")}
-              className={`flex items-center gap-2 px-3 py-1.5 rounded-lg text-sm font-medium transition-all cursor-pointer ${
+              className={`flex items-center gap-2 px-3 py-1.5 rounded-lg text-sm font-medium whitespace-nowrap shrink-0 transition-all cursor-pointer ${
                 tab === "contributed"
                   ? "bg-surface text-fg shadow-sm border border-hairline"
                   : "text-muted hover:text-fg hover:bg-surface/50"
@@ -379,7 +379,7 @@ export default function RepoGrid({
               role="tab"
               aria-selected={tab === "daily"}
               onClick={() => switchTab("daily")}
-              className={`flex items-center gap-2 px-3 py-1.5 rounded-lg text-sm font-medium transition-all cursor-pointer ${
+              className={`flex items-center gap-2 px-3 py-1.5 rounded-lg text-sm font-medium whitespace-nowrap shrink-0 transition-all cursor-pointer ${
                 tab === "daily"
                   ? "bg-surface text-fg shadow-sm border border-hairline"
                   : "text-muted hover:text-fg hover:bg-surface/50"
@@ -405,19 +405,22 @@ export default function RepoGrid({
             </button>
           </div>
 
-          <p className="t-caption text-faint">
-            {tab === "owned"
-              ? t("repos.forksExcluded")
-              : tab === "contributed"
-                ? t("repos.contributedHint")
-                : t("repos.dailyHint")}
-          </p>
+          {allowExport && tab !== "daily" && !selectionMode && (
+            <button
+              type="button"
+              onClick={() => setSelectionMode(true)}
+              className="btn btn-ghost btn-sm shrink-0"
+            >
+              {t("repos.export.start")}
+            </button>
+          )}
         </div>
 
         {/* Header & Filter Controls Row (only for Owned & Contributed grid tabs) */}
         {tab !== "daily" && (
           <SectionHeader
           title={tab === "owned" ? t("repos.title") : t("repos.contributedTitle")}
+          hint={tab === "owned" ? t("repos.forksExcluded") : t("repos.contributedHint")}
           count={
             tab === "contributed" && contributedLoading
               ? undefined
@@ -528,7 +531,7 @@ export default function RepoGrid({
         )}
 
         {/* Exclusion or Export actions bar */}
-        {tab !== "daily" && ((tab === "owned" && excluded.size > 0) || allowExport) && (
+        {tab !== "daily" && ((tab === "owned" && excluded.size > 0) || (allowExport && selectionMode)) && (
           <div className="flex flex-wrap items-center gap-2 pt-3 border-t border-hairline">
             {tab === "owned" && excluded.size > 0 && (
               <>
@@ -541,54 +544,42 @@ export default function RepoGrid({
               </>
             )}
 
-            {allowExport && (
+            {allowExport && selectionMode && (
               <div className="flex flex-wrap items-center gap-2 ml-auto">
-                {selectionMode ? (
-                  <>
-                    <button
-                      type="button"
-                      onClick={() => {
-                        const allKeys = visible.map((r) => r.fullName || r.name);
-                        setSelected(
-                          selected.size === visible.length ? new Set() : new Set(allKeys)
-                        );
-                      }}
-                      className="btn btn-ghost btn-sm"
-                    >
-                      {selected.size === visible.length && visible.length > 0
-                        ? t("repos.export.deselectAll")
-                        : t("repos.export.selectAll")}
-                    </button>
-                    <button
-                      type="button"
-                      onClick={exportSelected}
-                      disabled={exporting || selected.size === 0}
-                      className="btn btn-primary btn-sm"
-                    >
-                      {exporting
-                        ? t("repos.export.exporting")
-                        : `${t("repos.export.button")} (${selected.size})`}
-                    </button>
-                    <button
-                      type="button"
-                      onClick={() => {
-                        setSelectionMode(false);
-                        setSelected(new Set());
-                      }}
-                      className="btn btn-ghost btn-sm"
-                    >
-                      {t("action.cancel")}
-                    </button>
-                  </>
-                ) : (
-                  <button
-                    type="button"
-                    onClick={() => setSelectionMode(true)}
-                    className="btn btn-ghost btn-sm"
-                  >
-                    {t("repos.export.start")}
-                  </button>
-                )}
+                <button
+                  type="button"
+                  onClick={() => {
+                    const allKeys = visible.map((r) => r.fullName || r.name);
+                    setSelected(
+                      selected.size === visible.length ? new Set() : new Set(allKeys)
+                    );
+                  }}
+                  className="btn btn-ghost btn-sm"
+                >
+                  {selected.size === visible.length && visible.length > 0
+                    ? t("repos.export.deselectAll")
+                    : t("repos.export.selectAll")}
+                </button>
+                <button
+                  type="button"
+                  onClick={exportSelected}
+                  disabled={exporting || selected.size === 0}
+                  className="btn btn-primary btn-sm"
+                >
+                  {exporting
+                    ? t("repos.export.exporting")
+                    : `${t("repos.export.button")} (${selected.size})`}
+                </button>
+                <button
+                  type="button"
+                  onClick={() => {
+                    setSelectionMode(false);
+                    setSelected(new Set());
+                  }}
+                  className="btn btn-ghost btn-sm"
+                >
+                  {t("action.cancel")}
+                </button>
               </div>
             )}
           </div>

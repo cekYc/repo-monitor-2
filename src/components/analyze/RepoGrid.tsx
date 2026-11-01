@@ -2,13 +2,17 @@
 
 import { useCallback, useEffect, useMemo, useRef, useState } from "react";
 import EmptyState from "@/components/ui/EmptyState";
+import DailyActivityTab from "@/components/analyze/DailyActivityTab";
 import RepoCard from "@/components/analyze/RepoCard";
 import { SectionHeader } from "@/components/ui/Card";
 import { useLocale } from "@/components/LocaleProvider";
 import { getRepoActivityTimestamp } from "@/lib/repo-activity";
 import { tokenHeaders } from "@/lib/token";
-import { buildSampleContributedRepos } from "@/lib/sample-analysis";
-import type { RepoInfo } from "@/lib/github";
+import {
+  buildSampleContributedRepos,
+  buildSampleDailyActivity,
+} from "@/lib/sample-analysis";
+import type { RepoInfo, UserDailyActivityResponse } from "@/lib/github";
 import type { TranslationKey } from "@/lib/i18n";
 
 export type SortKey =
@@ -25,7 +29,7 @@ export type SortKey =
 
 export type SortDirection = "desc" | "asc";
 export type VisibilityFilter = "all" | "public" | "private";
-export type RepoTab = "owned" | "contributed";
+export type RepoTab = "owned" | "contributed" | "daily";
 
 const SORTS: { id: SortKey; labelKey: TranslationKey }[] = [
   { id: "updated", labelKey: "repos.sort.updated" },
@@ -113,6 +117,10 @@ export default function RepoGrid({
   const [contributedLoading, setContributedLoading] = useState(false);
   const fetchedOwner = useRef<string | null>(null);
 
+  const [dailyData, setDailyData] = useState<UserDailyActivityResponse | null>(null);
+  const [dailyLoading, setDailyLoading] = useState(false);
+  const fetchedDailyOwner = useRef<string | null>(null);
+
   const [query, setQuery] = useState("");
   const [visibility, setVisibility] = useState<VisibilityFilter>("all");
   const [lang, setLang] = useState("");
@@ -150,10 +158,39 @@ export default function RepoGrid({
     [isSample]
   );
 
+  const fetchDaily = useCallback(
+    async (targetOwner: string) => {
+      if (!targetOwner) return;
+      if (isSample || targetOwner.toLowerCase().startsWith("octo-sample")) {
+        setDailyData(buildSampleDailyActivity());
+        fetchedDailyOwner.current = targetOwner.toLowerCase();
+        return;
+      }
+      setDailyLoading(true);
+      try {
+        const res = await fetch(
+          `/api/daily-activity?username=${encodeURIComponent(targetOwner)}`,
+          { headers: tokenHeaders() }
+        );
+        if (!res.ok) throw new Error("Failed to fetch daily activity");
+        const data = (await res.json()) as UserDailyActivityResponse;
+        setDailyData(data);
+        fetchedDailyOwner.current = targetOwner.toLowerCase();
+      } catch {
+        setDailyData(null);
+      } finally {
+        setDailyLoading(false);
+      }
+    },
+    [isSample]
+  );
+
   // Reset when analyzed owner changes
   useEffect(() => {
     setContributedRepos(null);
     fetchedOwner.current = null;
+    setDailyData(null);
+    fetchedDailyOwner.current = null;
     setTab("owned");
     setQuery("");
     setLang("");
@@ -171,6 +208,8 @@ export default function RepoGrid({
     setSelected(new Set());
     if (nextTab === "contributed" && fetchedOwner.current !== owner.toLowerCase()) {
       fetchContributed(owner);
+    } else if (nextTab === "daily" && fetchedDailyOwner.current !== owner.toLowerCase()) {
+      fetchDaily(owner);
     }
   };
 
@@ -334,15 +373,50 @@ export default function RepoGrid({
                 </span>
               ) : null}
             </button>
+
+            <button
+              type="button"
+              role="tab"
+              aria-selected={tab === "daily"}
+              onClick={() => switchTab("daily")}
+              className={`flex items-center gap-2 px-3 py-1.5 rounded-lg text-sm font-medium transition-all cursor-pointer ${
+                tab === "daily"
+                  ? "bg-surface text-fg shadow-sm border border-hairline"
+                  : "text-muted hover:text-fg hover:bg-surface/50"
+              }`}
+            >
+              <svg className="w-4 h-4 text-accent" fill="none" viewBox="0 0 24 24" strokeWidth={1.8} stroke="currentColor">
+                <path strokeLinecap="round" strokeLinejoin="round" d="M6.75 3v2.25M17.25 3v2.25M3 18.75V7.5a2.25 2.25 0 012.25-2.25h13.5A2.25 2.25 0 0121 7.5v11.25m-18 0A2.25 2.25 0 005.25 21h13.5A2.25 2.25 0 0021 18.75m-18 0v-7.5A2.25 2.25 0 015.25 9h13.5A2.25 2.25 0 0121 11.25v7.5m-9-6h.008v.008H12v-.008zM12 15h.008v.008H12V15zm0 2.25h.008v.008H12v-.008zM9.75 15h.008v.008H9.75V15zm0 2.25h.008v.008H9.75v-.008zM7.5 15h.008v.008H7.5V15zm0 2.25h.008v.008H7.5v-.008zm6.75-4.5h.008v.008h-.008v-.008zm0 2.25h.008v.008h-.008V15zm0 2.25h.008v.008h-.008v-.008zm2.25-4.5h.008v.008H16.5v-.008zm0 2.25h.008v.008H16.5V15z" />
+              </svg>
+              <span>{t("repos.tab.daily")}</span>
+              {dailyLoading ? (
+                <span className="w-3.5 h-3.5 border-2 border-accent border-t-transparent rounded-full animate-spin inline-block ml-0.5" />
+              ) : dailyData !== null ? (
+                <span
+                  className={`text-xs px-1.5 py-0.5 rounded-md font-mono ${
+                    tab === "daily"
+                      ? "bg-accent/15 text-accent-text"
+                      : "bg-surface text-faint"
+                  }`}
+                >
+                  {dailyData.days.length}
+                </span>
+              ) : null}
+            </button>
           </div>
 
           <p className="t-caption text-faint">
-            {tab === "owned" ? t("repos.forksExcluded") : t("repos.contributedHint")}
+            {tab === "owned"
+              ? t("repos.forksExcluded")
+              : tab === "contributed"
+                ? t("repos.contributedHint")
+                : t("repos.dailyHint")}
           </p>
         </div>
 
-        {/* Header & Filter Controls Row */}
-        <SectionHeader
+        {/* Header & Filter Controls Row (only for Owned & Contributed grid tabs) */}
+        {tab !== "daily" && (
+          <SectionHeader
           title={tab === "owned" ? t("repos.title") : t("repos.contributedTitle")}
           count={
             tab === "contributed" && contributedLoading
@@ -448,12 +522,13 @@ export default function RepoGrid({
                   </>
                 )}
               </button>
-            </>
-          }
-        />
+              </>
+            }
+          />
+        )}
 
         {/* Exclusion or Export actions bar */}
-        {((tab === "owned" && excluded.size > 0) || allowExport) && (
+        {tab !== "daily" && ((tab === "owned" && excluded.size > 0) || allowExport) && (
           <div className="flex flex-wrap items-center gap-2 pt-3 border-t border-hairline">
             {tab === "owned" && excluded.size > 0 && (
               <>
@@ -521,7 +596,15 @@ export default function RepoGrid({
       </div>
 
       {/* Grid Content / Loading / Empty States */}
-      {tab === "contributed" && contributedLoading ? (
+      {tab === "daily" ? (
+        <DailyActivityTab
+          apiData={dailyData}
+          loading={dailyLoading}
+          ownedRepos={repos}
+          contributedRepos={contributedRepos}
+          owner={owner}
+        />
+      ) : tab === "contributed" && contributedLoading ? (
         <div className="space-y-3">
           <div className="rounded-lg border border-hairline bg-panel px-3 py-2 text-center">
             <p className="t-caption text-muted flex items-center justify-center gap-2">

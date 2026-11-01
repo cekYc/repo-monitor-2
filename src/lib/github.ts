@@ -131,12 +131,12 @@ export async function fetchUserAnalysis(
   if (isOwnProfile && token) {
     // Kendi profili → private repolar dahil listForAuthenticatedUser
     while (true) {
-const { data: repos } = await octokit.repos.listForAuthenticatedUser({
-  per_page: perPage,
-  page,
-  sort: "pushed",
-  affiliation: "owner",  // sadece bu kalıyor
-});
+      const { data: repos } = await octokit.repos.listForAuthenticatedUser({
+        per_page: perPage,
+        page,
+        sort: "pushed",
+        affiliation: "owner",  // sadece bu kalıyor
+      });
       allRepos = allRepos.concat(repos);
       if (repos.length < perPage) break;
       page++;
@@ -227,7 +227,7 @@ const { data: repos } = await octokit.repos.listForAuthenticatedUser({
           const commits = res.data;
           const lastPage = parseLastPage(res.headers.link);
           totalCommits = lastPage ? lastPage * 100 : commits.length;
-          
+
           const thirtyDaysAgo = Date.now() - 30 * 24 * 60 * 60 * 1000;
           const datesSet = new Set<string>();
           const normalizedUsername = username.toLowerCase();
@@ -709,9 +709,9 @@ export async function fetchRepoDeepAnalysis(
   const windowDays =
     oldestDate !== null && newestDate !== null
       ? Math.max(
-          1,
-          Math.round((newestDate - oldestDate) / (1000 * 60 * 60 * 24))
-        )
+        1,
+        Math.round((newestDate - oldestDate) / (1000 * 60 * 60 * 24))
+      )
       : 0;
 
   // Releases
@@ -884,7 +884,7 @@ export async function fetchOrgAnalysis(
           const commits = res.data;
           const lastPage = parseLastPage(res.headers.link);
           totalCommits = lastPage ? lastPage * 100 : commits.length;
-          
+
           const thirtyDaysAgo = Date.now() - 30 * 24 * 60 * 60 * 1000;
           const datesSet = new Set<string>();
           for (const c of commits) {
@@ -1010,4 +1010,99 @@ export async function fetchOrgAnalysis(
     totalBytes,
     totalRepos: repoInfos.length,
   };
+}
+
+// --- Daily Activity & Code Size Change Analysis ---
+
+export interface DailyCommitDetail {
+  sha: string;
+  shortSha: string;
+  message: string;
+  timestamp: string; // ISO date-time
+  url: string;
+  additions: number; // lines added
+  deletions: number; // lines deleted
+  addedBytes: number;
+  deletedBytes: number;
+  netBytes: number;
+}
+
+export interface DailyRepoCommitActivity {
+  repoName: string;
+  fullName: string;
+  ownerLogin: string;
+  ownerAvatar?: string;
+  htmlUrl: string;
+  isContributed: boolean;
+  private: boolean;
+  primaryLanguage?: string | null;
+  totalRepoBytes: number;
+  commitCount: number;
+  additions: number;
+  deletions: number;
+  addedBytes: number;
+  deletedBytes: number;
+  netBytes: number;
+  commits: DailyCommitDetail[];
+}
+
+export interface DailyRepoCreated {
+  repoName: string;
+  fullName: string;
+  htmlUrl: string;
+  description: string | null;
+  createdAt: string; // ISO
+  private: boolean;
+  primaryLanguage?: string | null;
+  totalBytes: number;
+  stars: number;
+}
+
+export interface DailyActivityEntry {
+  date: string; // YYYY-MM-DD
+  reposCreated: DailyRepoCreated[];
+  repoCommits: DailyRepoCommitActivity[];
+  totalCommits: number;
+  totalAdditions: number;
+  totalDeletions: number;
+  totalAddedBytes: number;
+  totalDeletedBytes: number;
+  netBytes: number;
+}
+
+export interface RepoActivitySummary {
+  repoName: string;
+  fullName: string;
+  htmlUrl: string;
+  isContributed: boolean;
+  private: boolean;
+  primaryLanguage?: string | null;
+  createdAt: string;
+  firstCommitDate: string | null;
+  lastCommitDate: string | null;
+  activeDays: number;
+  totalCommits: number;
+  totalAdditions: number;
+  totalDeletions: number;
+  totalAddedBytes: number;
+  totalDeletedBytes: number;
+  netBytes: number;
+  currentRepoBytes: number;
+}
+
+export interface UserDailyActivityResponse {
+  username: string;
+  days: DailyActivityEntry[];
+  repoSummaries: RepoActivitySummary[];
+  totals: {
+    activeDays: number;
+    reposCreated: number;
+    totalCommits: number;
+    totalAdditions: number;
+    totalDeletions: number;
+    totalAddedBytes: number;
+    totalDeletedBytes: number;
+    netBytes: number;
+  };
+  source: "graphql" | "rest" | "sample";
 }
